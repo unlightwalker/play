@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文字編輯與匯入/匯出工具</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      background-color: #f5f5f5;
+    }
+
+    /* 左側輸入區 */
+    .editor-container {
+      flex: 1;
+      height: 100%;
+      padding: 16px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      padding: 16px;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 15px;
+      line-height: 1.5;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      resize: none;
+      background-color: #ffffff;
+      color: #333333;
+    }
+
+    textarea:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+    }
+
+    /* 右側操作按鈕區 */
+    .sidebar {
+      width: 220px;
+      height: 100%;
+      background-color: #ffffff;
+      border-left: 1px solid #e0e0e0;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: -2px 0 6px rgba(0, 0, 0, 0.03);
+    }
+
+    .sidebar h3 {
+      font-size: 14px;
+      color: #666;
+      margin-top: 8px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 8px 0;
+    }
+
+    button {
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    /* 匯入按鈕樣式 (藍色) */
+    .btn-import {
+      background-color: #007bff;
+    }
+
+    .btn-import:hover {
+      background-color: #0056b3;
+    }
+
+    /* HTML 按鈕樣式 (橘色調) */
+    .btn-html {
+      background-color: #e44d26;
+    }
+
+    .btn-html:hover {
+      background-color: #cf3c16;
+    }
+
+    /* JS 按鈕樣式 (黃底黑字) */
+    .btn-js {
+      background-color: #f7df1e;
+      color: #323330;
+    }
+
+    .btn-js:hover {
+      background-color: #e5cd14;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 左側：全螢幕高文字輸入區 -->
+  <div class="editor-container">
+    <textarea id="textContent" placeholder="請在此輸入程式碼，或從右側匯入檔案..." spellcheck="false"></textarea>
+  </div>
+
+  <!-- 右側：功能面板 -->
+  <div class="sidebar">
+    <!-- 隱藏的檔案選取器 -->
+    <input type="file" id="fileInput" accept=".html,.htm,.js,text/html,text/javascript" style="display: none;" onchange="handleFileSelect(event)">
+    
+    <h3>匯入</h3>
+    <button class="btn-import" onclick="triggerImport()">📂 匯入檔案 (.html / .js)</button>
+
+    <hr>
+
+    <h3>匯出</h3>
+    <button class="btn-html" onclick="downloadFile('index.html', 'text/html')">下載成 .html</button>
+    <button class="btn-js" onclick="downloadFile('script.js', 'text/javascript')">下載成 .js</button>
+  </div>
+
+  <script>
+    const textarea = document.getElementById('textContent');
+    const fileInput = document.getElementById('fileInput');
+
+    // 觸發隱藏的 input 點擊
+    function triggerImport() {
+      fileInput.click();
+    }
+
+    // 處理檔案讀取
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // 如果編輯區已有文字，提示是否確認覆蓋
+      if (textarea.value.trim() !== '') {
+        const confirmOverwrite = confirm("左側編輯區目前已有內容，匯入將會覆蓋現有文字，確定繼續嗎？");
+        if (!confirmOverwrite) {
+          fileInput.value = ''; // 清空選擇狀態
+          return;
+        }
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        textarea.value = e.target.result;
+        // 匯入完成後清空 input，確保即使連續選取同一檔案也能觸發 change 事件
+        fileInput.value = '';
+      };
+
+      reader.onerror = function() {
+        alert("讀取檔案失敗，請再試一次。");
+        fileInput.value = '';
+      };
+
+      // 以 UTF-8 編碼讀取純文字
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    /**
+     * 匯出檔案功能
+     */
+    function downloadFile(defaultFilename, mimeType) {
+      const content = textarea.value;
+
+      if (!content.trim()) {
+        const confirmDownload = confirm("文字框目前是空的，確定要下載空檔案嗎？");
+        if (!confirmDownload) return;
+      }
+
+      // 建立 Blob 物件
+      const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
+      
+      // 建立虛擬 <a> 標籤進行下載
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = defaultFilename;
+      
+      document.body.appendChild(a);
+      a.click();
+      
+      // 清理記憶體
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
