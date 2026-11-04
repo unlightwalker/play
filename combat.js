@@ -1,7 +1,7 @@
 /**
  * ========================================================
- * 你的江湖 - 核心戰鬥引擎 (combat.js) [抗坍塌防黑屏版]
- * 職責：雙外功獨立 ATB、火柴人專屬動作、極致打擊感、高空翻騰閃避
+ * 你的江湖 - 核心戰鬥引擎 (combat.js) [學點掉落結算版]
+ * 戰鬥切磋勝出同步獎勵 +5 ~ +20 學點
  * ========================================================
  */
 
@@ -31,12 +31,10 @@ function calcDerivedCombatRates(atkStats, defStats) {
   return { hitRate, dodgeRate, parryRate, critRate };
 }
 
-// 核心修復：把 DOM 切換放第一行，確保擂台畫面瞬間彈出！
 function startBattleAgainst(enemyObj, isBoss = false) {
   isBossBattle = isBoss;
   currentEnemy = { ...enemyObj };
 
-  // 1. 第一時間強制切換畫面，徹底杜絕黑屏或畫面不見！
   const menuView = document.getElementById('menu-view');
   const battleView = document.getElementById('battle-view');
   if (menuView) menuView.classList.add('hidden');
@@ -45,7 +43,6 @@ function startBattleAgainst(enemyObj, isBoss = false) {
     battleView.style.display = 'flex';
   }
 
-  // 2. 數值防呆保護
   if (!currentEnemy.stats) {
     currentEnemy.stats = {
       arm: Math.floor(currentEnemy.atk * 0.7),
@@ -75,7 +72,6 @@ function startBattleAgainst(enemyObj, isBoss = false) {
   const bannerEl = document.getElementById('combat-banner');
   if (bannerEl) bannerEl.innerHTML = `交鋒開始！你手持【${curWName} (${curWType})】，雙外功獨立充能中！`;
 
-  // 確保火柴人武器外觀更新
   if (typeof updateWeaponSVG === 'function') updateWeaponSVG();
 
   updateCombatBars();
@@ -227,7 +223,6 @@ function playUniqueSkillAnimation(skillName, pRig, arm, curWType) {
     return;
   }
 
-  // 暗器專屬不良少年單手帥氣甩動
   if (curWType === "暗器" || skillName.includes("針") || skillName.includes("釘") || skillName.includes("鏢") || skillName.includes("花雨")) {
     pRig.classList.add('anim-thug-flick');
     return;
@@ -271,7 +266,6 @@ function executeSkillAttack(skill, isMatch, slotIndex) {
     const rollParry = Math.random() * 100;
     const rollCrit = Math.random() * 100;
 
-    // 1. 未命中
     if (rollHit > rates.hitRate) {
       spawnFloatingDmg("未命中!", 220, 55, "dmg-miss");
       const banner = document.getElementById('combat-banner');
@@ -280,7 +274,6 @@ function executeSkillAttack(skill, isMatch, slotIndex) {
       return;
     }
 
-    // 2. 閃避：敵人縱身高跳避開貼地攻擊！
     if (rollDodge < rates.dodgeRate) {
       if (eRig) eRig.classList.add('anim-jump-dodge-enemy');
       spawnFloatingDmg("騰空閃避!", 220, 40, "dmg-dodge");
@@ -303,7 +296,6 @@ function executeSkillAttack(skill, isMatch, slotIndex) {
     let baseDmg = (player.currentAtk * actualMult) + (player.stats.arm * 0.7) - (currentEnemy.def * 0.5);
     baseDmg = Math.max(6, Math.floor(baseDmg + Math.random() * 7));
 
-    // 3. 招架格擋
     let isParried = false;
     if (rollParry < rates.parryRate) {
       isParried = true;
@@ -314,18 +306,17 @@ function executeSkillAttack(skill, isMatch, slotIndex) {
       if (banner) banner.innerHTML = `【${currentEnemy.name}】催動真氣，<span style="color:#feca57;">【招架格擋】</span>減免半數傷害！`;
     }
 
-    // 4. 會心暴擊
     let isCrit = false;
     if (!isParried && rollCrit < rates.critRate) {
       isCrit = true;
       baseDmg = Math.floor(baseDmg * 1.6);
       spawnFloatingDmg(`暴擊! -${baseDmg}`, 220, 50, "dmg-crit");
       triggerScreenShake();
-      if (eRig) eRig.classList.add('anim-heavy-hit-enemy'); // 暴烈受創頓挫後仰
+      if (eRig) eRig.classList.add('anim-heavy-hit-enemy');
       const banner = document.getElementById('combat-banner');
       if (banner) banner.innerHTML = `福至心靈！你引爆弱點造成<span style="color:#ff3838; font-weight:bold;">【會心暴擊】${baseDmg}</span> 點傷害！`;
     } else if (!isParried) {
-      if (eRig) eRig.classList.add('anim-heavy-hit-enemy'); // 暴烈受創頓挫後仰
+      if (eRig) eRig.classList.add('anim-heavy-hit-enemy');
       spawnFloatingDmg(`-${baseDmg}`, 220, 55, "dmg-normal");
 
       const banner = document.getElementById('combat-banner');
@@ -347,24 +338,28 @@ function executeSkillAttack(skill, isMatch, slotIndex) {
       }
     }
 
+    // 擊潰敵人結算 (同步獎勵 +5 ~ +20 學點)
     if (enemyHp <= 0) {
       if (autoBattleTimer) clearInterval(autoBattleTimer);
       autoBattleTimer = null;
+
+      const earnLearn = Math.floor(5 + Math.random() * 16); // +5 ~ +20 學點
       player.exp += currentEnemy.exp;
       player.gold += currentEnemy.gold;
       player.combat += (currentEnemy.combat || 6);
+      player.learn += earnLearn; // 領悟學點
 
       if (isBossBattle) {
         player.sectRank = "出師大成";
         if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
         setTimeout(() => {
-          alert(`🏆 掌門長嘆：「青出於藍而勝於藍！少俠武功冠絕宗門，今日准你【出師大成】！」`);
+          alert(`🏆 掌門長嘆：「青出於藍而勝於藍！少俠武功冠絕宗門，今日准你【出師大成】！」\n獲得修為 +${currentEnemy.exp}、學點 +${earnLearn}！`);
           stopBattleAndExit();
         }, 300);
       } else {
         if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
         setTimeout(() => {
-          alert(`🎉 切磋勝出！擊敗【${currentEnemy.name}】！獲得修為 +${currentEnemy.exp}、銀兩 +${currentEnemy.gold}兩！`);
+          alert(`🎉 切磋勝出！擊敗【${currentEnemy.name}】！\n獲得修為 +${currentEnemy.exp}、銀兩 +${currentEnemy.gold}兩、實戰心得 +${currentEnemy.combat || 6}、學點 +${earnLearn}！`);
           stopBattleAndExit();
         }, 300);
       }
@@ -399,7 +394,6 @@ function executeEnemyAutoAttack() {
     const rollDodge = Math.random() * 100;
     const rollParry = Math.random() * 100;
 
-    // 玩家閃避：向上躍起避開攻擊！
     if (rollHit > rates.hitRate || rollDodge < rates.dodgeRate) {
       pRig.classList.add('anim-jump-dodge-player');
       spawnFloatingDmg("騰空閃避!", 60, 40, "dmg-dodge");
@@ -418,7 +412,6 @@ function executeEnemyAutoAttack() {
       const banner = document.getElementById('combat-banner');
       if (banner) banner.innerHTML = `你橫兵引勁，<span style="color:#feca57;">【格擋招架】</span>減免了半數傷害！`;
     } else {
-      // 玩家被重創：暴烈受創後仰頓挫！
       pRig.classList.add('anim-heavy-hit-player');
       spawnFloatingDmg(`-${eDmg}`, 60, 55, "dmg-crit");
       const banner = document.getElementById('combat-banner');

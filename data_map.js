@@ -315,6 +315,7 @@ const SECT_DATABASE = {
 };
 
 // 掛載至 window 全域，跨檔案完全相容
+const SECT_RANKS = ["外門弟子", "內門弟子", "真傳弟子", "長老", "出師大成"];
+window.SECT_RANKS = SECT_RANKS;
 window.WORLD_MAP = WORLD_MAP;
 window.SECT_DATABASE = SECT_DATABASE;
-window.SECT_RANKS = SECT_RANKS;

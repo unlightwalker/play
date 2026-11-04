@@ -1,11 +1,15 @@
 /**
  * ========================================================
- * 你的江湖 - 角色養成模組 (character.js) [素質透視與彈窗版]
- * 支援點擊查看：先天 + 功法 + 奇遇 + 裝備 來源分解
+ * 你的江湖 - 角色養成模組 (character.js) [完整修復版]
+ * 包含：
+ * 1. 8 款武俠向量手繪頭像、六維先天/功法/奇遇/裝備透視彈窗
+ * 2. 武學系統（openKungfuModal、槽位配戴、參悟升重、分類篩選）
+ * 3. 行囊系統（openBagModal、兵刃護甲穿脫、丹藥服用、商店購買）
+ * 4. 轉生輪迴（天賦抽卡 10 選 N、天賦傳承佔用格子、六維重骰、通天塔重置）
  * ========================================================
  */
 
-// 8 款武俠風格手繪向量頭像 (帶滿版寬高約束)
+// ==================== 1. 8 款武俠風格手繪向量頭像 ====================
 var WUXIA_AVATARS = [
   { id: 0, title: "斗笠劍客", svg: `<svg width="100%" height="100%" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#1e272e"/><path d="M15,45 Q50,15 85,45 Z" fill="#b8860b"/><path d="M30,45 Q50,75 70,45" fill="#f5cd79"/><rect x="44" y="52" width="12" height="3" fill="#333"/><line x1="20" y1="46" x2="80" y2="46" stroke="#d4a373" stroke-width="2"/><path d="M25,85 Q50,60 75,85" fill="#2980b9"/></svg>` },
   { id: 1, title: "白衣女俠", svg: `<svg width="100%" height="100%" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#2c3e50"/><circle cx="50" cy="45" r="20" fill="#f8c291"/><path d="M28,42 Q50,18 72,42 Q65,65 50,62 Q35,65 28,42 Z" fill="#1e272e"/><circle cx="43" cy="45" r="2.5" fill="#2f3542"/><circle cx="57" cy="45" r="2.5" fill="#2f3542"/><path d="M47,54 Q50,56 53,54" stroke="#e84118" stroke-width="1.5" fill="none"/><line x1="30" y1="26" x2="70" y2="24" stroke="#f1c40f" stroke-width="2.5"/><path d="M25,90 Q50,65 75,90" fill="#ecf0f1"/></svg>` },
@@ -18,7 +22,7 @@ var WUXIA_AVATARS = [
 ];
 window.WUXIA_AVATARS = WUXIA_AVATARS;
 
-// ==================== 頭像面板與六維來源透視 ====================
+// ==================== 2. 角色身體素質面板與頭像更換 ====================
 function openHeroProfileModal() {
   const gBox = document.getElementById('avatar-gallery-box');
   if (gBox) {
@@ -37,33 +41,64 @@ function openHeroProfileModal() {
     });
   }
 
-  // 渲染六維數字與其四項分解來源
-  const names = {
-    arm: "臂力",
-    speed: "身法",
-    bone: "根骨",
-    inner: "內功",
-    int: "悟性",
-    luck: "福緣"
-  };
-
+  // 1. 渲染六維素質與來源分解
   ['arm', 'speed', 'bone', 'inner', 'int', 'luck'].forEach(k => {
     const valEl = document.getElementById(`st-${k}`);
     const srcEl = document.getElementById(`st-${k}-source`);
     const src = (player.statSources && player.statSources[k]) ? player.statSources[k] : {
-      innate: player.stats[k], kf: 0, enc: 0, gear: 0, total: player.stats[k]
+      innate: player.stats[k], kf: 0, enc: 0, gear: 0, talent: 0, total: player.stats[k]
     };
 
     if (valEl) valEl.innerText = src.total;
     if (srcEl) {
-      srcEl.innerText = `[先天${src.innate} + 功法${src.kf} + 奇遇${src.enc} + 裝備${src.gear}]`;
+      srcEl.innerText = `[先天${src.innate} + 功法${src.kf} + 奇遇${src.enc} + 裝備${src.gear}${src.talent ? ' + 天賦' + src.talent : ''}]`;
     }
   });
+
+  // 2. 渲染當前已覺醒的宿命天賦
+  const tBox = document.getElementById('hero-talents-display');
+  const tCount = document.getElementById('hero-talent-count');
+  const talents = (Array.isArray(player.talents)) ? player.talents : [];
+
+  if (tCount) tCount.innerText = `(${talents.length} 個)`;
+  if (tBox) {
+    tBox.innerHTML = '';
+    if (talents.length === 0) {
+      tBox.innerHTML = `
+        <div style="background:#131720; border:1px dashed #354052; border-radius:4px; padding:10px; text-align:center; color:#8ca0b3; font-size:11.5px;">
+          此生尚未覺醒任何宿命天賦。<br><small style="color:#666;">（轉世輪迴後可自天道抽籤獲取強大天賦）</small>
+        </div>
+      `;
+    } else {
+      talents.forEach(t => {
+        const card = document.createElement('div');
+        card.style.cssText = "background:#141822; border:1px solid #334155; border-left:3px solid var(--gold); border-radius:4px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;";
+        
+        // 根據品階變更左邊框顏色
+        if (t.rarity === '神品') card.style.borderLeftColor = 'var(--gold)';
+        else if (t.rarity === '絕品') card.style.borderLeftColor = 'var(--purple)';
+        else if (t.rarity === '上品') card.style.borderLeftColor = 'var(--cyan)';
+        else if (t.rarity === '良品') card.style.borderLeftColor = 'var(--green)';
+        else card.style.borderLeftColor = '#95a5a6';
+
+        card.innerHTML = `
+          <div>
+            <b style="color:#fff; font-size:12px;">${t.name}</b>
+            <span class="rarity-badge rarity-${t.rarity}" style="font-size:9.5px; padding:0 3px;">${t.rarity}</span>
+            <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">${t.desc}</div>
+          </div>
+        `;
+        card.onclick = () => {
+          alert(`【天賦・${t.name}】（${t.rarity}）\n${t.desc}`);
+        };
+        tBox.appendChild(card);
+      });
+    }
+  }
 
   openModal('modal-hero-profile');
 }
 
-// 點擊屬性方塊查看詳細彈窗
 function showStatDetail(statKey) {
   const names = {
     arm: "臂力 (剛猛 / 外攻輸出 / 破除格擋)",
@@ -74,7 +109,7 @@ function showStatDetail(statKey) {
     luck: "福緣 (機緣 / 會心暴擊率)"
   };
   const src = (player.statSources && player.statSources[statKey]) ? player.statSources[statKey] : {
-    innate: player.stats[statKey], kf: 0, enc: 0, gear: 0, total: player.stats[statKey]
+    innate: player.stats[statKey], kf: 0, enc: 0, gear: 0, talent: 0, total: player.stats[statKey]
   };
 
   alert(`【${names[statKey]} 來源詳情】\n` +
@@ -83,18 +118,19 @@ function showStatDetail(statKey) {
         `• 功法加成：${src.kf} (主修功法與修煉造詣)\n` +
         `• 奇遇靈藥：${src.enc} (服食丹藥/特殊機緣)\n` +
         `• 裝備加持：${src.gear} (神兵寶甲附帶)\n` +
+        `• 宿命天賦：${src.talent || 0} (轉生承載天命)\n` +
         `------------------------------------\n` +
         `合計總值：${src.total} 點`);
 }
 
 function selectAvatar(id) {
   player.avatarId = id;
-  updateProfileUI();
-  autoSave();
+  if (typeof updateProfileUI === 'function') updateProfileUI();
+  if (typeof autoSave === 'function') autoSave();
   openHeroProfileModal();
 }
 
-// ==================== 武學分類篩選與參悟 ====================
+// ==================== 3. 武學修煉、槽位與分類篩選 ====================
 var currentKungfuFilter = "全部";
 
 function setKungfuFilter(filterType, btnEl) {
@@ -189,7 +225,6 @@ function renderLearnedKungfuList() {
     const costExp = Math.max(10, Math.floor(rawCost * (1 - (player.stats.int * 0.005))));
     const reqW = (typeof getSkillWeaponReq === 'function') ? getSkillWeaponReq(kf) : "任意";
 
-    // 六維成長展示
     let statText = "";
     if (kf.statBonus) {
       const names = { arm: "臂力", speed: "身法", bone: "根骨", inner: "內功" };
@@ -310,7 +345,6 @@ function upgradeKungfu(id) {
     if (kf.tier < 10) {
       kf.tier += 1;
       kf.progress = 0;
-      const evalT = (typeof getKungfuEval === 'function') ? getKungfuEval(kf.tier, 0) : `${kf.tier}重`;
       alert(`⚡ 功力大進！【${kf.name}】突破桎梏晉升至【第 ${kf.tier} 重】！六維大幅躍進！`);
     } else {
       kf.progress = 100;
@@ -347,7 +381,7 @@ function learnKwoonSkill(name, costLearn, costGold) {
   alert(`🎉 參悟成功！你習得了【${name}】！初始為【初學者（一重 0%）】，請至「武學」佩戴！`);
 }
 
-// ==================== 行囊與靈藥服用 (靈藥加成歸入奇遇) ====================
+// ==================== 4. 行囊管理、裝備穿脫與丹藥 ====================
 function openBagModal() { renderBagUI(); openModal('modal-bag'); }
 
 function renderBagUI() {
@@ -431,11 +465,11 @@ function usePillFromBag(itemIdx) {
   if (item.healHp) {
     player.hp = Math.min(player.maxHp, player.hp + item.healHp);
     alert(`💊 服下【${item.name}】，氣血恢復 ${item.healHp} 點！`);
-  } else if (item.hpAdd || item.speedAdd) {
+  } else if (item.hpAdd || item.speedAdd || item.expAdd) {
     player.baseMaxHp += (item.hpAdd || 0);
-    // 靈藥加成歸入【奇遇】
     player.statsEncounter.speed = (player.statsEncounter.speed || 0) + (item.speedAdd || 0);
-    alert(`💊 服下【${item.name}】，奇遇造化湧現，永久氣血 +${item.hpAdd || 0}，身法 +${item.speedAdd || 0}！`);
+    if (item.expAdd) player.exp += item.expAdd;
+    alert(`💊 服下【${item.name}】，奇遇造化湧現，氣血上限 +${item.hpAdd || 0}，身法 +${item.speedAdd || 0}！`);
   }
 
   if (item.count && item.count > 1) {
@@ -479,20 +513,47 @@ function buyPillToBag(name, cost) {
   alert(`💊 購買成功！【${name}】已放入行囊！`);
 }
 
-// ==================== 轉世輪迴 (重置先天，歸零奇遇) ====================
-var selectedReincarnationHeritage = [];
+// ==================== 5. 轉生輪迴、天賦抽取與繼承 ====================
+let selectedReincarnationHeritage = [];
+let draftedTalentOptions = [];
+let selectedDraftedTalents = [];
 
 function openReincarnationModal() {
   closeModal('modal-hero-profile');
   const allowed = 1 + (player.reincarnations || 0);
   const allowEl = document.getElementById('reincarnate-allowed-count');
   if (allowEl) allowEl.innerText = allowed;
+
   selectedReincarnationHeritage = [];
+  selectedDraftedTalents = [];
+
+  const step1 = document.getElementById('reincarnate-step-1');
+  const step2 = document.getElementById('reincarnate-step-2');
+  if (step1) step1.style.display = 'block';
+  if (step2) step2.style.display = 'none';
 
   const list = document.getElementById('reincarnate-selection-list');
   if (!list) return;
   list.innerHTML = '';
 
+  // 1. 已啟用的天賦（可作為遺產傳承）
+  if (player.talents && player.talents.length > 0) {
+    player.talents.forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'bag-item-card';
+      d.innerHTML = `
+        <div>
+          <b style="color:#f1c40f;">【天賦】${t.name}</b>
+          <span class="rarity-badge rarity-${t.rarity}">${t.rarity}</span>
+          <div style="font-size:10.5px; color:#aaa;">${t.desc}</div>
+        </div>
+        <input type="checkbox" onchange="toggleReincarnationHeritage('talent', '${t.id}', this)" style="transform:scale(1.3); cursor:pointer;">
+      `;
+      list.appendChild(d);
+    });
+  }
+
+  // 2. 已習得之武學
   myLearnedKungfu.forEach(kf => {
     const d = document.createElement('div');
     d.className = 'bag-item-card';
@@ -508,6 +569,7 @@ function openReincarnationModal() {
     list.appendChild(d);
   });
 
+  // 3. 所有裝備
   const allGears = [...player.inventory];
   if (player.equippedGear.weapon) allGears.push(player.equippedGear.weapon);
   if (player.equippedGear.armor) allGears.push(player.equippedGear.armor);
@@ -535,7 +597,7 @@ function toggleReincarnationHeritage(type, id, checkbox) {
   const allowed = 1 + (player.reincarnations || 0);
   if (checkbox.checked) {
     if (selectedReincarnationHeritage.length >= allowed) {
-      alert(`第 ${1 + player.reincarnations} 世輪迴最多只可保留 ${allowed} 項遺產！`);
+      alert(`第 ${1 + player.reincarnations} 世輪迴最多只可保留 ${allowed} 項遺產（天賦/武學/裝備共用名額）！`);
       checkbox.checked = false;
       return;
     }
@@ -545,8 +607,95 @@ function toggleReincarnationHeritage(type, id, checkbox) {
   }
 }
 
-function confirmReincarnation() {
-  if (!confirm(`少俠確定要破虛轉世重修嗎？\n已勾選保留 ${selectedReincarnationHeritage.length} 項遺產，轉世後將邁入【第 ${player.reincarnations + 2} 世】！`)) return;
+function goToTalentDraftStep() {
+  const nextReincarnations = (player.reincarnations || 0) + 1;
+  const pickLimit = Math.min(3, Math.max(0, nextReincarnations - 1));
+
+  const s1 = document.getElementById('reincarnate-step-1');
+  const s2 = document.getElementById('reincarnate-step-2');
+  if (s1) s1.style.display = 'none';
+  if (s2) s2.style.display = 'block';
+
+  const pickEl = document.getElementById('draft-pick-count');
+  const hintEl = document.getElementById('draft-rule-hint');
+  if (pickEl) pickEl.innerText = pickLimit;
+  if (hintEl) hintEl.innerText = `(轉生第 ${nextReincarnations} 次：可自 10 個天賦中挑選 ${pickLimit} 個)`;
+
+  const pool = (typeof GLOBAL_TALENTS !== 'undefined' && Array.isArray(GLOBAL_TALENTS)) ? [...GLOBAL_TALENTS] : [];
+  draftedTalentOptions = [];
+  for (let i = 0; i < 10 && pool.length > 0; i++) {
+    const randIdx = Math.floor(Math.random() * pool.length);
+    draftedTalentOptions.push(pool.splice(randIdx, 1)[0]);
+  }
+
+  renderTalentDraftUI(pickLimit);
+}
+
+function renderTalentDraftUI(pickLimit) {
+  const box = document.getElementById('talent-draft-container');
+  if (!box) return;
+  box.innerHTML = '';
+
+  if (pickLimit === 0) {
+    box.innerHTML = `<div style="text-align:center; color:#aaa; font-size:12px; padding:20px;">首次轉世（第 2 世）尚無法自天道中領悟新天賦，第 2 次轉生起方可挑選！請直接點擊下方踏入下一世！</div>`;
+    return;
+  }
+
+  draftedTalentOptions.forEach(talent => {
+    const isSelected = selectedDraftedTalents.some(t => t.id === talent.id);
+    const card = document.createElement('div');
+    card.className = 'bag-item-card';
+    card.style.cursor = 'pointer';
+    card.style.borderColor = isSelected ? 'var(--cyan)' : '#354052';
+    card.style.background = isSelected ? '#1b2a38' : '#141822';
+
+    card.innerHTML = `
+      <div style="flex:1;">
+        <b style="color:${isSelected ? 'var(--cyan)' : '#fff'};">${talent.name}</b>
+        <span class="rarity-badge rarity-${talent.rarity}">${talent.rarity}</span>
+        <div style="font-size:11.5px; color:#cbd5e1; margin-top:3px; line-height:1.4;">${talent.desc}</div>
+      </div>
+      <input type="checkbox" ${isSelected ? 'checked' : ''} style="transform:scale(1.3); pointer-events:none; margin-left:8px;">
+    `;
+
+    card.onclick = () => {
+      toggleDraftPick(talent, pickLimit);
+    };
+
+    box.appendChild(card);
+  });
+}
+
+function toggleDraftPick(talent, pickLimit) {
+  const existIdx = selectedDraftedTalents.findIndex(t => t.id === talent.id);
+  if (existIdx >= 0) {
+    selectedDraftedTalents.splice(existIdx, 1);
+  } else {
+    if (selectedDraftedTalents.length >= pickLimit) {
+      alert(`當前最多只可挑選 ${pickLimit} 個天賦！`);
+      return;
+    }
+    selectedDraftedTalents.push(talent);
+  }
+  renderTalentDraftUI(pickLimit);
+}
+
+function confirmReincarnationWithTalents() {
+  const nextReincarnations = (player.reincarnations || 0) + 1;
+  const pickLimit = Math.min(3, Math.max(0, nextReincarnations - 1));
+
+  if (selectedDraftedTalents.length < pickLimit && pickLimit > 0) {
+    if (!confirm(`尚有 ${pickLimit - selectedDraftedTalents.length} 個天賦未選取，確定要直接轉生嗎？`)) {
+      return;
+    }
+  }
+
+  // 1. 整理遺產
+  const keptTalents = [];
+  selectedReincarnationHeritage.filter(h => h.type === 'talent').forEach(h => {
+    const t = player.talents.find(item => item.id === h.id);
+    if (t) keptTalents.push(t);
+  });
 
   const keptKungfus = [];
   selectedReincarnationHeritage.filter(h => h.type === 'kf').forEach(h => {
@@ -564,7 +713,9 @@ function confirmReincarnation() {
     if (g) keptGears.push({ ...g });
   });
 
-  player.reincarnations = (player.reincarnations || 0) + 1;
+  // 2. 轉生重置數值與【通天塔層數重置】
+  player.reincarnations = nextReincarnations;
+  player.towerFloor = 1;
   player.sect = "無門無派";
   player.sectRank = "無";
   player.curLoc = "牛家村";
@@ -572,8 +723,11 @@ function confirmReincarnation() {
   player.exp = 100;
   player.learn = 80;
   player.combat = 10;
-  
-  // 新一世先天重骰
+
+  // 3. 繼承天賦與裝備新天賦
+  player.talents = [...keptTalents, ...selectedDraftedTalents];
+
+  // 4. 先天骰點
   player.statsInnate = {
     arm: 15 + Math.floor(Math.random() * 8),
     speed: 40 + Math.floor(Math.random() * 12),
@@ -584,6 +738,7 @@ function confirmReincarnation() {
   };
   player.statsEncounter = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
 
+  // 5. 武學庫重置
   myLearnedKungfu = (typeof GLOBAL_SKILLS !== 'undefined') ? [
     GLOBAL_SKILLS[0], GLOBAL_SKILLS[1], GLOBAL_SKILLS[2], GLOBAL_SKILLS[3]
   ] : [];
@@ -615,5 +770,32 @@ function confirmReincarnation() {
   recalcPlayerStats();
   if (typeof renderJianghuScenesOnMenu === 'function') renderJianghuScenesOnMenu();
   if (typeof refreshChatForCurrentLocation === 'function') refreshChatForCurrentLocation();
-  alert(`✨ 雷劫洗禮，破虛飛昇！少俠已轉生入【第 ${player.reincarnations + 1} 世】！`);
+
+  const talentNames = player.talents.map(t => `【${t.name}】`).join(' ');
+  alert(`✨ 雷劫降臨，破虛飛昇！少俠已邁入【第 ${player.reincarnations + 1} 世】！\n通天試煉塔已重置至第 1 層！\n本世承載天命：\n${talentNames || '無'}`);
 }
+
+// ==================== 6. 全域函數嚴格掛載 ====================
+window.openHeroProfileModal = openHeroProfileModal;
+window.showStatDetail = showStatDetail;
+window.selectAvatar = selectAvatar;
+window.setKungfuFilter = setKungfuFilter;
+window.openKungfuModal = openKungfuModal;
+window.renderKungfuSlots = renderKungfuSlots;
+window.renderLearnedKungfuList = renderLearnedKungfuList;
+window.unequipSlot = unequipSlot;
+window.equipKungfu = equipKungfu;
+window.upgradeKungfu = upgradeKungfu;
+window.learnKwoonSkill = learnKwoonSkill;
+window.openBagModal = openBagModal;
+window.renderBagUI = renderBagUI;
+window.equipGearFromBag = equipGearFromBag;
+window.unequipGear = unequipGear;
+window.usePillFromBag = usePillFromBag;
+window.buyItemToBag = buyItemToBag;
+window.buyPillToBag = buyPillToBag;
+window.openReincarnationModal = openReincarnationModal;
+window.toggleReincarnationHeritage = toggleReincarnationHeritage;
+window.goToTalentDraftStep = goToTalentDraftStep;
+window.toggleDraftPick = toggleDraftPick;
+window.confirmReincarnationWithTalents = confirmReincarnationWithTalents;
