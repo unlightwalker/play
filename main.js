@@ -1,17 +1,17 @@
 /**
  * ========================================================
- * 你的江湖 - 系統中樞模組 (main.js) [轉生天賦與首領動態掉寶版]
- * 包含：
- * 1. 玩家狀態模型（六維分解：先天 + 功法 + 奇遇 + 裝備 + 天賦）
- * 2. 歷練通天塔：身法決定攻速、臂力決定單擊、刀光特效與受創震顫
- * 3. 首領通天秘寶匣：神品(0.2%*層數)、絕品(2%*層數)動態結算與開箱
- * 4. 轉生重置通天塔層數、天賦繼承與屬性全域結算
- * 5. 悟性催化打坐調息產出修為與學點
- * 6. 存檔中樞（6.0s倒數提示、跨版本相容、離線收益）
+ * 你的江湖 - 系統中樞模組 (main.js) [境界動態晉升與天賦加成版]
+ * 職責：
+ * 1. 玩家核心模型與六維資料消毒 (sanitizePlayerData)
+ * 2. 全域素質結算 (recalcPlayerStats，接線轉生輪迴印記、全天賦加成)
+ * 3. 狀態欄 UI 刷新與十大境界評定演算法 (evaluatePlayerRealm)
+ * 4. 閉目調息打坐系統 (接線：大道自然、孤僻怪傑、文弱書生、筋脈瘀阻)
+ * 5. 定時本地存檔與雲端備份中樞 (manualSave, autoSave, loadSavedGame)
+ * 6. 遊戲主啟動入口 (initGame)
  * ========================================================
  */
 
-// ==================== 1. 玩家狀態模型與資料消毒 ====================
+// ==================== 1. 玩家核心模型定義 ====================
 var player = {
   name: "無名少俠",
   avatarId: 0,
@@ -19,10 +19,12 @@ var player = {
   sect: "無門無派",
   sectRank: "無",
   reincarnations: 0,
-  talents: [], // 當前生效的轉生天賦
+  talents: [],
   claimedMails: [],
   lastSectClaimTime: 0,
   towerFloor: 1,
+  towerBgEarned: { exp: 0, gold: 0, learn: 0, floors: 0 },
+  hasSeenIntro: false,
   statsInnate: { arm: 15, speed: 40, bone: 15, inner: 10, int: 25, luck: 18 },
   statsEncounter: { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 },
   stats: { arm: 22, speed: 55, bone: 24, inner: 20, int: 25, luck: 18 },
@@ -47,6 +49,7 @@ var player = {
 var equippedSlots = { internal: null, qinggong: null, ext0: null, ext1: null };
 var myLearnedKungfu = [];
 
+// ==================== 2. 玩家資料消毒與防呆 ====================
 function sanitizePlayerData() {
   if (!player.statsInnate) player.statsInnate = { arm: 15, speed: 40, bone: 15, inner: 10, int: 25, luck: 18 };
   if (!player.statsEncounter) player.statsEncounter = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
@@ -71,12 +74,10 @@ function sanitizePlayerData() {
   player.combat = Number(player.combat) >= 0 ? Number(player.combat) : 15;
 
   if (!Array.isArray(player.talents)) player.talents = [];
+  if (!player.towerBgEarned) player.towerBgEarned = { exp: 0, gold: 0, learn: 0, floors: 0 };
 
-  if (!player.equippedGear || typeof player.equippedGear !== 'object') player.equippedGear = {};
-  if (!player.equippedGear.weapon) {
-    player.equippedGear.weapon = { id: "w_init", name: "粗製木劍", type: "weapon", weaponType: "劍", rarity: "凡品", atk: 6, speed: 0, desc: "外攻 +6" };
-  } else {
-    player.equippedGear.weapon.weaponType = (typeof getWeaponType === 'function') ? getWeaponType(player.equippedGear.weapon) : "劍";
+  if (!player.equippedGear || typeof player.equippedGear !== 'object') {
+    player.equippedGear = { weapon: null, armor: null };
   }
   if (!player.equippedGear.armor) {
     player.equippedGear.armor = { id: "a_init", name: "粗麻布衣", type: "armor", rarity: "凡品", def: 4, hp: 40, desc: "防禦 +4，氣血 +40" };
@@ -84,7 +85,9 @@ function sanitizePlayerData() {
 
   if (!Array.isArray(player.inventory)) player.inventory = [];
   player.inventory = player.inventory.filter(it => it && typeof it === 'object').map(item => {
-    if (item.type === 'weapon' && typeof getWeaponType === 'function') item.weaponType = getWeaponType(item);
+    if (item.type === 'weapon' && typeof getWeaponType === 'function') {
+      item.weaponType = getWeaponType(item);
+    }
     return item;
   });
 
@@ -111,7 +114,7 @@ function sanitizePlayerData() {
   }
 }
 
-// ==================== 2. 全面屬性結算 (含轉生天賦) ====================
+// ==================== 3. 全面屬性結算 (含轉生天賦) ====================
 function recalcPlayerStats() {
   sanitizePlayerData();
 
@@ -119,7 +122,7 @@ function recalcPlayerStats() {
   const statsGear = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
   let gearAtk = 0, gearDef = 0, gearHp = 0;
 
-  if (player.equippedGear.weapon) {
+  if (player.equippedGear && player.equippedGear.weapon) {
     const w = player.equippedGear.weapon;
     gearAtk += Number(w.atk) || 0;
     statsGear.speed += Number(w.speed) || 0;
@@ -127,7 +130,7 @@ function recalcPlayerStats() {
       for (let k in w.statBonus) statsGear[k] = (statsGear[k] || 0) + (w.statBonus[k] || 0);
     }
   }
-  if (player.equippedGear.armor) {
+  if (player.equippedGear && player.equippedGear.armor) {
     const a = player.equippedGear.armor;
     gearDef += Number(a.def) || 0;
     gearHp += Number(a.hp) || 0;
@@ -136,7 +139,7 @@ function recalcPlayerStats() {
     }
   }
 
-  // 2. 武學加成
+  // 2. 武學加成 (主修與被動)
   const statsKungfu = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
   let kfHp = 0, kfDef = 0;
 
@@ -170,9 +173,10 @@ function recalcPlayerStats() {
     }
   });
 
-  // 3. 轉生天賦六維加成與特殊機制加成
+  // 3. 宿命天賦加成
   const statsTalent = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
   let talentHpAdd = 0, talentDefAdd = 0, talentHpPct = 0;
+  let hasZeroDef = false, defDouble = false, atkPenaltyPct = 0;
 
   if (Array.isArray(player.talents)) {
     player.talents.forEach(t => {
@@ -184,6 +188,15 @@ function recalcPlayerStats() {
       if (t.hpAdd) talentHpAdd += t.hpAdd;
       if (t.defAdd) talentDefAdd += t.defAdd;
       if (t.hpPct) talentHpPct += t.hpPct;
+      if (t.zeroDef) hasZeroDef = true;
+      if (t.defPct) defDouble = true;
+      if (t.atkPct) atkPenaltyPct += t.atkPct;
+
+      // 天賦：輪迴印記 (每轉生一次全屬性基礎 +2)
+      if (t.reinScale) {
+        const bonus = (player.reincarnations || 0) * t.reinScale;
+        ['arm', 'speed', 'bone', 'inner', 'int', 'luck'].forEach(k => statsTalent[k] += bonus);
+      }
     });
   }
 
@@ -208,16 +221,42 @@ function recalcPlayerStats() {
   }
   player.maxHp = Math.max(100, rawMaxHp);
 
-  player.def = Math.max(1, player.baseDef + gearDef + kfDef + boneDef + talentDefAdd);
+  let totalDef = player.baseDef + gearDef + kfDef + boneDef + talentDefAdd;
+  if (defDouble) totalDef *= 2;
+  if (hasZeroDef) totalDef = 0;
+  player.def = Math.max(0, totalDef);
+
   player.speed = Math.max(10, player.stats.speed);
-  player.currentAtk = Math.max(5, player.baseAtk + gearAtk + Math.floor(player.stats.arm * 0.65));
+
+  let calculatedAtk = player.baseAtk + gearAtk + Math.floor(player.stats.arm * 0.65);
+  if (atkPenaltyPct !== 0) {
+    calculatedAtk = Math.floor(calculatedAtk * (1 + atkPenaltyPct));
+  }
+  player.currentAtk = Math.max(5, calculatedAtk);
 
   if (!player.hp || isNaN(player.hp) || player.hp > player.maxHp) player.hp = player.maxHp;
 
   updateWeaponSVG();
   updateProfileUI();
-  updateMailUI();
+  if (typeof updateMailRedDot === 'function') updateMailRedDot();
   autoSave();
+}
+
+// ==================== 4. 武俠十大境界評定演算法 ====================
+function evaluatePlayerRealm() {
+  const score = (player.currentAtk || 20) * 4 + (player.def || 10) * 5 + Math.floor((player.maxHp || 350) * 0.15) + ((player.towerFloor || 1) * 25);
+  
+  if (score < 180)  return "凡夫俗子";
+  if (score < 350)  return "初窺門徑";
+  if (score < 600)  return "略有小成";
+  if (score < 1000) return "駕輕就熟";
+  if (score < 1600) return "融會貫通";
+  if (score < 2400) return "爐火純青";
+  if (score < 3400) return "出神入化";
+  if (score < 4600) return "登峰造極";
+  if (score < 6200) return "返璞歸真";
+  if (score < 8000) return "震爍古今";
+  return "天人合一";
 }
 
 function updateProfileUI() {
@@ -236,6 +275,7 @@ function updateProfileUI() {
   const cbtEl = document.getElementById('res-combat');
   const gldEl = document.getElementById('res-gold');
   const sEl = document.getElementById('disp-sect');
+  const realmEl = document.getElementById('disp-realm');
 
   if (nameEl) nameEl.innerText = player.name;
   if (locEl) locEl.innerText = player.curLoc;
@@ -250,9 +290,25 @@ function updateProfileUI() {
   if (reinTag) reinTag.innerText = `第 ${player.reincarnations + 1} 世`;
   if (reinBtn) reinBtn.innerText = `${player.reincarnations + 1}`;
 
+  // 境界動態刷新
+  if (realmEl) {
+    const curRealm = evaluatePlayerRealm();
+    realmEl.innerText = curRealm;
+    realmEl.style.color = (curRealm === "天人合一" || curRealm === "震爍古今" || curRealm === "返璞歸真") ? "var(--gold)" : "var(--cyan)";
+  }
+
+  // 兵刃色彩隨品階著色
   const w = player.equippedGear ? player.equippedGear.weapon : null;
   const wType = (typeof getWeaponType === 'function') ? getWeaponType(w) : "拳";
-  if (wEl) wEl.innerText = w ? `${w.name} (${wType})` : "空手 (拳)";
+  if (wEl) {
+    if (w) {
+      const colorClass = (typeof getRarityColorClass === 'function') ? getRarityColorClass(w.rarity) : `color-${w.rarity}`;
+      wEl.innerHTML = `<span class="${colorClass}">${w.name}</span> (${wType})`;
+    } else {
+      wEl.innerHTML = `<span style="color:#95a5a6;">空手 (拳)</span>`;
+    }
+  }
+
   if (hpEl) hpEl.innerText = `${player.hp} / ${player.maxHp}`;
   if (expEl) expEl.innerText = player.exp;
   if (lrnEl) lrnEl.innerText = player.learn;
@@ -311,7 +367,7 @@ function updateWeaponSVG() {
   }
 }
 
-// ==================== 3. 打坐系統 (悟性催化產出學點) ====================
+// ==================== 5. 打坐調息系統 (接線打坐天賦) ====================
 var meditateTimer = null;
 var currentSessionExp = 0;
 var currentSessionLearn = 0;
@@ -333,9 +389,15 @@ function openMeditateModal() {
     let addExp = 2 + Math.floor(player.stats.int * 0.12);
     if (equippedSlots.internal) addExp += Math.floor(equippedSlots.internal.tier * 0.8);
     
-    // 天賦【大道自然】修煉產出翻倍
-    if (player.talents && player.talents.some(t => t.id === "t_020")) {
-      addExp = Math.floor(addExp * 2.0);
+    // 天賦：筋脈瘀阻 (無法自然產出修為)
+    if (player.talents && player.talents.some(t => t.noMeditateExp)) {
+      addExp = 0;
+    }
+
+    // 天賦：大道自然 (+100% 修為) / 孤僻怪傑 (+80% 修為)
+    if (player.talents) {
+      if (player.talents.some(t => t.id === "t_020")) addExp = Math.floor(addExp * 2.0);
+      if (player.talents.some(t => t.id === "t_027")) addExp = Math.floor(addExp * 1.8);
     }
 
     player.exp += addExp;
@@ -344,8 +406,13 @@ function openMeditateModal() {
     meditateTickCounter++;
     const learnInterval = Math.max(2, Math.floor(7 - player.stats.int * 0.1));
     if (meditateTickCounter % learnInterval === 0) {
-      player.learn += 1;
-      currentSessionLearn += 1;
+      let learnGain = 1;
+      // 天賦：文弱書生 (打坐額外產出 +3 學點)
+      if (player.talents && player.talents.some(t => t.meditateLearnBonus)) {
+        learnGain += 3;
+      }
+      player.learn += learnGain;
+      currentSessionLearn += learnGain;
     }
 
     if (gainEl) {
@@ -361,474 +428,7 @@ function closeMeditateModal() {
   closeModal('modal-meditate');
 }
 
-// ==================== 4. 無盡歷練與通天首領秘寶匣 ====================
-let towerCurrentFloor = 1;
-let towerMonster = null;
-let towerTimer = null;
-let towerBossSeconds = 30;
-let pendingChestReward = null;
-
-const TOWER_HUMANOIDS = [
-  {
-    type: "bandit",
-    name: "綠林悍刀客",
-    svg: `<svg width="100" height="130" viewBox="0 0 100 130">
-      <circle cx="50" cy="22" r="9" fill="#d35400"/>
-      <path d="M40,20 L60,16 L50,12 Z" fill="#c0392b"/>
-      <line x1="50" y1="31" x2="50" y2="78" stroke="#e67e22" stroke-width="5"/>
-      <line x1="50" y1="42" x2="26" y2="58" stroke="#e67e22" stroke-width="4.5"/>
-      <line x1="50" y1="42" x2="74" y2="52" stroke="#e67e22" stroke-width="4.5"/>
-      <path d="M74,52 Q95,30 105,15" stroke="#f39c12" stroke-width="6" fill="none"/>
-      <line x1="50" y1="78" x2="32" y2="122" stroke="#e67e22" stroke-width="5"/>
-      <line x1="50" y1="78" x2="68" y2="122" stroke="#e67e22" stroke-width="5"/>
-    </svg>`
-  },
-  {
-    type: "swordsman",
-    name: "青鋒叛門劍修",
-    svg: `<svg width="100" height="130" viewBox="0 0 100 130">
-      <circle cx="50" cy="22" r="9" fill="#2980b9"/>
-      <circle cx="50" cy="14" r="3.5" fill="#f1c40f"/>
-      <line x1="50" y1="31" x2="50" y2="78" stroke="#3498db" stroke-width="5"/>
-      <line x1="50" y1="42" x2="28" y2="60" stroke="#3498db" stroke-width="4"/>
-      <line x1="50" y1="42" x2="72" y2="48" stroke="#3498db" stroke-width="4"/>
-      <line x1="72" y1="48" x2="108" y2="24" stroke="#5dade2" stroke-width="4"/>
-      <line x1="70" y1="50" x2="74" y2="46" stroke="#fff" stroke-width="6"/>
-      <line x1="50" y1="78" x2="34" y2="122" stroke="#3498db" stroke-width="5"/>
-      <line x1="50" y1="78" x2="66" y2="122" stroke="#3498db" stroke-width="5"/>
-    </svg>`
-  },
-  {
-    type: "monk",
-    name: "少林破戒金剛",
-    svg: `<svg width="100" height="130" viewBox="0 0 100 130">
-      <circle cx="50" cy="22" r="10" fill="#f39c12"/>
-      <line x1="50" y1="32" x2="50" y2="80" stroke="#d35400" stroke-width="6"/>
-      <circle cx="50" cy="44" r="14" fill="none" stroke="#e74c3c" stroke-width="2.5"/>
-      <line x1="50" y1="45" x2="25" y2="62" stroke="#d35400" stroke-width="5"/>
-      <line x1="50" y1="45" x2="75" y2="55" stroke="#d35400" stroke-width="5"/>
-      <line x1="60" y1="75" x2="115" y2="20" stroke="#b87333" stroke-width="6"/>
-      <line x1="50" y1="80" x2="30" y2="122" stroke="#d35400" stroke-width="6"/>
-      <line x1="50" y1="80" x2="70" y2="122" stroke="#d35400" stroke-width="6"/>
-    </svg>`
-  },
-  {
-    type: "assassin",
-    name: "百毒影殺死士",
-    svg: `<svg width="100" height="130" viewBox="0 0 100 130">
-      <circle cx="50" cy="22" r="9" fill="#8e44ad"/>
-      <rect x="42" y="24" width="16" height="6" fill="#2c3e50"/>
-      <line x1="50" y1="31" x2="50" y2="76" stroke="#9b59b6" stroke-width="4.5"/>
-      <line x1="50" y1="40" x2="26" y2="56" stroke="#9b59b6" stroke-width="4"/>
-      <line x1="50" y1="40" x2="74" y2="48" stroke="#9b59b6" stroke-width="4"/>
-      <polygon points="74,48 94,40 86,54" fill="#2ecc71"/>
-      <line x1="50" y1="76" x2="30" y2="120" stroke="#9b59b6" stroke-width="4.5"/>
-      <line x1="50" y1="76" x2="70" y2="120" stroke="#9b59b6" stroke-width="4.5"/>
-    </svg>`
-  },
-  {
-    type: "heavy_warlord",
-    name: "塞北披甲狂魔",
-    svg: `<svg width="100" height="130" viewBox="0 0 100 130">
-      <circle cx="50" cy="22" r="9" fill="#7f8c8d"/>
-      <polygon points="40,14 60,14 50,4" fill="#95a5a6"/>
-      <line x1="50" y1="31" x2="50" y2="80" stroke="#bdc3c7" stroke-width="7"/>
-      <line x1="50" y1="44" x2="22" y2="60" stroke="#bdc3c7" stroke-width="6"/>
-      <line x1="50" y1="44" x2="78" y2="52" stroke="#bdc3c7" stroke-width="6"/>
-      <path d="M78,52 L112,22 L116,36 L86,60 Z" fill="#c0392b"/>
-      <line x1="50" y1="80" x2="30" y2="124" stroke="#bdc3c7" stroke-width="6"/>
-      <line x1="50" y1="80" x2="70" y2="124" stroke="#bdc3c7" stroke-width="6"/>
-    </svg>`
-  },
-  {
-    type: "boss_demon",
-    name: "👑 通天魔尊・赤血魔皇",
-    svg: `<svg width="100" height="130" viewBox="0 0 100 130">
-      <circle cx="50" cy="22" r="10" fill="#c0392b" filter="drop-shadow(0 0 8px #ff4757)"/>
-      <polygon points="36,12 50,2 64,12 50,16" fill="#f1c40f"/>
-      <line x1="50" y1="32" x2="50" y2="80" stroke="#e74c3c" stroke-width="6.5"/>
-      <path d="M42,34 L15,100 L36,92 L50,80 L64,92 L85,100 L58,34 Z" fill="rgba(192, 57, 43, 0.45)"/>
-      <line x1="50" y1="44" x2="20" y2="60" stroke="#e74c3c" stroke-width="5"/>
-      <line x1="50" y1="44" x2="80" y2="50" stroke="#e74c3c" stroke-width="5"/>
-      <path d="M80,50 Q105,25 118,5" stroke="#f1c40f" stroke-width="6" fill="none"/>
-      <line x1="50" y1="80" x2="28" y2="124" stroke="#e74c3c" stroke-width="6"/>
-      <line x1="50" y1="80" x2="72" y2="124" stroke="#e74c3c" stroke-width="6"/>
-    </svg>`
-  }
-];
-
-function openTowerModal() {
-  towerCurrentFloor = player.towerFloor || 1;
-  initTowerFloor(towerCurrentFloor);
-  openModal('modal-tower');
-  startTowerAutoAttackEngine();
-}
-
-function closeTowerModal() {
-  if (towerTimer) clearInterval(towerTimer);
-  towerTimer = null;
-  closeModal('modal-tower');
-}
-
-function getTowerAttackSpeedInterval() {
-  const currentSpeed = (player.stats && Number(player.stats.speed)) || 50;
-  return Math.max(100, Math.floor(750 - currentSpeed * 4.2));
-}
-
-function startTowerAutoAttackEngine() {
-  if (towerTimer) clearInterval(towerTimer);
-  const interval = getTowerAttackSpeedInterval();
-  towerTimer = setInterval(towerAutoLoop, interval);
-}
-
-function initTowerFloor(floor) {
-  const isBoss = (floor % 5 === 0);
-  const baseHp = Math.floor(120 * Math.pow(1.18, floor - 1));
-  const hp = isBoss ? baseHp * 2.8 : baseHp;
-
-  let humanoidTemplate = null;
-  if (isBoss) {
-    humanoidTemplate = TOWER_HUMANOIDS[5];
-  } else {
-    humanoidTemplate = TOWER_HUMANOIDS[(floor - 1) % (TOWER_HUMANOIDS.length - 1)];
-  }
-
-  towerMonster = {
-    floor,
-    name: isBoss ? `👑 第 ${floor} 層首領・${humanoidTemplate.name}` : `第 ${floor} 層・${humanoidTemplate.name}`,
-    svg: humanoidTemplate.svg,
-    isBoss,
-    maxHp: Math.max(80, Math.floor(hp)),
-    hp: Math.max(80, Math.floor(hp))
-  };
-
-  towerBossSeconds = 30;
-  updateTowerUI();
-}
-
-function updateTowerUI() {
-  if (!towerMonster) return;
-  const floorEl = document.getElementById('tower-floor-title');
-  const nameEl = document.getElementById('tower-target-name');
-  const hpText = document.getElementById('tower-hp-text');
-  const hpFill = document.getElementById('tower-hp-fill');
-  const figureEl = document.getElementById('tower-enemy-figure');
-  const bossTimerEl = document.getElementById('tower-boss-timer');
-  const armDmgEl = document.getElementById('tower-arm-dmg');
-  const spdRateEl = document.getElementById('tower-spd-rate');
-
-  if (floorEl) floorEl.innerText = `第 ${towerMonster.floor} 層 (歷史極限: 第 ${player.towerFloor} 層)`;
-  if (nameEl) {
-    nameEl.innerText = towerMonster.name;
-    nameEl.style.color = towerMonster.isBoss ? '#f1c40f' : '#cad3df';
-  }
-
-  if (hpText) hpText.innerText = `${towerMonster.hp} / ${towerMonster.maxHp}`;
-  if (hpFill) {
-    const pct = Math.max(0, Math.min(100, (towerMonster.hp / towerMonster.maxHp) * 100));
-    hpFill.style.width = pct + '%';
-    hpFill.style.background = towerMonster.isBoss ? 'linear-gradient(90deg, #f39c12, #e74c3c)' : '#2ecc71';
-  }
-
-  if (figureEl && figureEl.innerHTML !== towerMonster.svg) {
-    figureEl.innerHTML = towerMonster.svg;
-  }
-
-  const currentArm = (player.stats && Number(player.stats.arm)) || 20;
-  const currentSpeed = (player.stats && Number(player.stats.speed)) || 50;
-  const clickDmgEstimate = Math.floor(currentArm * 4.2 + (player.currentAtk || player.baseAtk) * 1.5);
-  const interval = getTowerAttackSpeedInterval();
-  const freqPerSec = (1000 / interval).toFixed(1);
-
-  if (armDmgEl) armDmgEl.innerText = `${clickDmgEstimate} 威力`;
-  if (spdRateEl) spdRateEl.innerText = `${freqPerSec} 次/秒 (${interval}ms)`;
-
-  if (bossTimerEl) {
-    if (towerMonster.isBoss) {
-      bossTimerEl.style.display = 'inline-block';
-      bossTimerEl.innerText = `⏳ 首領狂暴倒數: ${Math.ceil(towerBossSeconds)}s`;
-    } else {
-      bossTimerEl.style.display = 'none';
-    }
-  }
-}
-
-function strikeTowerTarget() {
-  if (!towerMonster || towerMonster.hp <= 0) return;
-
-  const currentArm = (player.stats && Number(player.stats.arm)) || 20;
-  const isCrit = Math.random() * 100 < (player.stats.luck * 0.5 + 5);
-
-  let dmg = Math.floor(currentArm * 4.2 + (player.currentAtk || player.baseAtk) * 1.5 + Math.random() * (currentArm * 0.8));
-  if (isCrit) dmg = Math.floor(dmg * 1.8);
-
-  dealTowerDamage(dmg, isCrit, true);
-}
-
-function towerAutoLoop() {
-  if (!towerMonster || towerMonster.hp <= 0) return;
-
-  if (towerMonster.isBoss) {
-    const intervalSec = getTowerAttackSpeedInterval() / 1000;
-    towerBossSeconds -= intervalSec;
-    if (towerBossSeconds <= 0) {
-      alert("⚠️ 首領狂暴震天一吼將你震退！時間耗盡，自動退回上一層修整！");
-      initTowerFloor(Math.max(1, towerMonster.floor - 1));
-      return;
-    }
-  }
-
-  const currentArm = (player.stats && Number(player.stats.arm)) || 20;
-  const autoDmg = Math.max(3, Math.floor(currentArm * 1.6 + (player.currentAtk || player.baseAtk) * 0.6));
-  dealTowerDamage(autoDmg, false, false);
-}
-
-function spawnTowerSlash(isCrit) {
-  const container = document.getElementById('tower-slash-layer');
-  if (!container) return;
-
-  const angles = [-35, 25, -60, 45, 0, -15];
-  const randAngle = angles[Math.floor(Math.random() * angles.length)];
-  const colors = isCrit ? ["#ff4757", "#f1c40f"] : ["#f1c40f", "#ffffff", "#5dade2"];
-  const randColor = colors[Math.floor(Math.random() * colors.length)];
-
-  const slash = document.createElement('div');
-  slash.className = 'tower-slash-arc';
-  slash.style.setProperty('--slash-angle', `${randAngle}deg`);
-  slash.innerHTML = `
-    <svg width="100%" height="100%" viewBox="0 0 100 100">
-      <path d="M10,85 Q50,20 90,15" stroke="${randColor}" stroke-width="${isCrit ? 8 : 5}" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 8px ${randColor})"/>
-      <path d="M25,90 Q55,35 85,25" stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    </svg>
-  `;
-  container.appendChild(slash);
-
-  const fig = document.getElementById('tower-enemy-figure');
-  if (fig) {
-    fig.classList.remove('anim-tower-recoil');
-    void fig.offsetWidth;
-    fig.classList.add('anim-tower-recoil');
-  }
-
-  setTimeout(() => slash.remove(), 280);
-}
-
-function dealTowerDamage(dmg, isCrit, isClick) {
-  towerMonster.hp = Math.max(0, towerMonster.hp - dmg);
-
-  spawnTowerSlash(isCrit);
-  spawnTowerFloatingDmg(dmg, isCrit);
-  updateTowerUI();
-
-  if (towerMonster.hp <= 0) {
-    const floor = towerMonster.floor;
-    const isBoss = towerMonster.isBoss;
-    const earnExp = Math.floor(15 + floor * 4);
-    const earnGold = Math.floor(5 + floor * 2);
-    const earnLearn = Math.max(1, Math.floor(floor / 3));
-
-    player.exp += earnExp;
-    player.gold += earnGold;
-    player.learn += earnLearn;
-    player.combat += 1;
-
-    // 天賦【通天徹地】每擊敗 1 名敵人回血 5%
-    if (player.talents && player.talents.some(t => t.id === "t_012")) {
-      player.hp = Math.min(player.maxHp, player.hp + Math.floor(player.maxHp * 0.05));
-    }
-
-    if (floor >= player.towerFloor) {
-      player.towerFloor = floor + 1;
-    }
-
-    updateProfileUI();
-
-    // 擊敗首領 BOSS 觸發專屬戰利品寶箱
-    if (isBoss) {
-      setTimeout(() => {
-        triggerBossChest(floor);
-      }, 350);
-    }
-
-    const autoBox = document.getElementById('tower-auto-advance');
-    const canAdvance = autoBox ? autoBox.checked : true;
-
-    if (canAdvance) {
-      setTimeout(() => initTowerFloor(floor + 1), 220);
-    } else {
-      setTimeout(() => initTowerFloor(floor), 220);
-    }
-  }
-}
-
-function spawnTowerFloatingDmg(dmg, isCrit) {
-  const container = document.getElementById('tower-target-box');
-  if (!container) return;
-  const p = document.createElement('div');
-  p.className = `dmg-num ${isCrit ? 'dmg-crit' : 'dmg-normal'}`;
-  p.innerText = (isCrit ? "暴擊! -" : "-") + dmg;
-  p.style.left = (30 + Math.random() * 80) + 'px';
-  p.style.top = (20 + Math.random() * 40) + 'px';
-  container.appendChild(p);
-  setTimeout(() => p.remove(), 600);
-}
-
-// ==================== 5. 通天首領秘寶開箱 (神品 0.2%*層數、絕品 2%*層數) ====================
-function triggerBossChest(floor) {
-  pendingChestReward = { floor };
-  const numEl = document.getElementById('chest-floor-num');
-  const resBox = document.getElementById('chest-result-box');
-  const openBtn = document.getElementById('btn-open-chest');
-  const icon = document.getElementById('chest-icon');
-
-  if (numEl) numEl.innerText = floor;
-  if (resBox) {
-    resBox.style.display = 'none';
-    resBox.innerHTML = '';
-  }
-  if (openBtn) {
-    openBtn.style.display = 'block';
-    openBtn.innerText = "✨ 破開禁制・開啟秘寶匣！";
-    openBtn.disabled = false;
-    openBtn.onclick = openTowerChest;
-  }
-  if (icon) icon.innerText = "📦";
-
-  openModal('modal-chest');
-}
-
-function openTowerChest() {
-  if (!pendingChestReward) return;
-  const floor = pendingChestReward.floor;
-  const openBtn = document.getElementById('btn-open-chest');
-  const resBox = document.getElementById('chest-result-box');
-  const icon = document.getElementById('chest-icon');
-
-  if (openBtn) openBtn.disabled = true;
-
-  // 1. 基礎資源掉落 (隨層數成長)
-  let droppedGold = Math.floor(30 + floor * 10 + Math.random() * 25);
-  let droppedExp = Math.floor(60 + floor * 20);
-  let droppedLearn = Math.floor(15 + floor * 4);
-
-  player.gold += droppedGold;
-  player.exp += droppedExp;
-  player.learn += droppedLearn;
-
-  // 2. 動態機率計算：神品 0.2% * floor，絕品 2.0% * floor
-  let godRate = Math.min(100, 0.2 * floor);
-  // 天賦【氣運之子】神品掉率翻倍
-  if (player.talents && player.talents.some(t => t.id === "t_007")) {
-    godRate = Math.min(100, godRate * 2.0);
-  }
-  const supremeRate = Math.min(100 - godRate, 2.0 * floor);
-
-  const roll = Math.random() * 100;
-
-  let targetRarity = "良品";
-  if (roll < godRate) {
-    targetRarity = "神品";
-  } else if (roll < godRate + supremeRate) {
-    targetRarity = "絕品";
-  } else {
-    targetRarity = (Math.random() * 100 < Math.min(70, 20 + floor * 1.5)) ? "上品" : "良品";
-  }
-
-  if (icon) {
-    if (targetRarity === "神品") icon.innerText = "🌟";
-    else if (targetRarity === "絕品") icon.innerText = "✨";
-    else icon.innerText = "🎁";
-  }
-
-  let rewardHtml = `
-    <div style="color:var(--gold); font-weight:bold; margin-bottom:6px;">
-      🎁 第 ${floor} 層首領秘寶開啟！
-      <span style="font-size:11px; color:#aaa; font-weight:normal;">[神品率: ${godRate.toFixed(1)}% | 絕品率: ${supremeRate.toFixed(1)}%]</span>
-    </div>
-    <div style="font-size:12px; color:#cfd9e6; line-height:1.7;">
-      • 繳獲碎銀：<b style="color:var(--gold);">+${droppedGold} 兩</b><br>
-      • 汲取修為：<b style="color:#f1c40f;">+${droppedExp} 點</b><br>
-      • 體悟學點：<b style="color:var(--cyan);">+${droppedLearn} 點</b><br>
-  `;
-
-  // 3. 戰利品類型判定：50% 武學殘卷 / 50% 神兵護甲靈藥
-  const isSkillDrop = Math.random() < 0.5;
-
-  if (isSkillDrop) {
-    const skillsOfTier = (typeof GLOBAL_SKILLS !== 'undefined')
-      ? GLOBAL_SKILLS.filter(s => s.rarity === targetRarity)
-      : [];
-
-    const pickedSkill = (skillsOfTier.length > 0)
-      ? skillsOfTier[Math.floor(Math.random() * skillsOfTier.length)]
-      : (typeof GLOBAL_SKILLS !== 'undefined' ? GLOBAL_SKILLS[0] : null);
-
-    if (pickedSkill) {
-      const alreadyLearned = myLearnedKungfu.some(k => k.name === pickedSkill.name);
-
-      if (!alreadyLearned) {
-        myLearnedKungfu.push({
-          ...pickedSkill,
-          id: "kf_drop_" + Date.now(),
-          tier: 1,
-          progress: 0
-        });
-        rewardHtml += `• <span class="rarity-badge rarity-${targetRarity}">【${targetRarity}武學出世】</span> 習得絕技【<b style="color:#fff;">${pickedSkill.name}</b>】（需${pickedSkill.weaponReq}）！<br>`;
-      } else {
-        const bonusLearn = (targetRarity === "神品") ? 180 : (targetRarity === "絕品" ? 100 : 50);
-        player.learn += bonusLearn;
-        rewardHtml += `• <span style="color:#9b59b6; font-weight:bold;">【武學重悟】</span> 翻閱【${pickedSkill.name}】精妙殘卷，觸類旁通，額外獲取 <b style="color:var(--cyan);">+${bonusLearn} 學點</b>！<br>`;
-      }
-    }
-  } else {
-    const itemsOfTier = (typeof GLOBAL_ITEMS !== 'undefined')
-      ? GLOBAL_ITEMS.filter(i => i.rarity === targetRarity)
-      : [];
-
-    let pickedItem = null;
-    if (itemsOfTier.length > 0) {
-      pickedItem = { ...itemsOfTier[Math.floor(Math.random() * itemsOfTier.length)] };
-    } else {
-      pickedItem = {
-        name: "千年雪參丸", type: "pill", rarity: "絕品",
-        hpAdd: 250, speedAdd: 15, expAdd: 250, cost: 200,
-        desc: "極品雪參靈丹，永久氣血+250，身法+15，修為+250！"
-      };
-    }
-
-    if (pickedItem.type === 'pill') {
-      const existing = player.inventory.find(i => i.name === pickedItem.name);
-      if (existing) {
-        existing.count = (existing.count || 1) + 1;
-      } else {
-        player.inventory.push({ ...pickedItem, id: "drop_" + Date.now(), count: 1 });
-      }
-      rewardHtml += `• <span class="rarity-badge rarity-${targetRarity}">【${targetRarity}奇珍】</span> 拾得靈丹【<b style="color:#fff;">${pickedItem.name}</b>】已放入行囊！<br>`;
-    } else {
-      player.inventory.push({ ...pickedItem, id: "drop_" + Date.now() });
-      rewardHtml += `• <span class="rarity-badge rarity-${targetRarity}">【${targetRarity}神兵】</span> 繳獲【<b style="color:#fff;">${pickedItem.name}</b>】已放入行囊！<br>`;
-    }
-  }
-
-  rewardHtml += `</div>`;
-  if (resBox) {
-    resBox.innerHTML = rewardHtml;
-    resBox.style.display = 'block';
-  }
-
-  if (openBtn) {
-    openBtn.innerText = "✔ 收下寶物";
-    openBtn.disabled = false;
-    openBtn.onclick = () => {
-      closeModal('modal-chest');
-      recalcPlayerStats();
-    };
-  }
-
-  recalcPlayerStats();
-}
-
-// ==================== 6. 存檔倒數 [6.0s] 提示 ====================
+// ==================== 6. 存檔與定時中樞 ====================
 var saveCountdown = 6.0;
 
 function tickSaveCountdown() {
@@ -837,7 +437,7 @@ function tickSaveCountdown() {
   if (saveCountdown <= 0.05) {
     autoSave();
     if (indicator) {
-      indicator.innerText = "[存]";
+      indicator.innerText = "[已存]";
       indicator.style.color = "#f1c40f";
     }
     saveCountdown = 6.0;
@@ -852,15 +452,20 @@ function tickSaveCountdown() {
 }
 setInterval(tickSaveCountdown, 100);
 
-// ==================== 7. 存檔讀檔中樞 ====================
+function manualSave() {
+  saveCountdown = 6.0;
+  autoSave();
+  const indicator = document.getElementById('save-indicator');
+  if (indicator) {
+    indicator.innerText = "[已存]";
+    indicator.style.color = "#f1c40f";
+    setTimeout(() => {
+      indicator.style.color = "#2ecc71";
+    }, 600);
+  }
+}
+
 const MASTER_SAVE_KEY = "WUXIA_MASTER_SAVE";
-const HISTORICAL_KEYS = [
-  "WUXIA_MASTER_SAVE",
-  "WUXIA_YOUR_JIANGHU_SAVE_V7",
-  "WUXIA_YOUR_JIANGHU_SAVE_V6",
-  "WUXIA_YOUR_JIANGHU_SAVE_V5",
-  "WUXIA_YOUR_JIANGHU_SAVE_V4"
-];
 
 function autoSave() {
   const saveData = {
@@ -874,15 +479,17 @@ function autoSave() {
     myLearnedKungfu,
     saveTimestamp: Date.now()
   };
+
   localStorage.setItem(MASTER_SAVE_KEY, JSON.stringify(saveData));
+
+  // 登入狀態下自動備份上傳 Firebase
+  if (typeof uploadSaveToCloud === 'function') {
+    uploadSaveToCloud();
+  }
 }
 
 function loadSavedGame() {
-  let raw = null;
-  for (let k of HISTORICAL_KEYS) {
-    const s = localStorage.getItem(k);
-    if (s) { raw = s; break; }
-  }
+  const raw = localStorage.getItem(MASTER_SAVE_KEY);
   if (!raw) {
     sanitizePlayerData();
     return false;
@@ -904,82 +511,15 @@ function loadSavedGame() {
     }
 
     sanitizePlayerData();
-
-    const offlineSeconds = Math.floor((Date.now() - (data.saveTimestamp || Date.now())) / 1000);
-    if (offlineSeconds > 20) {
-      const offlineExp = Math.min(600, Math.floor(offlineSeconds / 10));
-      player.exp += offlineExp;
-      setTimeout(() => {
-        alert(`🌙 離線調息結算：獲得修為 +${offlineExp} 點！`);
-      }, 400);
-    }
     return true;
   } catch (e) {
-    console.error("跨版本存檔解析重置", e);
+    console.error("本地存檔解析重置:", e);
     sanitizePlayerData();
     return false;
   }
 }
 
-// ==================== 8. 信件與活動禮包 ====================
-function openMailModal() {
-  updateMailUI();
-  openModal('modal-mail');
-}
-
-function updateMailUI() {
-  const isClaimed = Array.isArray(player.claimedMails) && player.claimedMails.includes('tangmen_launch');
-  const btn = document.getElementById('btn-claim-mail');
-  const dot = document.getElementById('mail-red-dot');
-
-  if (btn) {
-    if (isClaimed) {
-      btn.disabled = true;
-      btn.innerText = "✔ 附件已領取";
-      btn.style.opacity = "0.5";
-      btn.style.borderColor = "#555";
-      btn.style.color = "#888";
-    } else {
-      btn.disabled = false;
-      btn.innerText = "🎁 一鍵領取附件";
-      btn.style.opacity = "1";
-      btn.style.borderColor = "#2ecc71";
-      btn.style.color = "#2ecc71";
-    }
-  }
-  if (dot) dot.style.display = isClaimed ? "none" : "block";
-}
-
-function claimTangmenLaunchGift() {
-  if (player.claimedMails && player.claimedMails.includes('tangmen_launch')) {
-    alert("少俠已領取過這封信件的附件了！");
-    return;
-  }
-  if (!Array.isArray(player.claimedMails)) player.claimedMails = [];
-  player.claimedMails.push('tangmen_launch');
-
-  const coinTemplate = (typeof GLOBAL_ITEMS !== 'undefined') ? GLOBAL_ITEMS.find(i => i.name === "台幣50元") : null;
-  const coin = coinTemplate ? { ...coinTemplate } : {
-    name: "台幣50元", type: "weapon", weaponType: "暗器", rarity: "良品",
-    atk: 20, speed: 8, def: 0, hp: 0, desc: "【活動限定】金光燦爛的五十元硬幣。(外攻+20，身法+8)"
-  };
-  player.inventory.push({ ...coin, id: "coin_" + Date.now() });
-
-  const tanzhiTemplate = (typeof GLOBAL_SKILLS !== 'undefined') ? GLOBAL_SKILLS.find(s => s.name === "彈指神通") : null;
-  const tanzhi = tanzhiTemplate ? { ...tanzhiTemplate } : {
-    name: "彈指神通", type: "external", weaponReq: "暗器", rarity: "神品",
-    tier: 1, progress: 0, baseMult: 3.20, uniqueVfx: "tanzhi", statBonus: { speed: 25, arm: 10 },
-    jinyongDesc: "指尖微曲隨即一彈，一道森森氣勁如離弦之箭激射而出！"
-  };
-  myLearnedKungfu.push({ ...tanzhi, id: "tanzhi_" + Date.now() });
-
-  recalcPlayerStats();
-  updateMailUI();
-  closeModal('modal-mail');
-  alert("🎉 附件領取成功！\n1. 【良品】限定暗器【台幣50元】已放入「行囊」！\n2. 【神品】暗器絕學【彈指神通】已收錄至「武學」！");
-}
-
-// ==================== 9. 通用彈窗與改名 ====================
+// ==================== 7. 通用彈窗與改名 ====================
 function openModal(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add('show');
@@ -1001,33 +541,37 @@ function confirmRename() {
   }
 }
 
-// ==================== 10. 系統啟動入口 ====================
+// ==================== 8. 系統啟動入口 ====================
 function initGame() {
   try {
-    loadSavedGame();
+    const hasSave = loadSavedGame();
     recalcPlayerStats();
     if (typeof renderJianghuScenesOnMenu === 'function') renderJianghuScenesOnMenu();
+    if (typeof renderNineGridMap === 'function') renderNineGridMap();
     if (typeof refreshChatForCurrentLocation === 'function') refreshChatForCurrentLocation();
-    updateMailUI();
+    if (typeof updateMailRedDot === 'function') updateMailRedDot();
+
+    // 首次進入遊戲且無存檔時觸發新手身世引導
+    if (!hasSave && !player.hasSeenIntro && typeof checkAndShowNewbieIntro === 'function') {
+      setTimeout(checkAndShowNewbieIntro, 300);
+    }
   } catch (err) {
-    console.error("系統中樞啟動攔截修復:", err);
+    console.error("系統啟動修復攔截:", err);
     sanitizePlayerData();
     recalcPlayerStats();
-    if (typeof renderJianghuScenesOnMenu === 'function') renderJianghuScenesOnMenu();
-    if (typeof refreshChatForCurrentLocation === 'function') refreshChatForCurrentLocation();
-    updateMailUI();
   }
 }
 
 initGame();
 
-// 掛載至全域
-window.openTowerModal = openTowerModal;
-window.closeTowerModal = closeTowerModal;
-window.strikeTowerTarget = strikeTowerTarget;
-window.openTowerChest = openTowerChest;
+// 掛載全域函數
+window.manualSave = manualSave;
+window.autoSave = autoSave;
+window.recalcPlayerStats = recalcPlayerStats;
+window.evaluatePlayerRealm = evaluatePlayerRealm;
+window.updateProfileUI = updateProfileUI;
+window.openMeditateModal = openMeditateModal;
+window.closeMeditateModal = closeMeditateModal;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.confirmRename = confirmRename;
-window.recalcPlayerStats = recalcPlayerStats;
-window.autoSave = autoSave;

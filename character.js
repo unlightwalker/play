@@ -1,18 +1,26 @@
 /**
  * ========================================================
- * 你的江湖 - 角色養成模組 (character.js) [完整修復版]
- * 包含：
- * 1. 8 款武俠向量手繪頭像、六維先天/功法/奇遇/裝備透視彈窗
- * 2. 武學系統（openKungfuModal、槽位配戴、參悟升重、分類篩選）
- * 3. 行囊系統（openBagModal、兵刃護甲穿脫、丹藥服用、商店購買）
- * 4. 轉生輪迴（天賦抽卡 10 選 N、天賦傳承佔用格子、六維重骰、通天塔重置）
+ * 你的江湖 - 角色養成模組 (character.js) [稀有度全彩與天賦生效版]
+ * 職責：
+ * 1. 裝備、物品、功法、秘笈、天賦名稱文字顏色隨稀有度動態變化
+ * 2. 六維素質分解透視與手繪頭像切換
+ * 3. 點擊頭像即時檢視當前已覺醒宿命天賦
+ * 4. 卸裝切換空手 (拳)、武學槽位穿脫與參悟升重 (接線：九陽絕脈、愚笨如牛、武學奇才)
+ * 5. 通關 50 層方可轉世之天道限制與天賦/裝備/武學格子傳承
+ * 6. 服用丹藥接線【饕餮吞天】效果加倍
  * ========================================================
  */
+
+// 取得稀有度對應文字色彩 Class
+function getRarityColorClass(rarity) {
+  if (!rarity) return "color-凡品";
+  return `color-${rarity}`;
+}
 
 // ==================== 1. 8 款武俠風格手繪向量頭像 ====================
 var WUXIA_AVATARS = [
   { id: 0, title: "斗笠劍客", svg: `<svg width="100%" height="100%" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#1e272e"/><path d="M15,45 Q50,15 85,45 Z" fill="#b8860b"/><path d="M30,45 Q50,75 70,45" fill="#f5cd79"/><rect x="44" y="52" width="12" height="3" fill="#333"/><line x1="20" y1="46" x2="80" y2="46" stroke="#d4a373" stroke-width="2"/><path d="M25,85 Q50,60 75,85" fill="#2980b9"/></svg>` },
-  { id: 1, title: "白衣女俠", svg: `<svg width="100%" height="100%" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#2c3e50"/><circle cx="50" cy="45" r="20" fill="#f8c291"/><path d="M28,42 Q50,18 72,42 Q65,65 50,62 Q35,65 28,42 Z" fill="#1e272e"/><circle cx="43" cy="45" r="2.5" fill="#2f3542"/><circle cx="57" cy="45" r="2.5" fill="#2f3542"/><path d="M47,54 Q50,56 53,54" stroke="#e84118" stroke-width="1.5" fill="none"/><line x1="30" y1="26" x2="70" y2="24" stroke="#f1c40f" stroke-width="2.5"/><path d="M25,90 Q50,65 75,90" fill="#ecf0f1"/></svg>` },
+  { id: 1, title: "白衣女俠", svg: `<svg width="100%" height="100%" viewBox="0 0 100 100"><circle cx="50" cy="46" r="46" fill="#2c3e50"/><circle cx="50" cy="45" r="20" fill="#f8c291"/><path d="M28,42 Q50,18 72,42 Q65,65 50,62 Q35,65 28,42 Z" fill="#1e272e"/><circle cx="43" cy="45" r="2.5" fill="#2f3542"/><circle cx="57" cy="45" r="2.5" fill="#2f3542"/><path d="M47,54 Q50,56 53,54" stroke="#e84118" stroke-width="1.5" fill="none"/><line x1="30" y1="26" x2="70" y2="24" stroke="#f1c40f" stroke-width="2.5"/><path d="M25,90 Q50,65 75,90" fill="#ecf0f1"/></svg>` },
   { id: 2, title: "唐門暗客", svg: `<svg width="100%" height="100%" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#130f40"/><circle cx="50" cy="46" r="20" fill="#f5cd79"/><path d="M30,46 Q50,65 70,46 L70,68 Q50,85 30,68 Z" fill="#301934"/><circle cx="42" cy="42" r="2.5" fill="#be2edd"/><circle cx="58" cy="42" r="2.5" fill="#be2edd"/><path d="M22,35 Q50,15 78,35 L74,22 Q50,8 26,22 Z" fill="#4834d4"/><path d="M20,92 Q50,68 80,92" fill="#574b90"/></svg>` },
   { id: 3, title: "少林武僧", svg: `<svg width="100%" height="100%" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#2d3436"/><circle cx="50" cy="46" r="22" fill="#eccc68"/><circle cx="42" cy="43" r="2.5" fill="#222"/><circle cx="58" cy="43" r="2.5" fill="#222"/><circle cx="45" cy="30" r="1.5" fill="#fff"/><circle cx="50" cy="30" r="1.5" fill="#fff"/><circle cx="55" cy="30" r="1.5" fill="#fff"/><circle cx="45" cy="35" r="1.5" fill="#fff"/><circle cx="50" cy="35" r="1.5" fill="#fff"/><circle cx="55" cy="35" r="1.5" fill="#fff"/><path d="M22,90 Q50,68 78,90" fill="#e17055"/></svg>` },
   { id: 4, title: "武當道尊", svg: `<svg width="100%" height="100%" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#1b2a47"/><circle cx="50" cy="48" r="20" fill="#f8c291"/><circle cx="50" cy="22" r="8" fill="#111"/><line x1="40" y1="22" x2="60" y2="22" stroke="#d4a373" stroke-width="2.5"/><path d="M25,92 Q50,68 75,92" fill="#2980b9"/><circle cx="44" cy="45" r="2" fill="#222"/><circle cx="56" cy="45" r="2.5" fill="#222"/></svg>` },
@@ -22,7 +30,7 @@ var WUXIA_AVATARS = [
 ];
 window.WUXIA_AVATARS = WUXIA_AVATARS;
 
-// ==================== 2. 角色身體素質面板與頭像更換 ====================
+// ==================== 2. 身體素質透視面板與天賦檢視 ====================
 function openHeroProfileModal() {
   const gBox = document.getElementById('avatar-gallery-box');
   if (gBox) {
@@ -41,7 +49,6 @@ function openHeroProfileModal() {
     });
   }
 
-  // 1. 渲染六維素質與來源分解
   ['arm', 'speed', 'bone', 'inner', 'int', 'luck'].forEach(k => {
     const valEl = document.getElementById(`st-${k}`);
     const srcEl = document.getElementById(`st-${k}-source`);
@@ -55,7 +62,6 @@ function openHeroProfileModal() {
     }
   });
 
-  // 2. 渲染當前已覺醒的宿命天賦
   const tBox = document.getElementById('hero-talents-display');
   const tCount = document.getElementById('hero-talent-count');
   const talents = (Array.isArray(player.talents)) ? player.talents : [];
@@ -66,33 +72,42 @@ function openHeroProfileModal() {
     if (talents.length === 0) {
       tBox.innerHTML = `
         <div style="background:#131720; border:1px dashed #354052; border-radius:4px; padding:10px; text-align:center; color:#8ca0b3; font-size:11.5px;">
-          此生尚未覺醒任何宿命天賦。<br><small style="color:#666;">（轉世輪迴後可自天道抽籤獲取強大天賦）</small>
+          此生尚未覺醒任何宿命天賦。<br><small style="color:#666;">（轉世輪迴或天命顯聖後可獲得）</small>
         </div>
       `;
     } else {
       talents.forEach(t => {
         const card = document.createElement('div');
-        card.style.cssText = "background:#141822; border:1px solid #334155; border-left:3px solid var(--gold); border-radius:4px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;";
-        
-        // 根據品階變更左邊框顏色
-        if (t.rarity === '神品') card.style.borderLeftColor = 'var(--gold)';
-        else if (t.rarity === '絕品') card.style.borderLeftColor = 'var(--purple)';
-        else if (t.rarity === '上品') card.style.borderLeftColor = 'var(--cyan)';
-        else if (t.rarity === '良品') card.style.borderLeftColor = 'var(--green)';
-        else card.style.borderLeftColor = '#95a5a6';
+        let borderColor = '#95a5a6';
+        if (t.rarity === '神品') borderColor = 'var(--gold)';
+        else if (t.rarity === '絕品') borderColor = 'var(--purple)';
+        else if (t.rarity === '上品') borderColor = 'var(--cyan)';
+        else if (t.rarity === '良品') borderColor = 'var(--green)';
 
+        card.style.cssText = `background:#141822; border:1px solid #334155; border-left:3.5px solid ${borderColor}; border-radius:4px; padding:6px 10px; margin-bottom:5px; cursor:pointer;`;
         card.innerHTML = `
-          <div>
-            <b style="color:#fff; font-size:12px;">${t.name}</b>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b class="${getRarityColorClass(t.rarity)}" style="font-size:12px;">${t.name}</b>
             <span class="rarity-badge rarity-${t.rarity}" style="font-size:9.5px; padding:0 3px;">${t.rarity}</span>
-            <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">${t.desc}</div>
           </div>
+          <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">${t.desc}</div>
         `;
         card.onclick = () => {
           alert(`【天賦・${t.name}】（${t.rarity}）\n${t.desc}`);
         };
         tBox.appendChild(card);
       });
+    }
+  }
+
+  const reinBtn = document.getElementById('btn-reincarnate-trigger');
+  if (reinBtn) {
+    if ((player.towerFloor || 1) <= 50) {
+      reinBtn.style.opacity = "0.5";
+      reinBtn.innerHTML = `🔒 破虛輪迴 (需通關通天塔第50層，當前第${player.towerFloor || 1}層)`;
+    } else {
+      reinBtn.style.opacity = "1";
+      reinBtn.innerHTML = `🔮 破虛輪迴・轉世重修 (當前：第 ${player.reincarnations + 1} 世)`;
     }
   }
 
@@ -115,10 +130,10 @@ function showStatDetail(statKey) {
   alert(`【${names[statKey]} 來源詳情】\n` +
         `------------------------------------\n` +
         `• 先天根基：${src.innate}\n` +
-        `• 功法加成：${src.kf} (主修功法與修煉造詣)\n` +
-        `• 奇遇靈藥：${src.enc} (服食丹藥/特殊機緣)\n` +
-        `• 裝備加持：${src.gear} (神兵寶甲附帶)\n` +
-        `• 宿命天賦：${src.talent || 0} (轉生承載天命)\n` +
+        `• 功法加成：${src.kf}\n` +
+        `• 奇遇靈藥：${src.enc}\n` +
+        `• 裝備加持：${src.gear}\n` +
+        `• 宿命天賦：${src.talent || 0}\n` +
         `------------------------------------\n` +
         `合計總值：${src.total} 點`);
 }
@@ -130,7 +145,7 @@ function selectAvatar(id) {
   openHeroProfileModal();
 }
 
-// ==================== 3. 武學修煉、槽位與分類篩選 ====================
+// ==================== 3. 武學管理、篩選與秘笈研讀 ====================
 var currentKungfuFilter = "全部";
 
 function setKungfuFilter(filterType, btnEl) {
@@ -166,26 +181,30 @@ function renderSingleSlot(slotKey, textId, cardId) {
     card.classList.add('filled');
     const evalText = (typeof getKungfuEval === 'function') ? getKungfuEval(kf.tier, kf.progress) : `${kf.tier}重`;
     const req = (typeof getSkillWeaponReq === 'function') ? getSkillWeaponReq(kf) : "任意";
+    const colorClass = getRarityColorClass(kf.rarity);
 
     let matchBadge = "";
     if (kf.type === 'external') {
-      const isMatch = (typeof isSkillCompatibleWithWeapon === 'function') ? isSkillCompatibleWithWeapon(kf, player.equippedGear.weapon) : true;
+      const isMatch = (typeof isSkillCompatibleWithWeapon === 'function') 
+        ? isSkillCompatibleWithWeapon(kf, player.equippedGear ? player.equippedGear.weapon : null) 
+        : true;
+
       if (isMatch) {
         matchBadge = `<span style="color:#2ecc71; font-size:10px; margin-left:3px;">[✔ 契合:${req}]</span>`;
       } else {
         card.classList.add('mismatched');
-        matchBadge = `<span style="color:#e74c3c; font-size:10px; margin-left:3px; font-weight:bold;">[⚠️ 兵刃不符:需${req}]</span>`;
+        matchBadge = `<span style="color:#e74c3c; font-size:10px; margin-left:3px; font-weight:bold;">[⚠️ 不符:該次普攻]</span>`;
       }
     }
 
     text.innerHTML = `
       <span class="rarity-badge rarity-${kf.rarity}">${kf.rarity}</span>
-      ${kf.name} <small style="color:#f1c40f;">(${kf.tier}重・${evalText})</small>
+      <span class="${colorClass}">${kf.name}</span> <small style="color:#f1c40f;">(${kf.tier}重・${evalText})</small>
       ${matchBadge}
     `;
   } else {
     card.classList.remove('filled');
-    text.innerHTML = `<span style="color:#666; font-size:12px;">【空置・點擊下方佩戴】</span>`;
+    text.innerHTML = `<span style="color:#666; font-size:12px;">【空置・出招將為普通攻擊】</span>`;
   }
 }
 
@@ -208,7 +227,7 @@ function renderLearnedKungfuList() {
   });
 
   if (filteredList.length === 0) {
-    box.innerHTML = `<div style="text-align:center; color:#666; font-size:12px; padding:20px;">當前分類下無習得之武學。可前往各城鎮武館或門派請教！</div>`;
+    box.innerHTML = `<div style="text-align:center; color:#666; font-size:12px; padding:20px;">當前分類下無習得之武學。可翻閱行囊秘笈或向門派武館請教！</div>`;
     return;
   }
 
@@ -222,8 +241,17 @@ function renderLearnedKungfuList() {
     const evalText = (typeof getKungfuEval === 'function') ? getKungfuEval(kf.tier, kf.progress) : `${kf.tier}重`;
     const isMastered = (kf.tier >= 10 && kf.progress >= 100);
     const rawCost = (typeof getUpgradeExpCost === 'function') ? getUpgradeExpCost(kf.rarity, kf.tier) : 75;
-    const costExp = Math.max(10, Math.floor(rawCost * (1 - (player.stats.int * 0.005))));
+    
+    let costExp = Math.max(10, Math.floor(rawCost * (1 - (player.stats.int * 0.005))));
+    if (kf.type === 'internal' && player.talents && player.talents.some(t => t.kfCostDec)) {
+      costExp = Math.floor(costExp * 0.7);
+    }
+    if (player.talents && player.talents.some(t => t.doubleKfCost)) {
+      costExp = costExp * 2;
+    }
+
     const reqW = (typeof getSkillWeaponReq === 'function') ? getSkillWeaponReq(kf) : "任意";
+    const colorClass = getRarityColorClass(kf.rarity);
 
     let statText = "";
     if (kf.statBonus) {
@@ -236,7 +264,7 @@ function renderLearnedKungfuList() {
     if (kf.type === 'external') {
       const curMult = ((Number(kf.baseMult) || 1.3) * (1 + (kf.tier - 1) * 0.18 + (kf.progress / 100) * 0.18)).toFixed(2);
       const isMatch = (typeof isSkillCompatibleWithWeapon === 'function') ? isSkillCompatibleWithWeapon(kf, curW) : true;
-      detailStats = `威力：<b style="color:var(--cyan);">${curMult}x</b> | 兵刃: <b>${reqW}</b> ${isMatch ? '<span style="color:#2ecc71;">(契合)</span>' : '<span style="color:#e74c3c;">(不符)</span>'}`;
+      detailStats = `威力：<b style="color:var(--cyan);">${curMult}x</b> | 兵刃: <b>${reqW}</b> ${isMatch ? '<span style="color:#2ecc71;">(契合)</span>' : '<span style="color:#e74c3c;">(未符)</span>'}`;
     } else if (kf.type === 'internal') {
       const curHp = Math.floor((Number(kf.baseHpBonus) || 50) * (1 + (kf.tier - 1) * 0.22));
       detailStats = `氣血+${curHp} 防禦+${Math.floor((Number(kf.baseDefBonus) || 4) * (1 + (kf.tier - 1) * 0.22))}`;
@@ -245,12 +273,14 @@ function renderLearnedKungfuList() {
       detailStats = `身法+${curSpd}`;
     }
 
+    const jumpProgressVal = (player.talents && player.talents.some(t => t.kfJumpProgress)) ? 50 : 25;
+
     const card = document.createElement('div');
     card.className = `kungfu-master-card ${kf.rarity}`;
     card.innerHTML = `
       <div class="kf-header">
         <div>
-          <b style="color:#fff; font-size:13.5px;">${kf.name}</b>
+          <b class="${colorClass}" style="font-size:13.5px;">${kf.name}</b>
           <span class="rarity-badge rarity-${kf.rarity}">${kf.rarity}</span>
           <span style="font-size:11px; color:#8ca0b3; margin-left:4px;">[${kf.type === 'external' ? '外功' : (kf.type === 'internal' ? '心法' : '輕功')}]</span>
         </div>
@@ -272,7 +302,7 @@ function renderLearnedKungfuList() {
         <div>
           <button class="wuxia-btn" style="padding:3px 8px; font-size:11.5px; border-color:var(--gold); color:var(--gold);" 
             onclick="upgradeKungfu('${kf.id}')" ${isMastered ? 'disabled style="opacity:0.5;"' : ''}>
-            ${isMastered ? '已至大圓滿' : `參悟 (+25% 耗${costExp}修為)`}
+            ${isMastered ? '已至大圓滿' : `參悟 (+${jumpProgressVal}% 耗${costExp}修為)`}
           </button>
         </div>
       </div>
@@ -331,7 +361,16 @@ function upgradeKungfu(id) {
   if (kf.tier >= 10 && kf.progress >= 100) return;
 
   const rawCost = (typeof getUpgradeExpCost === 'function') ? getUpgradeExpCost(kf.rarity, kf.tier) : 75;
-  const cost = Math.max(10, Math.floor(rawCost * (1 - (player.stats.int * 0.005))));
+  let cost = Math.max(10, Math.floor(rawCost * (1 - (player.stats.int * 0.005))));
+
+  // 天賦：九陽絕脈 (心法修煉消耗 -30%)
+  if (kf.type === 'internal' && player.talents && player.talents.some(t => t.kfCostDec)) {
+    cost = Math.floor(cost * 0.7);
+  }
+  // 天賦：愚笨如牛 (消耗翻倍)
+  if (player.talents && player.talents.some(t => t.doubleKfCost)) {
+    cost = cost * 2;
+  }
 
   if (player.exp < cost) {
     alert(`修為不足！【${kf.name}】乃【${kf.rarity}】絕學，突破需消耗 ${cost} 點修為！請打坐或切磋累積！`);
@@ -339,7 +378,14 @@ function upgradeKungfu(id) {
   }
 
   player.exp -= cost;
-  kf.progress += 25;
+
+  // 天賦：武學奇才 (每次跳升 50% 進度，原為 25%)
+  let jumpProgress = 25;
+  if (player.talents && player.talents.some(t => t.kfJumpProgress)) {
+    jumpProgress = 50;
+  }
+
+  kf.progress += jumpProgress;
 
   if (kf.progress >= 100) {
     if (kf.tier < 10) {
@@ -381,7 +427,37 @@ function learnKwoonSkill(name, costLearn, costGold) {
   alert(`🎉 參悟成功！你習得了【${name}】！初始為【初學者（一重 0%）】，請至「武學」佩戴！`);
 }
 
-// ==================== 4. 行囊管理、裝備穿脫與丹藥 ====================
+function studyKungfuBook(itemIdx) {
+  const item = player.inventory[itemIdx];
+  if (!item || item.type !== 'book' || !item.skillData) return;
+
+  const sk = item.skillData;
+  if (myLearnedKungfu.some(k => k.name === sk.name)) {
+    alert(`少俠早已通曉【${sk.name}】，無需重複研讀！`);
+    return;
+  }
+
+  const reqLearn = item.costLearn || 40;
+  if (player.learn < reqLearn) {
+    alert(`悟性學點不足！研讀《${item.name}》需體悟耗費 ${reqLearn} 點學點！請打坐或聽書獲取！`);
+    return;
+  }
+
+  player.learn -= reqLearn;
+  myLearnedKungfu.push({
+    ...sk,
+    id: "kf_" + Date.now(),
+    tier: 1,
+    progress: 0
+  });
+
+  player.inventory.splice(itemIdx, 1);
+  recalcPlayerStats();
+  renderBagUI();
+  alert(`📖 挑燈夜讀，皓月懸空！你消耗 ${reqLearn} 學點，參透了【${sk.name}】精妙奧義！武學已登錄！`);
+}
+
+// ==================== 4. 行囊管理 ====================
 function openBagModal() { renderBagUI(); openModal('modal-bag'); }
 
 function renderBagUI() {
@@ -390,8 +466,21 @@ function renderBagUI() {
 
   const wNameEl = document.getElementById('bag-cur-weapon-name');
   const aNameEl = document.getElementById('bag-cur-armor-name');
-  if (wNameEl) wNameEl.innerText = w ? `${w.name} [${getWeaponType(w)}] (${w.desc})` : "赤手空拳 [拳]";
-  if (aNameEl) aNameEl.innerText = a ? `${a.name} (${a.desc})` : "赤膊布身";
+  
+  if (wNameEl) {
+    if (w) {
+      wNameEl.innerHTML = `<span class="${getRarityColorClass(w.rarity)}">${w.name}</span> [${getWeaponType(w)}] <small style="color:#aaa;">(${w.desc || '已配備'})</small>`;
+    } else {
+      wNameEl.innerHTML = `<span style="color:#95a5a6;">空手 (拳)</span> <small style="color:#777;">[徒手搏擊]</small>`;
+    }
+  }
+  if (aNameEl) {
+    if (a) {
+      aNameEl.innerHTML = `<span class="${getRarityColorClass(a.rarity)}">${a.name}</span> <small style="color:#aaa;">(${a.desc || '已穿戴'})</small>`;
+    } else {
+      aNameEl.innerHTML = `<span style="color:#95a5a6;">赤膊布身</span> <small style="color:#777;">[無防具]</small>`;
+    }
+  }
 
   const list = document.getElementById('bag-inventory-list');
   if (!list) return;
@@ -405,17 +494,20 @@ function renderBagUI() {
   player.inventory.forEach((item, idx) => {
     const card = document.createElement('div');
     card.className = 'bag-item-card';
+    const colorClass = getRarityColorClass(item.rarity);
 
     let actionBtn = "";
     if (item.type === 'weapon' || item.type === 'armor') {
       actionBtn = `<button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:var(--cyan);" onclick="equipGearFromBag(${idx})">裝備</button>`;
     } else if (item.type === 'pill') {
       actionBtn = `<button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:#2ecc71;" onclick="usePillFromBag(${idx})">服下</button>`;
+    } else if (item.type === 'book') {
+      actionBtn = `<button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:var(--gold);" onclick="studyKungfuBook(${idx})">研習(${item.costLearn || 40}學點)</button>`;
     }
 
     card.innerHTML = `
       <div>
-        <b style="color:#fff; font-size:13px;">${item.name}</b>
+        <b class="${colorClass}" style="font-size:13px;">${item.name}</b>
         <span class="rarity-badge rarity-${item.rarity}">${item.rarity}</span>
         ${item.type === 'weapon' ? `<span style="font-size:10px; color:#f1c40f; margin-left:3px;">[${getWeaponType(item)}]</span>` : ''}
         ${item.count ? `<span style="font-size:11px; color:var(--gold);">x${item.count}</span>` : ''}
@@ -431,18 +523,24 @@ function equipGearFromBag(itemIdx) {
   const item = player.inventory[itemIdx];
   if (!item) return;
 
+  // 天賦：苦行頭陀 (無法佩戴防具衣甲)
+  if (item.type === 'armor' && player.talents && player.talents.some(t => t.noArmor)) {
+    alert("你身具【苦行頭陀】宿命，不可穿戴任何防具衣甲！");
+    return;
+  }
+
   if (item.type === 'weapon') {
     const oldWeapon = player.equippedGear.weapon;
     player.equippedGear.weapon = item;
     player.inventory.splice(itemIdx, 1);
     if (oldWeapon) player.inventory.push(oldWeapon);
-    alert(`🗡️ 你已自背包裝備上了【${item.name}】！`);
+    alert(`🗡️ 你已自行囊裝備上了【${item.name}】！`);
   } else if (item.type === 'armor') {
     const oldArmor = player.equippedGear.armor;
     player.equippedGear.armor = item;
     player.inventory.splice(itemIdx, 1);
     if (oldArmor) player.inventory.push(oldArmor);
-    alert(`🛡️ 你已自背包披上了【${item.name}】！`);
+    alert(`🛡️ 你已自行囊披上了【${item.name}】！`);
   }
 
   recalcPlayerStats();
@@ -450,26 +548,43 @@ function equipGearFromBag(itemIdx) {
 }
 
 function unequipGear(slotType) {
-  const current = player.equippedGear ? player.equippedGear[slotType] : null;
-  if (!current) return;
+  if (!player.equippedGear) return;
+  const current = player.equippedGear[slotType];
+  if (!current) {
+    alert(slotType === 'weapon' ? "當前早已是赤手空拳，無需卸除！" : "當前並未穿戴任何護甲！");
+    return;
+  }
+
   player.inventory.push(current);
   player.equippedGear[slotType] = null;
+
   recalcPlayerStats();
   renderBagUI();
+  alert(slotType === 'weapon' ? "🗡️ 已收兵刃入鞘，身歸自然，切換為【空手 (拳)】！" : "🛡️ 已卸下護甲！");
 }
 
 function usePillFromBag(itemIdx) {
   const item = player.inventory[itemIdx];
   if (!item || item.type !== 'pill') return;
 
+  // 天賦：饕餮吞天 (丹藥效果提升 100%)
+  const isTaotie = (player.talents && player.talents.some(t => t.pillMult));
+  const mult = isTaotie ? 2.0 : 1.0;
+
   if (item.healHp) {
-    player.hp = Math.min(player.maxHp, player.hp + item.healHp);
-    alert(`💊 服下【${item.name}】，氣血恢復 ${item.healHp} 點！`);
+    const healVal = Math.floor(item.healHp * mult);
+    player.hp = Math.min(player.maxHp, player.hp + healVal);
+    alert(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，氣血恢復 ${healVal} 點！`);
   } else if (item.hpAdd || item.speedAdd || item.expAdd) {
-    player.baseMaxHp += (item.hpAdd || 0);
-    player.statsEncounter.speed = (player.statsEncounter.speed || 0) + (item.speedAdd || 0);
-    if (item.expAdd) player.exp += item.expAdd;
-    alert(`💊 服下【${item.name}】，奇遇造化湧現，氣血上限 +${item.hpAdd || 0}，身法 +${item.speedAdd || 0}！`);
+    const hpGain = Math.floor((item.hpAdd || 0) * mult);
+    const spdGain = Math.floor((item.speedAdd || 0) * mult);
+    const expGain = Math.floor((item.expAdd || 0) * mult);
+
+    player.baseMaxHp += hpGain;
+    player.statsEncounter.speed = (player.statsEncounter.speed || 0) + spdGain;
+    if (expGain) player.exp += expGain;
+
+    alert(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，奇遇造化湧現：氣血上限 +${hpGain}，身法 +${spdGain}${expGain ? '，修為 +' + expGain : ''}！`);
   }
 
   if (item.count && item.count > 1) {
@@ -513,12 +628,17 @@ function buyPillToBag(name, cost) {
   alert(`💊 購買成功！【${name}】已放入行囊！`);
 }
 
-// ==================== 5. 轉生輪迴、天賦抽取與繼承 ====================
+// ==================== 5. 轉生輪迴 (通天塔 50 層限制與 10 選 N) ====================
 let selectedReincarnationHeritage = [];
 let draftedTalentOptions = [];
 let selectedDraftedTalents = [];
 
 function openReincarnationModal() {
+  if ((player.towerFloor || 1) <= 50) {
+    alert(`🔒 天道封印：通天試煉塔未破！\n少俠需通關通天塔【第 50 層】（當前極限：第 ${player.towerFloor || 1} 層），淬煉無上道果後方可破碎虛空轉世重修！`);
+    return;
+  }
+
   closeModal('modal-hero-profile');
   const allowed = 1 + (player.reincarnations || 0);
   const allowEl = document.getElementById('reincarnate-allowed-count');
@@ -527,23 +647,24 @@ function openReincarnationModal() {
   selectedReincarnationHeritage = [];
   selectedDraftedTalents = [];
 
-  const step1 = document.getElementById('reincarnate-step-1');
-  const step2 = document.getElementById('reincarnate-step-2');
-  if (step1) step1.style.display = 'block';
-  if (step2) step2.style.display = 'none';
+  const s1 = document.getElementById('reincarnate-step-1');
+  const s2 = document.getElementById('reincarnate-step-2');
+  if (s1) s1.style.display = 'block';
+  if (s2) s2.style.display = 'none';
 
   const list = document.getElementById('reincarnate-selection-list');
   if (!list) return;
   list.innerHTML = '';
 
-  // 1. 已啟用的天賦（可作為遺產傳承）
+  // 1. 已啟用的天賦
   if (player.talents && player.talents.length > 0) {
     player.talents.forEach(t => {
       const d = document.createElement('div');
       d.className = 'bag-item-card';
+      const colorClass = getRarityColorClass(t.rarity);
       d.innerHTML = `
         <div>
-          <b style="color:#f1c40f;">【天賦】${t.name}</b>
+          <b class="${colorClass}">【天賦】${t.name}</b>
           <span class="rarity-badge rarity-${t.rarity}">${t.rarity}</span>
           <div style="font-size:10.5px; color:#aaa;">${t.desc}</div>
         </div>
@@ -553,14 +674,15 @@ function openReincarnationModal() {
     });
   }
 
-  // 2. 已習得之武學
+  // 2. 武學遺產
   myLearnedKungfu.forEach(kf => {
     const d = document.createElement('div');
     d.className = 'bag-item-card';
     const evalT = (typeof getKungfuEval === 'function') ? getKungfuEval(kf.tier, kf.progress) : `${kf.tier}重`;
+    const colorClass = getRarityColorClass(kf.rarity);
     d.innerHTML = `
       <div>
-        <b style="color:#fff;">【武學】${kf.name}</b>
+        <b class="${colorClass}">【武學】${kf.name}</b>
         <span class="rarity-badge rarity-${kf.rarity}">${kf.rarity}</span>
         <small style="color:#f1c40f;">(${kf.tier}重・${evalT})</small>
       </div>
@@ -569,7 +691,7 @@ function openReincarnationModal() {
     list.appendChild(d);
   });
 
-  // 3. 所有裝備
+  // 3. 裝備遺產
   const allGears = [...player.inventory];
   if (player.equippedGear.weapon) allGears.push(player.equippedGear.weapon);
   if (player.equippedGear.armor) allGears.push(player.equippedGear.armor);
@@ -578,9 +700,10 @@ function openReincarnationModal() {
     if (item.type === 'weapon' || item.type === 'armor') {
       const d = document.createElement('div');
       d.className = 'bag-item-card';
+      const colorClass = getRarityColorClass(item.rarity);
       d.innerHTML = `
         <div>
-          <b style="color:#fff;">【裝備】${item.name}</b>
+          <b class="${colorClass}">【裝備】${item.name}</b>
           <span class="rarity-badge rarity-${item.rarity}">${item.rarity}</span>
           <small style="color:#aaa;">(${item.desc})</small>
         </div>
@@ -648,10 +771,11 @@ function renderTalentDraftUI(pickLimit) {
     card.style.cursor = 'pointer';
     card.style.borderColor = isSelected ? 'var(--cyan)' : '#354052';
     card.style.background = isSelected ? '#1b2a38' : '#141822';
+    const colorClass = getRarityColorClass(talent.rarity);
 
     card.innerHTML = `
       <div style="flex:1;">
-        <b style="color:${isSelected ? 'var(--cyan)' : '#fff'};">${talent.name}</b>
+        <b class="${colorClass}">${talent.name}</b>
         <span class="rarity-badge rarity-${talent.rarity}">${talent.rarity}</span>
         <div style="font-size:11.5px; color:#cbd5e1; margin-top:3px; line-height:1.4;">${talent.desc}</div>
       </div>
@@ -690,7 +814,6 @@ function confirmReincarnationWithTalents() {
     }
   }
 
-  // 1. 整理遺產
   const keptTalents = [];
   selectedReincarnationHeritage.filter(h => h.type === 'talent').forEach(h => {
     const t = player.talents.find(item => item.id === h.id);
@@ -713,7 +836,6 @@ function confirmReincarnationWithTalents() {
     if (g) keptGears.push({ ...g });
   });
 
-  // 2. 轉生重置數值與【通天塔層數重置】
   player.reincarnations = nextReincarnations;
   player.towerFloor = 1;
   player.sect = "無門無派";
@@ -724,10 +846,8 @@ function confirmReincarnationWithTalents() {
   player.learn = 80;
   player.combat = 10;
 
-  // 3. 繼承天賦與裝備新天賦
   player.talents = [...keptTalents, ...selectedDraftedTalents];
 
-  // 4. 先天骰點
   player.statsInnate = {
     arm: 15 + Math.floor(Math.random() * 8),
     speed: 40 + Math.floor(Math.random() * 12),
@@ -738,7 +858,6 @@ function confirmReincarnationWithTalents() {
   };
   player.statsEncounter = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
 
-  // 5. 武學庫重置
   myLearnedKungfu = (typeof GLOBAL_SKILLS !== 'undefined') ? [
     GLOBAL_SKILLS[0], GLOBAL_SKILLS[1], GLOBAL_SKILLS[2], GLOBAL_SKILLS[3]
   ] : [];
@@ -750,7 +869,7 @@ function confirmReincarnationWithTalents() {
   });
 
   player.equippedGear = {
-    weapon: { id: "w_init", name: "粗製木劍", type: "weapon", weaponType: "劍", rarity: "凡品", atk: 6, speed: 0, desc: "外攻 +6" },
+    weapon: null,
     armor: { id: "a_init", name: "粗麻布衣", type: "armor", rarity: "凡品", def: 4, hp: 40, desc: "防禦 +4，氣血 +40" }
   };
 
@@ -769,13 +888,15 @@ function confirmReincarnationWithTalents() {
   closeModal('modal-reincarnation');
   recalcPlayerStats();
   if (typeof renderJianghuScenesOnMenu === 'function') renderJianghuScenesOnMenu();
+  if (typeof renderNineGridMap === 'function') renderNineGridMap();
   if (typeof refreshChatForCurrentLocation === 'function') refreshChatForCurrentLocation();
 
   const talentNames = player.talents.map(t => `【${t.name}】`).join(' ');
-  alert(`✨ 雷劫降臨，破虛飛昇！少俠已邁入【第 ${player.reincarnations + 1} 世】！\n通天試煉塔已重置至第 1 層！\n本世承載天命：\n${talentNames || '無'}`);
+  alert(`✨ 雷劫洗禮，破虛飛昇！少俠已邁入【第 ${player.reincarnations + 1} 世】！\n通天試煉塔已重置至第 1 層！\n本世共承載天命：\n${talentNames || '無'}`);
 }
 
-// ==================== 6. 全域函數嚴格掛載 ====================
+// ==================== 6. 全域函數掛載 ====================
+window.getRarityColorClass = getRarityColorClass;
 window.openHeroProfileModal = openHeroProfileModal;
 window.showStatDetail = showStatDetail;
 window.selectAvatar = selectAvatar;
@@ -787,6 +908,7 @@ window.unequipSlot = unequipSlot;
 window.equipKungfu = equipKungfu;
 window.upgradeKungfu = upgradeKungfu;
 window.learnKwoonSkill = learnKwoonSkill;
+window.studyKungfuBook = studyKungfuBook;
 window.openBagModal = openBagModal;
 window.renderBagUI = renderBagUI;
 window.equipGearFromBag = equipGearFromBag;

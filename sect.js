@@ -1,14 +1,17 @@
 /**
  * ========================================================
- * 你的江湖 - 門派系統模組 (sect.js) [宗門俸祿版]
- * 恢復宗門例銀俸祿領取：+30 兩銀兩、+50 學點
+ * 你的江湖 - 門派系統模組 (sect.js) [天賦接線版]
+ * 支援：
+ * 1. 宗門晉升、出師挑戰
+ * 2. 領取例銀俸祿（接線【窮困潦倒】無法領取、【門派親善】額外增給）
+ * 3. 拜師接線【一代宗師】直入內門弟子、【孤僻怪傑】拒入宗門
  * ========================================================
  */
 
 function openSectHallModal(sName) {
   sName = sName || player.sect;
   if (!sName || sName === "無門無派") {
-    alert("少俠當前孤身一人，尚未拜入門派！可前往重慶唐門、華山、全真、丐幫總舵或金刀門拜師！");
+    alert("少俠當前孤身一人，尚未拜入門派！可前往重慶唐門、華山、全真、少林、武當或金刀門拜師！");
     return;
   }
 
@@ -32,9 +35,9 @@ function openSectHallModal(sName) {
 
   if (!isMySect) {
     html += `
-      <p style="font-size:12px; color:#bbb; line-height:1.5;">欲拜入【${sName}】，須在此宣誓恪守門規。初入一律為【外門弟子】。</p>
+      <p style="font-size:12px; color:#bbb; line-height:1.5;">欲拜入【${sName}】，須在此宣誓恪守門規。初入一律為【外門弟子】（身具特異命格者除外）。</p>
       <button class="wuxia-btn" style="width:100%; margin-top:10px; border-color:#2ecc71; color:#2ecc71; font-weight:bold; padding:9px;" onclick="joinSect('${sName}')">
-        🙇 叩拜拜入【${sName}】（成為外門弟子）
+        🙇 叩拜拜入【${sName}】
       </button>
     `;
   } else {
@@ -88,23 +91,39 @@ function openSectHallModal(sName) {
   openModal('modal-sect-hall');
 }
 
-// 領取宗門例銀與學點
+// 領取宗門例銀與學點 (接線天賦)
 function claimSectDaily() {
   const now = Date.now();
   const lastClaim = player.lastSectClaimTime || 0;
-  const cooldown = 180000; // 3分鐘領取一次，兼顧遊戲節奏與掛機
+  const cooldown = 180000; // 3分鐘 CD
   if (now - lastClaim < cooldown) {
     const remainSec = Math.ceil((cooldown - (now - lastClaim)) / 1000);
     alert(`宗門俸祿每隔段時間發放，掌門交代請稍後再來領取！（尚餘約 ${remainSec} 秒）`);
     return;
   }
+
+  // 天賦：窮困潦倒 (無法領取俸祿)
+  if (player.talents && player.talents.some(t => t.noSectDaily)) {
+    alert("你身負【窮困潦倒】厄運，門派長老揮手將你逐出庫房，未能領取俸祿！");
+    return;
+  }
+
   player.lastSectClaimTime = now;
-  player.gold += 30;
-  player.learn += 50;
+  let addGold = 30;
+  let addLearn = 50;
+
+  // 天賦：門派親善 (額外多領 15 兩、20 學點)
+  if (player.talents && player.talents.some(t => t.sectDailyBonusGold)) {
+    addGold += 15;
+    addLearn += 20;
+  }
+
+  player.gold += addGold;
+  player.learn += addLearn;
 
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
   if (typeof autoSave === 'function') autoSave();
-  alert("💰 掌門賜下本期宗門例銀 30 兩、學點 50 點！勉勵你刻苦用功！");
+  alert(`💰 掌門賜下本期宗門例銀 ${addGold} 兩、學點 ${addLearn} 點！勉勵你刻苦用功！`);
 }
 
 function checkStatsReq(userStats, reqStats) {
@@ -190,19 +209,40 @@ function learnFromElder(sName, skillName) {
 
 function joinSect(sName) {
   if (player.sect !== "無門無派") { alert("欺師滅祖乃江湖大忌！不可另投他派！"); return; }
+
+  // 天賦：孤僻怪傑 (不可拜入任何門派)
+  if (player.talents && player.talents.some(t => t.noSect)) {
+    alert("你身具【孤僻怪傑】命格，心性獨往獨來，受不得任何門派規矩約束！");
+    return;
+  }
+
   player.sect = sName;
-  player.sectRank = "外門弟子";
+
+  // 天賦：一代宗師 (初始即為內門弟子)
+  if (player.talents && player.talents.some(t => t.sectDirectInner)) {
+    player.sectRank = "內門弟子";
+    alert(`🙇 掌門撫鬚大笑：「奇才！真乃天生武骨！」破格直接晉升你為【${sName}】內門弟子！`);
+  } else {
+    player.sectRank = "外門弟子";
+    alert(`🙇 三拜九叩！你已成為【${sName}】外門弟子！`);
+  }
+
   recalcPlayerStats();
   openSectHallModal(sName);
-  alert(`🙇 三拜九叩！你已成為【${sName}】外門弟子！`);
 }
 
 function checkMySect() {
   if (player.sect === "無門無派") {
-    alert("少俠當前孤身一人，尚未拜入門派！可前往重慶唐門、華山、全真、丐幫總舵或金刀門拜師！");
+    alert("少俠當前孤身一人，尚未拜入門派！可前往重慶唐門、華山、全真、少林、武當或金刀門拜師！");
   } else {
     openSectHallModal(player.sect);
   }
 }
 
+window.openSectHallModal = openSectHallModal;
 window.claimSectDaily = claimSectDaily;
+window.joinSect = joinSect;
+window.checkMySect = checkMySect;
+window.promoteRank = promoteRank;
+window.challengeMaster = challengeMaster;
+window.learnFromElder = learnFromElder;

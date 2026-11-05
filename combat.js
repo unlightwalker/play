@@ -1,7 +1,11 @@
 /**
  * ========================================================
- * 你的江湖 - 核心戰鬥引擎 (combat.js) [學點掉落結算版]
- * 戰鬥切磋勝出同步獎勵 +5 ~ +20 學點
+ * 你的江湖 - 核心戰鬥引擎 (combat.js) [天賦特效全面接線版]
+ * 支援：
+ * 1. 雙外功獨立 ATB 蓄力（天賦【雙生武脈】充能同步共享）
+ * 2. 兵刃不合/無技能時普攻輸出
+ * 3. 散財童子扣銀出招、以巧破千斤差值增傷、刀狂吸血 10%
+ * 4. 不死鳥之息致命免死重生、純陽罡氣受暴反彈 50%
  * ========================================================
  */
 
@@ -28,12 +32,24 @@ function calcDerivedCombatRates(atkStats, defStats) {
   let parryRate = Math.min(45, Math.max(5, Math.floor(dBone * 0.3 + dInner * 0.35)));
   let critRate = Math.min(50, Math.max(5, Math.floor(aLck * 0.5 + aArm * 0.1)));
 
+  // 天賦修正
+  if (typeof player !== 'undefined' && Array.isArray(player.talents)) {
+    if (player.talents.some(t => t.dodgeRateAdd)) dodgeRate += 15;
+    if (player.talents.some(t => t.noDodge)) dodgeRate = 0;
+    if (player.talents.some(t => t.parryRateAdd)) parryRate += 20;
+    if (player.talents.some(t => t.noParry)) parryRate = 0;
+    if (player.talents.some(t => t.lockCrit)) critRate = 5;
+    if (player.talents.some(t => t.noCrit)) critRate = 0;
+    if (player.talents.some(t => t.hitPenalty)) hitRate -= 15;
+  }
+
   return { hitRate, dodgeRate, parryRate, critRate };
 }
 
 function startBattleAgainst(enemyObj, isBoss = false) {
   isBossBattle = isBoss;
   currentEnemy = { ...enemyObj };
+  player._hasRevivedInCombat = false; // 重設不死鳥天賦單場標記
 
   const menuView = document.getElementById('menu-view');
   const battleView = document.getElementById('battle-view');
@@ -63,7 +79,7 @@ function startBattleAgainst(enemyObj, isBoss = false) {
   isActing = false;
 
   const curW = player.equippedGear ? player.equippedGear.weapon : null;
-  const curWType = getWeaponType(curW);
+  const curWType = (typeof getWeaponType === 'function') ? getWeaponType(curW) : "拳";
   const curWName = curW ? curW.name : "赤手空拳";
 
   const titleEl = document.getElementById('battle-loc-title');
@@ -105,32 +121,29 @@ function battleTick() {
   if (isActing || !currentEnemy) return;
 
   const curW = player.equippedGear ? player.equippedGear.weapon : null;
-  const wType = getWeaponType(curW);
+  const wType = (typeof getWeaponType === 'function') ? getWeaponType(curW) : "拳";
   const wFactor = (typeof WEAPON_SPEED_FACTOR !== 'undefined') ? (WEAPON_SPEED_FACTOR[wType] || 1.0) : 1.0;
   const baseSpd = (Number(player.speed) > 0) ? Number(player.speed) : 45;
 
+  // 招式壹充能
   const sk0 = equippedSlots.ext0;
   const isMatch0 = sk0 ? isSkillCompatibleWithWeapon(sk0, curW) : false;
-  if (sk0 && isMatch0) {
-    const rFactor0 = (typeof RARITY_SPEED_FACTOR !== 'undefined') ? (RARITY_SPEED_FACTOR[sk0.rarity] || 1.0) : 1.0;
-    const tierBonus0 = 1 + (sk0.tier - 1) * 0.02;
-    ext0Gauge += (baseSpd * wFactor * rFactor0 * tierBonus0) * 0.07;
-  } else {
-    ext0Gauge = 0;
-  }
+  const rFactor0 = (sk0 && typeof RARITY_SPEED_FACTOR !== 'undefined') ? (RARITY_SPEED_FACTOR[sk0.rarity] || 1.0) : 1.0;
+  const tierBonus0 = sk0 ? (1 + (sk0.tier - 1) * 0.02) : 1.0;
+  ext0Gauge += (baseSpd * wFactor * rFactor0 * tierBonus0) * 0.07;
 
+  // 招式貳充能
   const sk1 = equippedSlots.ext1;
   const isMatch1 = sk1 ? isSkillCompatibleWithWeapon(sk1, curW) : false;
-  if (sk1 && isMatch1) {
-    const rFactor1 = (typeof RARITY_SPEED_FACTOR !== 'undefined') ? (RARITY_SPEED_FACTOR[sk1.rarity] || 1.0) : 1.0;
-    const tierBonus1 = 1 + (sk1.tier - 1) * 0.02;
-    ext1Gauge += (baseSpd * wFactor * rFactor1 * tierBonus1) * 0.07;
-  } else {
-    ext1Gauge = 0;
-  }
+  const rFactor1 = (sk1 && typeof RARITY_SPEED_FACTOR !== 'undefined') ? (RARITY_SPEED_FACTOR[sk1.rarity] || 1.0) : 1.0;
+  const tierBonus1 = sk1 ? (1 + (sk1.tier - 1) * 0.02) : 1.0;
+  ext1Gauge += (baseSpd * wFactor * rFactor1 * tierBonus1) * 0.07;
 
-  if (!isMatch0 && !isMatch1) {
-    ext0Gauge += (baseSpd * wFactor * 0.85) * 0.07;
+  // 天賦：雙生武脈 (兩者進度同步共享，取最高值)
+  if (player.talents && player.talents.some(t => t.shareAtb)) {
+    const maxG = Math.max(ext0Gauge, ext1Gauge);
+    ext0Gauge = maxG;
+    ext1Gauge = maxG;
   }
 
   const eSpeed = (currentEnemy && Number(currentEnemy.speed) > 0) ? Number(currentEnemy.speed) : 40;
@@ -157,7 +170,7 @@ function battleTick() {
 
 function updateSkillMetersUI() {
   const curW = player.equippedGear ? player.equippedGear.weapon : null;
-  const wType = getWeaponType(curW);
+  const wType = (typeof getWeaponType === 'function') ? getWeaponType(curW) : "拳";
   const wFactor = (typeof WEAPON_SPEED_FACTOR !== 'undefined') ? (WEAPON_SPEED_FACTOR[wType] || 1.0) : 1.0;
 
   const sk0 = equippedSlots.ext0;
@@ -167,17 +180,15 @@ function updateSkillMetersUI() {
   const fillEl0 = document.getElementById('sm-fill-0');
 
   if (sk0) {
-    const req = getSkillWeaponReq(sk0);
     if (isMatch0) {
       if (nameEl0) nameEl0.innerHTML = `${sk0.name} <small style="color:#2ecc71;">[✔ 契合:${wType}]</small>`;
-      if (spdEl0) spdEl0.innerText = `速度: x${(wFactor * ((typeof RARITY_SPEED_FACTOR !== 'undefined') ? RARITY_SPEED_FACTOR[sk0.rarity] || 1 : 1)).toFixed(2)}`;
     } else {
-      if (nameEl0) nameEl0.innerHTML = `${sk0.name} <small style="color:#e74c3c; font-weight:bold;">[⚠️ 兵刃不合(需${req})]</small>`;
-      if (spdEl0) spdEl0.innerText = `停滯`;
+      if (nameEl0) nameEl0.innerHTML = `${sk0.name} <small style="color:#e67e22;">[⚠️ 兵刃未符:出招為普攻]</small>`;
     }
+    if (spdEl0) spdEl0.innerText = `速度: x${(wFactor * ((typeof RARITY_SPEED_FACTOR !== 'undefined') ? RARITY_SPEED_FACTOR[sk0.rarity] || 1 : 1)).toFixed(2)}`;
   } else {
-    if (nameEl0) nameEl0.innerHTML = `<span style="color:#666;">招式壹：未配戴</span>`;
-    if (spdEl0) spdEl0.innerText = `--`;
+    if (nameEl0) nameEl0.innerHTML = `<span style="color:#aaa;">招式壹：空置 (出招為普攻)</span>`;
+    if (spdEl0) spdEl0.innerText = `普攻充能中`;
   }
   if (fillEl0) fillEl0.style.width = ext0Gauge + '%';
 
@@ -188,17 +199,15 @@ function updateSkillMetersUI() {
   const fillEl1 = document.getElementById('sm-fill-1');
 
   if (sk1) {
-    const req = getSkillWeaponReq(sk1);
     if (isMatch1) {
       if (nameEl1) nameEl1.innerHTML = `${sk1.name} <small style="color:#2ecc71;">[✔ 契合:${wType}]</small>`;
-      if (spdEl1) spdEl1.innerText = `速度: x${(wFactor * ((typeof RARITY_SPEED_FACTOR !== 'undefined') ? RARITY_SPEED_FACTOR[sk1.rarity] || 1 : 1)).toFixed(2)}`;
     } else {
-      if (nameEl1) nameEl1.innerHTML = `${sk1.name} <small style="color:#e74c3c; font-weight:bold;">[⚠️ 兵刃不合(需${req})]</small>`;
-      if (spdEl1) spdEl1.innerText = `停滯`;
+      if (nameEl1) nameEl1.innerHTML = `${sk1.name} <small style="color:#e67e22;">[⚠️ 兵刃未符:出招為普攻]</small>`;
     }
+    if (spdEl1) spdEl1.innerText = `速度: x${(wFactor * ((typeof RARITY_SPEED_FACTOR !== 'undefined') ? RARITY_SPEED_FACTOR[sk1.rarity] || 1 : 1)).toFixed(2)}`;
   } else {
-    if (nameEl1) nameEl1.innerHTML = `<span style="color:#666;">招式貳：未配戴</span>`;
-    if (spdEl1) spdEl1.innerText = `--`;
+    if (nameEl1) nameEl1.innerHTML = `<span style="color:#aaa;">招式貳：空置 (出招為普攻)</span>`;
+    if (spdEl1) spdEl1.innerText = `普攻充能中`;
   }
   if (fillEl1) fillEl1.style.width = ext1Gauge + '%';
 
@@ -247,10 +256,23 @@ function executeSkillAttack(skill, isMatch, slotIndex) {
   const arm = document.getElementById('p-arm');
 
   const curW = player.equippedGear ? player.equippedGear.weapon : null;
-  const curWType = getWeaponType(curW);
-  const curWName = curW ? curW.name : "赤手空拳";
+  const curWType = (typeof getWeaponType === 'function') ? getWeaponType(curW) : "拳";
 
   pRig.classList.remove('idle-stance');
+
+  // 天賦：散財童子扣除銀兩
+  let sancaiUsed = false;
+  if (skill && isMatch && getSkillWeaponReq(skill) === "暗器" && curWType !== "暗器") {
+    if (player.talents && player.talents.some(t => t.id === "t_sancai" || t.name.includes("散財童子"))) {
+      if (player.gold >= 2) {
+        player.gold -= 2;
+        sancaiUsed = true;
+        if (typeof updateProfileUI === 'function') updateProfileUI();
+      } else {
+        isMatch = false; // 銀兩不足，強制降為普通攻擊
+      }
+    }
+  }
 
   if (skill && isMatch) {
     playUniqueSkillAnimation(skill.name, pRig, arm, curWType);
@@ -283,17 +305,35 @@ function executeSkillAttack(skill, isMatch, slotIndex) {
       return;
     }
 
-    let actualMult = 0.6;
-    let skillDesc = "平推粗招";
+    let actualMult = 1.0;
+    let isNormalAttack = true;
+    let skillDesc = "徒手普通攻擊";
     let evalText = "基礎";
 
     if (skill && isMatch) {
+      isNormalAttack = false;
       actualMult = (Number(skill.baseMult) || 1.3) * (1 + (skill.tier - 1) * 0.18 + (skill.progress / 100) * 0.18);
       evalText = (typeof getKungfuEval === 'function') ? getKungfuEval(skill.tier, skill.progress) : `${skill.tier}重`;
       skillDesc = skill.name;
     }
 
-    let baseDmg = (player.currentAtk * actualMult) + (player.stats.arm * 0.7) - (currentEnemy.def * 0.5);
+    let baseDmg = ((player.currentAtk || player.baseAtk) * actualMult) + (player.stats.arm * 0.7) - (currentEnemy.def * 0.5);
+
+    // 天賦：以巧破千斤 (身法高於目標時，差值轉化為傷害)
+    if (player.talents && player.talents.some(t => t.speedDiffToAtk)) {
+      const spdDiff = Math.max(0, player.stats.speed - (currentEnemy.stats.speed || 40));
+      baseDmg += spdDiff * 0.8;
+    }
+
+    // 兵刃增傷天賦
+    if (player.talents) {
+      if (curWType === "劍" && player.talents.some(t => t.swordDmgAdd)) baseDmg *= 1.4;
+      if (curWType === "拳" && player.talents.some(t => t.fistDmgAdd)) baseDmg *= 1.5;
+      if (isBossBattle && player.talents.some(t => t.bossDmgAdd)) baseDmg *= 1.6;
+      if (!isBossBattle && player.talents.some(t => t.mobDmgPenalty)) baseDmg *= 0.8;
+      if (player.talents.some(t => t.dmgBoost)) baseDmg *= 1.5; // 七傷損體增傷
+    }
+
     baseDmg = Math.max(6, Math.floor(baseDmg + Math.random() * 7));
 
     let isParried = false;
@@ -309,57 +349,85 @@ function executeSkillAttack(skill, isMatch, slotIndex) {
     let isCrit = false;
     if (!isParried && rollCrit < rates.critRate) {
       isCrit = true;
-      baseDmg = Math.floor(baseDmg * 1.6);
+      let critMult = 1.6;
+      if (player.talents) {
+        if (player.talents.some(t => t.id === "t_004")) critMult += 0.5; // 天罡神力 +50%
+        if (player.talents.some(t => t.id === "t_026")) critMult += 1.0; // 狂血修羅 +100%
+      }
+      baseDmg = Math.floor(baseDmg * critMult);
       spawnFloatingDmg(`暴擊! -${baseDmg}`, 220, 50, "dmg-crit");
       triggerScreenShake();
       if (eRig) eRig.classList.add('anim-heavy-hit-enemy');
       const banner = document.getElementById('combat-banner');
-      if (banner) banner.innerHTML = `福至心靈！你引爆弱點造成<span style="color:#ff3838; font-weight:bold;">【會心暴擊】${baseDmg}</span> 點傷害！`;
+      if (banner) banner.innerHTML = `福至心靈！造成<span style="color:#ff3838; font-weight:bold;">【會心暴擊】${baseDmg}</span> 點傷害！`;
     } else if (!isParried) {
       if (eRig) eRig.classList.add('anim-heavy-hit-enemy');
       spawnFloatingDmg(`-${baseDmg}`, 220, 55, "dmg-normal");
 
       const banner = document.getElementById('combat-banner');
       if (banner) {
-        if (skill && isMatch) {
-          banner.innerHTML = `施展【<b style="color:var(--cyan);">${skillDesc}</b>】（${evalText}），重挫對手 <b>${baseDmg}</b> 點！`;
+        if (!isNormalAttack) {
+          const sancaiHint = sancaiUsed ? ` <small style="color:var(--gold);">[散財童子扣銀2兩]</small>` : '';
+          banner.innerHTML = `施展【<b style="color:var(--cyan);">${skillDesc}</b>】（${evalText}）${sancaiHint}，重挫對手 <b>${baseDmg}</b> 點！`;
         } else {
-          banner.innerHTML = `<span style="color:#e74c3c; font-weight:bold;">⚠️ 兵刃不符！手持【${curWName}(${curWType})】無法催動絕技，只能平推造成 ${baseDmg} 點微傷！</span>`;
+          banner.innerHTML = `未佩戴合適武學，使出一記平實沉穩的<b>【普通攻擊】</b>，造成 <b>${baseDmg}</b> 點傷害！`;
         }
       }
+    }
+
+    // 天賦：刀狂血魔 (佩戴刀時吸血 10%)
+    if (curWType === "刀" && player.talents && player.talents.some(t => t.bladeLeech)) {
+      const leech = Math.floor(baseDmg * 0.1);
+      if (leech > 0) {
+        player.hp = Math.min(player.maxHp, player.hp + leech);
+        spawnFloatingDmg(`+${leech} 飲血`, 60, 45, "dmg-dodge");
+      }
+    }
+
+    // 天賦：狂血修羅 (每出招自扣 1% 當前氣血)
+    if (player.talents && player.talents.some(t => t.selfHarmPct)) {
+      const selfLoss = Math.max(1, Math.floor(player.hp * 0.01));
+      player.hp = Math.max(1, player.hp - selfLoss);
     }
 
     enemyHp = Math.max(0, enemyHp - baseDmg);
     updateCombatBars();
 
-    if (skill && isMatch && !isParried) {
+    if (!isNormalAttack && !isParried) {
       if (typeof outputBattleNarrativeAndComment === 'function') {
         outputBattleNarrativeAndComment(skill.name, evalText, skill.jinyongDesc || "氣貫長虹！");
       }
     }
 
-    // 擊潰敵人結算 (同步獎勵 +5 ~ +20 學點)
     if (enemyHp <= 0) {
       if (autoBattleTimer) clearInterval(autoBattleTimer);
       autoBattleTimer = null;
 
-      const earnLearn = Math.floor(5 + Math.random() * 16); // +5 ~ +20 學點
-      player.exp += currentEnemy.exp;
-      player.gold += currentEnemy.gold;
+      let earnLearn = Math.floor(5 + Math.random() * 16);
+      let earnExp = currentEnemy.exp || 40;
+      let earnGold = currentEnemy.gold || 10;
+
+      // 天賦：聚寶盆轉世 (獲銀翻倍)
+      if (player.talents && player.talents.some(t => t.id === "t_011")) {
+        earnGold *= 2;
+      }
+
+      player.exp += earnExp;
+      player.gold += earnGold;
       player.combat += (currentEnemy.combat || 6);
-      player.learn += earnLearn; // 領悟學點
+      player.learn += earnLearn;
 
       if (isBossBattle) {
         player.sectRank = "出師大成";
         if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
         setTimeout(() => {
-          alert(`🏆 掌門長嘆：「青出於藍而勝於藍！少俠武功冠絕宗門，今日准你【出師大成】！」\n獲得修為 +${currentEnemy.exp}、學點 +${earnLearn}！`);
+          alert(`🏆 掌門長嘆：「青出於藍而勝於藍！少俠武功冠絕宗門，今日准你【出師大成】！」\n獲得修為 +${earnExp}、學點 +${earnLearn}！`);
           stopBattleAndExit();
         }, 300);
       } else {
         if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
         setTimeout(() => {
-          alert(`🎉 切磋勝出！擊敗【${currentEnemy.name}】！\n獲得修為 +${currentEnemy.exp}、銀兩 +${currentEnemy.gold}兩、實戰心得 +${currentEnemy.combat || 6}、學點 +${earnLearn}！`);
+          alert(`🎉 切磋勝出！擊敗【${currentEnemy.name}】！\n獲得修為 +${earnExp}、銀兩 +${earnGold}兩、實戰心得 +${currentEnemy.combat || 6}、學點 +${earnLearn}！`);
           stopBattleAndExit();
         }, 300);
       }
@@ -405,23 +473,55 @@ function executeEnemyAutoAttack() {
 
     let eDmg = Math.max(6, Math.floor(currentEnemy.atk + (currentEnemy.stats.arm * 0.6) - (player.def * 0.6) + Math.random() * 6));
 
+    // 天賦：七傷損體 (自身受傷 +30%)
+    if (player.talents && player.talents.some(t => t.vuln)) {
+      eDmg = Math.floor(eDmg * 1.3);
+    }
+
+    let isParried = false;
     if (rollParry < rates.parryRate) {
+      isParried = true;
       eDmg = Math.floor(eDmg * 0.5);
       pRig.classList.add('anim-parry');
       spawnFloatingDmg(`格擋! -${eDmg}`, 60, 55, "dmg-parry");
       const banner = document.getElementById('combat-banner');
       if (banner) banner.innerHTML = `你橫兵引勁，<span style="color:#feca57;">【格擋招架】</span>減免了半數傷害！`;
+
+      // 天賦：拳鎮山河 (格擋時反震 30% 傷害)
+      const curW = player.equippedGear ? player.equippedGear.weapon : null;
+      if (!curW && player.talents && player.talents.some(t => t.id === "t_017")) {
+        const reflectDmg = Math.max(3, Math.floor(eDmg * 0.6));
+        enemyHp = Math.max(0, enemyHp - reflectDmg);
+        spawnFloatingDmg(`反震! -${reflectDmg}`, 220, 50, "dmg-parry");
+      }
     } else {
       pRig.classList.add('anim-heavy-hit-player');
       spawnFloatingDmg(`-${eDmg}`, 60, 55, "dmg-crit");
       const banner = document.getElementById('combat-banner');
       if (banner) banner.innerHTML = `【${currentEnemy.name}】猛烈發難，震創你 <b>${eDmg}</b> 點氣血！`;
+
+      // 天賦：純陽罡氣 (受到暴擊傷害時反彈 50% 給對手)
+      if (player.talents && player.talents.some(t => t.reflectCritPct)) {
+        const reflect = Math.floor(eDmg * 0.5);
+        enemyHp = Math.max(0, enemyHp - reflect);
+        spawnFloatingDmg(`純陽反彈! -${reflect}`, 220, 45, "dmg-crit");
+      }
     }
 
     player.hp = Math.max(0, player.hp - eDmg);
     updateCombatBars();
 
+    // 瀕死檢驗與【不死鳥之息】
     if (player.hp <= 0) {
+      if (player.talents && player.talents.some(t => t.reviveOnce) && !player._hasRevivedInCombat) {
+        player._hasRevivedInCombat = true;
+        player.hp = Math.floor(player.maxHp * 0.5);
+        alert("🔥【天命顯聖・不死鳥之息】氣血歸元，免除致命死亡，當場浴火重生並回滿 50% 氣血！");
+        updateCombatBars();
+        finishEnemyTurn();
+        return;
+      }
+
       alert("傷重不支，少俠只得暫行退避調養...");
       player.hp = Math.floor(player.maxHp * 0.3);
       stopBattleAndExit();
