@@ -1,13 +1,11 @@
 /**
  * ========================================================
- * 你的江湖 - 角色養成模組 (character.js) [稀有度全彩與天賦生效版]
- * 職責：
- * 1. 裝備、物品、功法、秘笈、天賦名稱文字顏色隨稀有度動態變化
- * 2. 六維素質分解透視與手繪頭像切換
- * 3. 點擊頭像即時檢視當前已覺醒宿命天賦
- * 4. 卸裝切換空手 (拳)、武學槽位穿脫與參悟升重 (接線：九陽絕脈、愚笨如牛、武學奇才)
- * 5. 通關 50 層方可轉世之天道限制與天賦/裝備/武學格子傳承
- * 6. 服用丹藥接線【饕餮吞天】效果加倍
+ * 你的江湖 - 角色養成模組 (character.js) [完整無缺版]
+ * 支援：
+ * 1. 內嵌式武學參悟面板（基礎欄置頂，地圖入世隱去，保留對話框）
+ * 2. 突破資訊改由對話框以橙色文字即時發布
+ * 3. 卸除後自動動態呈現「基礎xx法」，並具備 100% 契合度
+ * 4. 六維透視、頭像更換、天賦檢視、行囊管理、轉世輪迴
  * ========================================================
  */
 
@@ -15,6 +13,16 @@
 function getRarityColorClass(rarity) {
   if (!rarity) return "color-凡品";
   return `color-${rarity}`;
+}
+
+// 動態推導未佩戴時的基礎自悟武學名稱
+function getBasicSkillName(slotKey) {
+  if (slotKey === 'internal') return '基礎心法';
+  if (slotKey === 'qinggong') return '基礎輕功';
+  const curW = (typeof player !== 'undefined' && player.equippedGear) ? player.equippedGear.weapon : null;
+  const wType = (typeof getWeaponType === 'function') ? getWeaponType(curW) : "拳";
+  if (wType === "暗器") return "基礎暗器手法";
+  return `基礎${wType}法`;
 }
 
 // ==================== 1. 8 款武俠風格手繪向量頭像 ====================
@@ -145,22 +153,66 @@ function selectAvatar(id) {
   openHeroProfileModal();
 }
 
-// ==================== 3. 武學管理、篩選與秘笈研讀 ====================
+// ==================== 3. 武學內嵌視圖（不再彈窗，基礎置頂，隱去地圖入世） ====================
+let isKungfuInlineOpen = false;
 var currentKungfuFilter = "全部";
+
+function toggleKungfuInlineView() {
+  isKungfuInlineOpen = !isKungfuInlineOpen;
+  const secMap = document.getElementById('sec-map');
+  const secScenes = document.getElementById('sec-scenes');
+  const secKungfu = document.getElementById('sec-kungfu');
+  const hintEl = document.getElementById('basic-mode-hint');
+  const kfBtn = document.getElementById('btn-kungfu-toggle');
+
+  if (isKungfuInlineOpen) {
+    if (secMap) secMap.style.display = 'none';
+    if (secScenes) secScenes.style.display = 'none';
+    if (secKungfu) secKungfu.style.display = 'block';
+    if (hintEl) hintEl.style.display = 'inline-block';
+    if (kfBtn) {
+      kfBtn.style.background = '#2980b9';
+      kfBtn.style.borderColor = 'var(--cyan)';
+      kfBtn.innerText = '武學 ✔';
+    }
+    renderKungfuSlots();
+    renderLearnedKungfuList();
+    const expEl = document.getElementById('kf-cur-exp');
+    if (expEl) expEl.innerText = player.exp;
+  } else {
+    switchToNormalMode();
+  }
+}
+
+// 相容舊函式介面
+function openKungfuModal() {
+  toggleKungfuInlineView();
+}
+
+function switchToNormalMode() {
+  isKungfuInlineOpen = false;
+  const secMap = document.getElementById('sec-map');
+  const secScenes = document.getElementById('sec-scenes');
+  const secKungfu = document.getElementById('sec-kungfu');
+  const hintEl = document.getElementById('basic-mode-hint');
+  const kfBtn = document.getElementById('btn-kungfu-toggle');
+
+  if (secMap) secMap.style.display = 'block';
+  if (secScenes) secScenes.style.display = 'block';
+  if (secKungfu) secKungfu.style.display = 'none';
+  if (hintEl) hintEl.style.display = 'none';
+  if (kfBtn) {
+    kfBtn.style.background = '';
+    kfBtn.style.borderColor = '#9b59b6';
+    kfBtn.innerText = '武學';
+  }
+}
 
 function setKungfuFilter(filterType, btnEl) {
   currentKungfuFilter = filterType;
   document.querySelectorAll('.kf-filter-btn').forEach(b => b.classList.remove('active'));
   if (btnEl) btnEl.classList.add('active');
   renderLearnedKungfuList();
-}
-
-function openKungfuModal() {
-  renderKungfuSlots();
-  renderLearnedKungfuList();
-  const expEl = document.getElementById('kf-cur-exp');
-  if (expEl) expEl.innerText = player.exp;
-  openModal('modal-kungfu');
 }
 
 function renderKungfuSlots() {
@@ -177,8 +229,12 @@ function renderSingleSlot(slotKey, textId, cardId) {
   if (!card || !text) return;
   card.classList.remove('mismatched');
 
+  const unequipBtn = card.querySelector('.slot-btn-unequip');
+
   if (kf) {
     card.classList.add('filled');
+    if (unequipBtn) unequipBtn.style.display = 'inline-block';
+
     const evalText = (typeof getKungfuEval === 'function') ? getKungfuEval(kf.tier, kf.progress) : `${kf.tier}重`;
     const req = (typeof getSkillWeaponReq === 'function') ? getSkillWeaponReq(kf) : "任意";
     const colorClass = getRarityColorClass(kf.rarity);
@@ -193,7 +249,7 @@ function renderSingleSlot(slotKey, textId, cardId) {
         matchBadge = `<span style="color:#2ecc71; font-size:10px; margin-left:3px;">[✔ 契合:${req}]</span>`;
       } else {
         card.classList.add('mismatched');
-        matchBadge = `<span style="color:#e74c3c; font-size:10px; margin-left:3px; font-weight:bold;">[⚠️ 不符:該次普攻]</span>`;
+        matchBadge = `<span style="color:#e74c3c; font-size:10px; margin-left:3px; font-weight:bold;">[⚠️ 兵刃未符:普攻]</span>`;
       }
     }
 
@@ -204,7 +260,16 @@ function renderSingleSlot(slotKey, textId, cardId) {
     `;
   } else {
     card.classList.remove('filled');
-    text.innerHTML = `<span style="color:#666; font-size:12px;">【空置・出招將為普通攻擊】</span>`;
+    if (unequipBtn) unequipBtn.style.display = 'none';
+
+    const basicName = getBasicSkillName(slotKey);
+    const subDesc = (slotKey === 'internal') ? '[自悟導引吐納]' : (slotKey === 'qinggong' ? '[自悟身法步法]' : '[自悟平實招式]');
+
+    text.innerHTML = `
+      <span class="rarity-badge rarity-凡品">凡品</span>
+      <span class="color-凡品" style="font-weight:bold;">${basicName}</span>
+      <small style="color:#8ca0b3; font-size:11px; margin-left:2px;">${subDesc}</small>
+    `;
   }
 }
 
@@ -254,10 +319,12 @@ function renderLearnedKungfuList() {
     const colorClass = getRarityColorClass(kf.rarity);
 
     let statText = "";
-    if (kf.statBonus) {
+    if (kf.statBonus && kf.tier >= 2) {
       const names = { arm: "臂力", speed: "身法", bone: "根骨", inner: "內功" };
-      const mult = 1 + (kf.tier - 1) * 0.2 + (kf.progress / 100) * 0.2;
+      const mult = 1 + (kf.tier - 2) * 0.2 + (kf.progress / 100) * 0.2;
       statText = Object.keys(kf.statBonus).map(k => `${names[k]}+${Math.floor(kf.statBonus[k] * mult)}`).join(' ');
+    } else if (kf.tier < 2) {
+      statText = "一重暫無六維加成";
     }
 
     let detailStats = "";
@@ -289,7 +356,7 @@ function renderLearnedKungfuList() {
 
       <div style="font-size:11.5px; color:#cfd9e6; margin-top:3px;">
         造詣：<b>第 ${kf.tier} 重</b> (${kf.progress}%)
-        <span style="margin-left:6px; color:#f1c40f;">${statText ? `[六維: ${statText}]` : ''}</span>
+        <span style="margin-left:6px; color:#f1c40f;">${statText ? `[${statText}]` : ''}</span>
         <span style="margin-left:6px; color:#aaa;">${detailStats}</span>
       </div>
 
@@ -313,10 +380,16 @@ function renderLearnedKungfuList() {
 
 function unequipSlot(slotKey) {
   if (!equippedSlots[slotKey]) return;
+  const oldName = equippedSlots[slotKey].name;
   equippedSlots[slotKey] = null;
   recalcPlayerStats();
   renderKungfuSlots();
   renderLearnedKungfuList();
+
+  const basicName = getBasicSkillName(slotKey);
+  if (typeof pushChatMessage === 'function') {
+    pushChatMessage('system', '【功法歸元】', `卸下【${oldName}】，身歸自然，該槽位轉化為【${basicName}】！`, '#ff9f43');
+  }
 }
 
 function equipKungfu(id, targetSlot) {
@@ -363,23 +436,22 @@ function upgradeKungfu(id) {
   const rawCost = (typeof getUpgradeExpCost === 'function') ? getUpgradeExpCost(kf.rarity, kf.tier) : 75;
   let cost = Math.max(10, Math.floor(rawCost * (1 - (player.stats.int * 0.005))));
 
-  // 天賦：九陽絕脈 (心法修煉消耗 -30%)
   if (kf.type === 'internal' && player.talents && player.talents.some(t => t.kfCostDec)) {
     cost = Math.floor(cost * 0.7);
   }
-  // 天賦：愚笨如牛 (消耗翻倍)
   if (player.talents && player.talents.some(t => t.doubleKfCost)) {
     cost = cost * 2;
   }
 
   if (player.exp < cost) {
-    alert(`修為不足！【${kf.name}】乃【${kf.rarity}】絕學，突破需消耗 ${cost} 點修為！請打坐或切磋累積！`);
+    if (typeof pushChatMessage === 'function') {
+      pushChatMessage('system', '【修為不足】', `【${kf.name}】突破需耗費 ${cost} 點修為！請打坐調息或通天歷練累積！`, '#e74c3c');
+    }
     return;
   }
 
   player.exp -= cost;
 
-  // 天賦：武學奇才 (每次跳升 50% 進度，原為 25%)
   let jumpProgress = 25;
   if (player.talents && player.talents.some(t => t.kfJumpProgress)) {
     jumpProgress = 50;
@@ -391,10 +463,24 @@ function upgradeKungfu(id) {
     if (kf.tier < 10) {
       kf.tier += 1;
       kf.progress = 0;
-      alert(`⚡ 功力大進！【${kf.name}】突破桎梏晉升至【第 ${kf.tier} 重】！六維大幅躍進！`);
+      if (typeof pushChatMessage === 'function') {
+        pushChatMessage(
+          'system', 
+          '【武學突破】', 
+          `⚡ 功力大進！少俠參悟有得，【${kf.name}】突破桎梏晉升至【第 ${kf.tier} 重】！六維大幅躍進！`, 
+          '#ff9f43'
+        );
+      }
     } else {
       kf.progress = 100;
-      alert(`🎉 震爍古今！【${kf.name}】達到【十重大圓滿】之無上境地！六維全面昇華！`);
+      if (typeof pushChatMessage === 'function') {
+        pushChatMessage(
+          'system', 
+          '【十重大圓滿】', 
+          `🎉 震爍古今！【${kf.name}】歷經苦修，達到【十重大圓滿】之無上化境！六維全面昇華！`, 
+          '#ff793f'
+        );
+      }
     }
   }
 
@@ -424,7 +510,9 @@ function learnKwoonSkill(name, costLearn, costGold) {
 
   recalcPlayerStats();
   closeModal('modal-scene');
-  alert(`🎉 參悟成功！你習得了【${name}】！初始為【初學者（一重 0%）】，請至「武學」佩戴！`);
+  if (typeof pushChatMessage === 'function') {
+    pushChatMessage('system', '【武館研習】', `參悟成功！你習得了【${name}】！初始為【初學者（一重 0%）】，請至「武學」配戴！`, '#ff9f43');
+  }
 }
 
 function studyKungfuBook(itemIdx) {
@@ -439,7 +527,7 @@ function studyKungfuBook(itemIdx) {
 
   const reqLearn = item.costLearn || 40;
   if (player.learn < reqLearn) {
-    alert(`悟性學點不足！研讀《${item.name}》需體悟耗費 ${reqLearn} 點學點！請打坐或聽書獲取！`);
+    alert(`悟性學點不足！研讀《${item.name}》需體悟耗費 ${reqLearn} 點學點！`);
     return;
   }
 
@@ -454,10 +542,12 @@ function studyKungfuBook(itemIdx) {
   player.inventory.splice(itemIdx, 1);
   recalcPlayerStats();
   renderBagUI();
-  alert(`📖 挑燈夜讀，皓月懸空！你消耗 ${reqLearn} 學點，參透了【${sk.name}】精妙奧義！武學已登錄！`);
+  if (typeof pushChatMessage === 'function') {
+    pushChatMessage('system', '【秘笈研讀】', `挑燈夜讀！你參透了《${item.name}》精妙奧義，正式習得【${sk.name}】！`, '#ff9f43');
+  }
 }
 
-// ==================== 4. 行囊管理 ====================
+// ==================== 4. 行囊管理與更換兵刃連動 ====================
 function openBagModal() { renderBagUI(); openModal('modal-bag'); }
 
 function renderBagUI() {
@@ -523,7 +613,6 @@ function equipGearFromBag(itemIdx) {
   const item = player.inventory[itemIdx];
   if (!item) return;
 
-  // 天賦：苦行頭陀 (無法佩戴防具衣甲)
   if (item.type === 'armor' && player.talents && player.talents.some(t => t.noArmor)) {
     alert("你身具【苦行頭陀】宿命，不可穿戴任何防具衣甲！");
     return;
@@ -545,6 +634,7 @@ function equipGearFromBag(itemIdx) {
 
   recalcPlayerStats();
   renderBagUI();
+  renderKungfuSlots();
 }
 
 function unequipGear(slotType) {
@@ -560,6 +650,7 @@ function unequipGear(slotType) {
 
   recalcPlayerStats();
   renderBagUI();
+  renderKungfuSlots();
   alert(slotType === 'weapon' ? "🗡️ 已收兵刃入鞘，身歸自然，切換為【空手 (拳)】！" : "🛡️ 已卸下護甲！");
 }
 
@@ -567,7 +658,6 @@ function usePillFromBag(itemIdx) {
   const item = player.inventory[itemIdx];
   if (!item || item.type !== 'pill') return;
 
-  // 天賦：饕餮吞天 (丹藥效果提升 100%)
   const isTaotie = (player.talents && player.talents.some(t => t.pillMult));
   const mult = isTaotie ? 2.0 : 1.0;
 
@@ -656,7 +746,6 @@ function openReincarnationModal() {
   if (!list) return;
   list.innerHTML = '';
 
-  // 1. 已啟用的天賦
   if (player.talents && player.talents.length > 0) {
     player.talents.forEach(t => {
       const d = document.createElement('div');
@@ -674,7 +763,6 @@ function openReincarnationModal() {
     });
   }
 
-  // 2. 武學遺產
   myLearnedKungfu.forEach(kf => {
     const d = document.createElement('div');
     d.className = 'bag-item-card';
@@ -691,7 +779,6 @@ function openReincarnationModal() {
     list.appendChild(d);
   });
 
-  // 3. 裝備遺產
   const allGears = [...player.inventory];
   if (player.equippedGear.weapon) allGears.push(player.equippedGear.weapon);
   if (player.equippedGear.armor) allGears.push(player.equippedGear.armor);
@@ -720,7 +807,7 @@ function toggleReincarnationHeritage(type, id, checkbox) {
   const allowed = 1 + (player.reincarnations || 0);
   if (checkbox.checked) {
     if (selectedReincarnationHeritage.length >= allowed) {
-      alert(`第 ${1 + player.reincarnations} 世輪迴最多只可保留 ${allowed} 項遺產（天賦/武學/裝備共用名額）！`);
+      alert(`第 ${1 + player.reincarnations} 世輪迴最多只可保留 ${allowed} 項遺產！`);
       checkbox.checked = false;
       return;
     }
@@ -760,7 +847,7 @@ function renderTalentDraftUI(pickLimit) {
   box.innerHTML = '';
 
   if (pickLimit === 0) {
-    box.innerHTML = `<div style="text-align:center; color:#aaa; font-size:12px; padding:20px;">首次轉世（第 2 世）尚無法自天道中領悟新天賦，第 2 次轉生起方可挑選！請直接點擊下方踏入下一世！</div>`;
+    box.innerHTML = `<div style="text-align:center; color:#aaa; font-size:12px; padding:20px;">首次轉世尚無法自天道中領悟新天賦，第 2 次轉生起方可挑選！請直接點擊下方踏入下一世！</div>`;
     return;
   }
 
@@ -895,13 +982,15 @@ function confirmReincarnationWithTalents() {
   alert(`✨ 雷劫洗禮，破虛飛昇！少俠已邁入【第 ${player.reincarnations + 1} 世】！\n通天試煉塔已重置至第 1 層！\n本世共承載天命：\n${talentNames || '無'}`);
 }
 
-// ==================== 6. 全域函數掛載 ====================
 window.getRarityColorClass = getRarityColorClass;
+window.getBasicSkillName = getBasicSkillName;
 window.openHeroProfileModal = openHeroProfileModal;
 window.showStatDetail = showStatDetail;
 window.selectAvatar = selectAvatar;
 window.setKungfuFilter = setKungfuFilter;
+window.toggleKungfuInlineView = toggleKungfuInlineView;
 window.openKungfuModal = openKungfuModal;
+window.switchToNormalMode = switchToNormalMode;
 window.renderKungfuSlots = renderKungfuSlots;
 window.renderLearnedKungfuList = renderLearnedKungfuList;
 window.unequipSlot = unequipSlot;

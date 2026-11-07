@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>江湖行 - 武俠手遊</title>
-<!-- 引入獨立抽出的樣式表 -->
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +13,7 @@
   <!-- 1. 頂部身世狀態欄 -->
   <div class="profile-section">
     <div class="profile-top">
-      <div class="avatar-box" onclick="openHeroProfileModal()" title="點擊檢視身體素質與覺醒天賦">
+      <div class="avatar-box" onclick="openHeroProfileModal()" title="點擊檢視身體素質、帳號同步與覺醒天賦">
         <div class="avatar-svg-container" id="avatar-img-disp"></div>
         <div class="avatar-badge" id="avatar-reincarnation-label">第 1 世</div>
       </div>
@@ -26,7 +25,6 @@
             <span class="reincarnation-tag" id="disp-reincarnation">第 1 世</span>
             <div class="edit-icon">✏️</div>
           </div>
-          <!-- 點擊手動即刻存檔 -->
           <span id="save-indicator" onclick="manualSave()" title="點擊即刻手動存檔">[6.0s]</span>
         </div>
         
@@ -41,11 +39,12 @@
       </div>
     </div>
 
+    <!-- 資源欄：鎖定單行不折行 -->
     <div class="res-row">
       <div><span class="tag">[氣血]</span><span class="val" id="disp-hp">350 / 350</span></div>
+      <div><span class="tag">[內力]</span><span class="val" id="disp-mp" style="color:#3498db; font-weight:bold;">200 / 200</span></div>
       <div><span class="tag">[修為]</span><span class="val" id="res-exp" style="color:#f1c40f; font-weight:bold;">120</span></div>
       <div><span class="tag">[學點]</span><span class="val" id="res-learn">120</span></div>
-      <div><span class="tag">[實戰]</span><span class="val" id="res-combat">15</span></div>
       <div><span class="tag">[銀兩]</span><span class="val" id="res-gold">80兩</span></div>
     </div>
   </div>
@@ -56,49 +55,165 @@
     <!-- 主選單畫面 -->
     <div class="menu-stage" id="menu-view">
 
-      <!-- 雲端帳號連線狀態列 (無任何 GM 入口，GM 權限由帳戶資料動態辨識) -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:4px 8px; background:#141923; border-radius:4px; border:1px solid #263142; font-size:11px;">
-        <span id="auth-status-label" style="color:#8ca0b3;">⚡ 本地遊玩中</span>
-        <button id="btn-auth-open" class="wuxia-btn" style="padding:2px 10px; font-size:11px; border-color:var(--cyan); color:var(--cyan);" onclick="openModal('modal-auth')">登入 / 註冊</button>
+      <!-- ★ 基礎功能按鈕欄（修正左側對齊，與坤輿全圖、入世嚴格齊平） ★ -->
+      <div id="sec-basic">
+        <div class="category-title" id="basic-category-title">
+          <span>基礎</span>
+          <span id="basic-mode-hint" style="margin-left:auto; font-size:11px; color:#aaa; font-weight:normal; display:none;">
+            <button class="wuxia-btn" style="padding:1px 8px; font-size:10.5px; border-color:var(--cyan); color:var(--cyan);" onclick="switchToNormalMode()">↩ 返回地圖</button>
+          </span>
+        </div>
+        
+        <div class="btn-grid">
+          <button class="wuxia-btn" onclick="openSectHallModal()">師門</button>
+          <button class="wuxia-btn" onclick="openMeditateModal()" style="border-color:#2ecc71; color:#2ecc71; font-weight:bold;">打坐</button>
+          <button class="wuxia-btn" onclick="openTowerModal()" style="border-color:#e67e22; color:#f39c12; font-weight:bold;">歷練</button>
+          <button class="wuxia-btn" id="btn-kungfu-toggle" onclick="toggleKungfuInlineView()" style="border-color:#9b59b6; color:#f5e8ff; font-weight:bold;">武學</button>
+        </div>
+
+        <div class="btn-grid" style="grid-template-columns: repeat(3, 1fr); width: 74%; margin-bottom: 8px;">
+          <button class="wuxia-btn" onclick="openBagModal()" style="border-color:#f1c40f; color:#f1c40f; font-weight:bold;">行囊</button>
+          <button class="wuxia-btn" onclick="alert('暫無同行結義俠客。')">俠客</button>
+          <button class="wuxia-btn" onclick="openMailModal()" id="btn-mail">信件<div class="red-dot" id="mail-red-dot"></div></button>
+        </div>
       </div>
 
-      <!-- 坤輿全圖：靠左對齊，右上角顯示即時整數坐標 (X, Y) -->
-      <div class="category-title" style="color:var(--cyan); justify-content: space-between; padding-right: 4px;">
-        <span>坤輿全圖</span>
-        <span id="map-coord-display" style="font-family: monospace; font-size: 11.5px; color: var(--gold); font-weight: bold; background: #151a24; padding: 1px 6px; border-radius: 3px; border: 1px solid #334155;">(0, 0)</span>
-      </div>
-      
-      <!-- 常駐九宮格容器 (由 town.js 動態渲染) -->
-      <div class="inline-nine-grid" id="main-inline-nine-grid"></div>
-
-      <!-- 基礎按鈕分類 -->
-      <div class="category-title">基礎</div>
-      
-      <!-- 第一排按鈕：師門、打坐、歷練、武學 -->
-      <div class="btn-grid">
-        <button class="wuxia-btn" onclick="openSectHallModal()">師門</button>
-        <button class="wuxia-btn" onclick="openMeditateModal()" style="border-color:#2ecc71; color:#2ecc71; font-weight:bold;">打坐</button>
-        <button class="wuxia-btn" onclick="openTowerModal()" style="border-color:#e67e22; color:#f39c12; font-weight:bold;">歷練</button>
-        <button class="wuxia-btn" onclick="openKungfuModal()" style="border-color:#9b59b6; color:#f5e8ff; font-weight:bold;">武學</button>
+      <!-- 地圖區域 -->
+      <div id="sec-map">
+        <div class="category-title" style="color:var(--cyan); padding-right: 4px;">
+          <span>坤輿全圖</span>
+          <span id="map-coord-display" style="margin-left: auto; font-family: monospace; font-size: 11.5px; color: var(--gold); font-weight: bold; background: #151a24; padding: 1px 6px; border-radius: 3px; border: 1px solid #334155;">(0, 0)</span>
+        </div>
+        <div class="inline-nine-grid" id="main-inline-nine-grid"></div>
       </div>
 
-      <!-- 第二排按鈕：行囊、俠客、信件 -->
-      <div class="btn-grid" style="grid-template-columns: repeat(3, 1fr); width: 74%; margin-bottom: 16px;">
-        <button class="wuxia-btn" onclick="openBagModal()" style="border-color:#f1c40f; color:#f1c40f; font-weight:bold;">行囊</button>
-        <button class="wuxia-btn" onclick="alert('暫無同行結義俠客。')">俠客</button>
-        <button class="wuxia-btn" onclick="openMailModal()" id="btn-mail">信件<div class="red-dot" id="mail-red-dot"></div></button>
+      <!-- 內嵌武學研習區 -->
+      <div id="sec-kungfu" style="display:none;">
+        <div class="category-title" style="color:#5dade2; display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+          <span>🥋 武學參悟與配戴</span>
+          <span style="font-size:11px; color:#cbd5e1; font-weight:normal;">可用修為: <b id="kf-cur-exp" style="color:var(--gold);">0</b></span>
+        </div>
+
+        <div class="slot-grid">
+          <div class="kungfu-slot-card" id="slot-card-internal">
+            <div class="slot-label">心法功體</div><div class="slot-content" id="slot-name-internal">未佩戴</div>
+            <button class="slot-btn-unequip" onclick="unequipSlot('internal')">卸下</button>
+          </div>
+          <div class="kungfu-slot-card" id="slot-card-qinggong">
+            <div class="slot-label">步法輕功</div><div class="slot-content" id="slot-name-qinggong">未佩戴</div>
+            <button class="slot-btn-unequip" onclick="unequipSlot('qinggong')">卸下</button>
+          </div>
+          <div class="kungfu-slot-card" id="slot-card-ext0">
+            <div class="slot-label">外功招式 壹</div><div class="slot-content" id="slot-name-ext0">未佩戴</div>
+            <button class="slot-btn-unequip" onclick="unequipSlot('ext0')">卸下</button>
+          </div>
+          <div class="kungfu-slot-card" id="slot-card-ext1">
+            <div class="slot-label">外功招式 貳</div><div class="slot-content" id="slot-name-ext1">未佩戴</div>
+            <button class="slot-btn-unequip" onclick="unequipSlot('ext1')">卸下</button>
+          </div>
+        </div>
+
+        <div class="kungfu-filter-bar">
+          <button class="kf-filter-btn active" onclick="setKungfuFilter('全部', this)">全部</button>
+          <button class="kf-filter-btn" onclick="setKungfuFilter('劍', this)">劍法</button>
+          <button class="kf-filter-btn" onclick="setKungfuFilter('刀', this)">刀法</button>
+          <button class="kf-filter-btn" onclick="setKungfuFilter('拳', this)">拳掌</button>
+          <button class="kf-filter-btn" onclick="setKungfuFilter('棍', this)">棍法</button>
+          <button class="kf-filter-btn" onclick="setKungfuFilter('暗器', this)">暗器</button>
+          <button class="kf-filter-btn" onclick="setKungfuFilter('心法', this)">心法</button>
+          <button class="kf-filter-btn" onclick="setKungfuFilter('輕功', this)">輕功</button>
+        </div>
+
+        <div id="learned-kungfu-list" style="max-height: 250px; overflow-y: auto;"></div>
       </div>
 
-      <!-- 入世：所在地城鎮名稱與場景按鈕 -->
-      <div class="category-title">
-        入世【<span id="jh-current-city" style="color:var(--cyan);">牛家村</span>】
-      </div>
-      <div class="btn-grid-scenes" id="jh-scenes-grid">
-        <!-- 由 town.js 動態渲染 -->
+      <!-- 入世區域 -->
+      <div id="sec-scenes">
+        <div class="category-title">
+          入世【<span id="jh-current-city" style="color:var(--cyan);">牛家村</span>】
+        </div>
+        <div class="btn-grid-scenes" id="jh-scenes-grid"></div>
       </div>
     </div>
 
-    <!-- 戰鬥演武場 -->
+    <!-- 歷練通天試煉塔 -->
+    <div class="tower-stage" id="tower-view">
+      <div class="battle-header" style="padding-bottom: 6px; margin-bottom: 4px;">
+        <div>
+          <h3 style="font-size:14px; color:#f39c12; margin:0; display:flex; align-items:center; gap:4px;">
+            <span>🏔️ 無盡歷練・通天試煉塔</span>
+          </h3>
+          <small id="tower-floor-title" style="color:#aaa; font-size:11px;">第 1 層 (歷史極限: 第 1 層)</small>
+        </div>
+        <button class="wuxia-btn" style="padding:3px 12px; font-size:12px; border-color:var(--gold); color:var(--gold); font-weight:bold;" onclick="closeTowerModal()">
+          ↩ 返回江湖
+        </button>
+      </div>
+
+      <div class="tower-chain-box" id="tower-chain-track"></div>
+
+      <div class="tower-arena">
+        <div class="tower-hp-container">
+          <div class="tower-hp-info">
+            <span id="tower-hp-text">100 / 100</span>
+            <span id="tower-boss-timer" style="color:#e74c3c; font-weight:bold; display:none;">⏳ 首領狂暴: 30s</span>
+          </div>
+          <div class="tower-hp-track">
+            <div id="tower-hp-fill" class="tower-hp-fill"></div>
+          </div>
+        </div>
+
+        <div class="tower-enemy-wrapper" id="tower-target-box" onclick="strikeTowerTarget()" title="點擊出招猛擊！">
+          <div id="tower-boss-aura" class="tower-boss-aura"></div>
+          <div id="tower-enemy-figure" class="tower-enemy-figure"></div>
+          <div id="tower-slash-layer" class="tower-slash-layer"></div>
+        </div>
+
+        <div id="tower-target-name" class="tower-enemy-name">試煉強敵</div>
+
+        <div class="tower-stat-hint">
+          <span>⚔️ 外功均值掌力: <b id="tower-arm-dmg" style="color:var(--gold);">--</b></span>
+          <span>⚡ 身法狂擊頻率: <b id="tower-spd-rate" style="color:var(--cyan);">--</b></span>
+        </div>
+      </div>
+
+      <div class="tower-dual-panels">
+        <div class="tower-info-card">
+          <div class="tower-card-title">📊 歷練時收與加成</div>
+          <div class="tower-rates-grid">
+            <div>修為: <b style="color:#f1c40f;" id="tower-hr-exp">+0/hr</b></div>
+            <div>銀兩: <b style="color:var(--gold);" id="tower-hr-gold">+0兩/hr</b></div>
+            <div>學點: <b style="color:var(--cyan);" id="tower-hr-learn">+0/hr</b></div>
+          </div>
+          <div class="tower-talent-buff-line" id="tower-active-talents">
+            命格生效: 先天凡體
+          </div>
+        </div>
+
+        <div class="tower-info-card" onclick="showNextBossLootDetail()" style="cursor:pointer;" title="點擊檢視首領掉落庫">
+          <div class="tower-card-title" style="color:#ff7675;">
+            🎁 首領珍寶窺探 <span style="font-size:10px; color:#aaa; font-weight:normal;">[詳情]</span>
+          </div>
+          <div style="font-size:11px; color:#cfd9e6; margin:2px 0;" id="tower-boss-countdown">
+            距離首領: <b>--</b> 層
+          </div>
+          <div style="font-size:10.5px; color:#94a3b8; line-height:1.4;" id="tower-boss-preview-text">
+            首領層必定繳獲【秘笈/神兵/靈丹】
+          </div>
+        </div>
+      </div>
+
+      <div class="tower-control-bar">
+        <label style="font-size:12px; color:#ddd; display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" id="tower-auto-advance" checked style="transform:scale(1.2); cursor:pointer;"> 自動挑戰下一層
+        </label>
+        <button class="wuxia-btn" id="btn-tower-action" style="padding:5px 14px; font-size:12.5px; border-color:var(--gold); color:var(--gold); font-weight:bold;" onclick="strikeTowerTarget()">
+          💥 催動掌力狂擊！
+        </button>
+      </div>
+    </div>
+
+    <!-- 切磋演武場 -->
     <div class="battle-stage" id="battle-view">
       <div class="battle-header">
         <h3 id="battle-loc-title" style="font-size:14px; color:var(--gold);">⚔️ 荒郊交鋒</h3>
@@ -112,6 +227,7 @@
         <div class="stick-rig rig-player idle-stance" id="p-rig">
           <div class="bar-container">
             <div class="hp-strip"><div class="hp-fill" id="p-hp-bar"></div></div>
+            <div class="mp-strip"><div class="mp-fill" id="p-mp-bar"></div></div>
           </div>
           <svg class="bone-svg" viewBox="0 0 100 120">
             <g>
@@ -132,6 +248,7 @@
         <div class="stick-rig rig-enemy idle-stance" id="e-rig">
           <div class="bar-container">
             <div class="hp-strip"><div class="hp-fill" id="e-hp-bar"></div></div>
+            <div class="mp-strip"><div class="mp-fill" id="e-mp-bar"></div></div>
           </div>
           <svg class="bone-svg" viewBox="0 0 100 120">
             <g>
@@ -150,78 +267,76 @@
         </div>
       </div>
 
-      <!-- 雙外功獨立 ATB 進度條區域 -->
-      <div class="skill-meter-box">
-        <div class="skill-meter-row">
-          <div class="sm-label-row">
-            <span id="sm-name-0" style="color:#5dade2; font-weight:bold;">招式壹：--</span>
-            <span id="sm-speed-0" style="color:#aaa;">充能速度: --</span>
+      <!-- 單一行動條 (ATB) 蓄力槽 -->
+      <div class="single-atb-box">
+        <div class="single-atb-row">
+          <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:2px;">
+            <span style="color:var(--cyan); font-weight:bold;">少俠行動條</span>
+            <span style="color:#aaa;" id="p-atb-status">身法蓄力</span>
           </div>
-          <div class="sm-bar"><div class="sm-fill-0" id="sm-fill-0"></div></div>
+          <div class="atb-track"><div class="atb-fill p-fill" id="p-atb-fill"></div></div>
         </div>
-        <div class="skill-meter-row">
-          <div class="sm-label-row">
-            <span id="sm-name-1" style="color:#f1c40f; font-weight:bold;">招式貳：--</span>
-            <span id="sm-speed-1" style="color:#aaa;">充能速度: --</span>
+        <div class="single-atb-row" style="margin-top:4px;">
+          <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:2px;">
+            <span style="color:#ff7675; font-weight:bold;">對手行動條</span>
+            <span style="color:#aaa;" id="e-atb-status">身法蓄力</span>
           </div>
-          <div class="sm-bar"><div class="sm-fill-1" id="sm-fill-1"></div></div>
-        </div>
-        <div class="skill-meter-row" style="margin-top:6px; border-top:1px dashed #283344; padding-top:4px;">
-          <div class="sm-label-row">
-            <span id="sm-name-enemy" style="color:#e74c3c;">對手出招蓄力</span>
-            <span id="sm-speed-enemy" style="color:#aaa;">--</span>
-          </div>
-          <div class="sm-bar"><div class="sm-fill-enemy" id="sm-fill-enemy"></div></div>
+          <div class="atb-track"><div class="atb-fill e-fill" id="e-atb-fill"></div></div>
         </div>
       </div>
 
+      <!-- 戰術指令面板 -->
+      <div class="battle-cmd-box" id="battle-cmd-panel" style="display:none;"></div>
+
       <div style="background:#171d27; padding:6px 10px; border-radius:4px; font-size:11.5px; border:1px solid #333f52;" id="combat-banner">
-        雙方擺開陣勢，不同武器與不同稀有度之外功擁有獨立充能速度！
+        雙方各持兵刃，身法蓄力中！
       </div>
     </div>
 
   </div>
 
-  <!-- 3. 底部所在地 NPC 閒聊 -->
-  <div class="chat-box" id="chat-list"></div>
+  <!-- 3. 底部持久化江湖情報站與五大頻道開關 -->
+  <div class="chat-wrapper" id="chat-wrapper">
+    <div class="chat-channel-bar" id="chat-channel-bar">
+      <button class="chat-ch-btn active" id="ch-btn-all" onclick="toggleChatChannel('all')">全部</button>
+      <button class="chat-ch-btn active" id="ch-btn-system" onclick="toggleChatChannel('system')">系統資訊</button>
+      <button class="chat-ch-btn active" id="ch-btn-world" onclick="toggleChatChannel('world')">世界頻道</button>
+      <button class="chat-ch-btn active" id="ch-btn-current" onclick="toggleChatChannel('current')">當前</button>
+      <button class="chat-ch-btn active" id="ch-btn-combat" onclick="toggleChatChannel('combat')">對戰紀錄</button>
+      <button class="chat-expand-btn" id="btn-toggle-expand" onclick="toggleChatExpand(event)" title="點擊放大/收起對話框">
+        ⛶ 放大
+      </button>
+    </div>
+    
+    <div class="chat-box" id="chat-list" onclick="handleChatBoxClick(event)">
+      <div id="chat-messages-container"></div>
+    </div>
+  </div>
 
-  <!-- 4. 彈窗 Modal: 雲端帳號登入/註冊中心 (若帳戶資料判定為 GM，會動態在此渲染 GM 專屬功能) -->
+  <!-- 4. 各功能彈窗 Modal -->
   <div class="modal-mask" id="modal-auth">
     <div class="modal-card" style="max-width: 350px; text-align: center;">
       <div class="modal-header">
         <h3 style="color:var(--cyan); font-size:16px;">☁️ 雲端藏經閣・帳號中心</h3>
         <button onclick="closeModal('modal-auth')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
       </div>
-
       <div id="auth-form-area">
-        <div style="font-size:12px; color:#aaa; margin-bottom:12px;">
-          綁定帳號後，跨裝置遊玩進度即時同步不遺失！
-        </div>
-
+        <div style="font-size:12px; color:#aaa; margin-bottom:12px;">綁定帳號後，跨裝置遊玩進度即時同步不遺失！</div>
         <input type="email" id="auth-email" placeholder="輸入電子郵箱 (Email)" class="wuxia-btn" style="width:100%; padding:8px; margin-bottom:8px; background:#111; text-align:left; cursor:text;">
         <input type="password" id="auth-password" placeholder="輸入密碼 (至少6位)" class="wuxia-btn" style="width:100%; padding:8px; margin-bottom:14px; background:#111; text-align:left; cursor:text;">
-
         <div style="display:flex; gap:8px; margin-bottom:10px;">
-          <button class="wuxia-btn" style="flex:1; border-color:var(--cyan); color:var(--cyan);" onclick="handleUserLogin(document.getElementById('auth-email').value, document.getElementById('auth-password').value)">
-            登入
-          </button>
-          <button class="wuxia-btn" style="flex:1; border-color:#2ecc71; color:#2ecc71; font-weight:bold;" onclick="handleUserRegister(document.getElementById('auth-email').value, document.getElementById('auth-password').value)">
-            註冊帳號
-          </button>
+          <button class="wuxia-btn" style="flex:1; border-color:var(--cyan); color:var(--cyan);" onclick="handleUserLogin(document.getElementById('auth-email').value, document.getElementById('auth-password').value)">登入</button>
+          <button class="wuxia-btn" style="flex:1; border-color:#2ecc71; color:#2ecc71; font-weight:bold;" onclick="handleUserRegister(document.getElementById('auth-email').value, document.getElementById('auth-password').value)">註冊帳號</button>
         </div>
-
         <div style="display:flex; justify-content:space-between; margin-top:8px;">
           <button class="wuxia-btn" style="font-size:11px; padding:4px 8px; opacity:0.8;" onclick="handleGuestLogin()">遊客連線</button>
           <button class="wuxia-btn" style="font-size:11px; padding:4px 8px; border-color:#e74c3c; color:#ff7675;" onclick="handleUserLogout()">登出當前帳號</button>
         </div>
       </div>
-
-      <!-- 動態 GM 專屬控制區：僅在讀取帳戶資料確認為 GM 時由 JS 動態填入，平時完全空白無痕 -->
       <div id="dynamic-gm-section" style="margin-top:12px;"></div>
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 飛鴿傳書 (官方動態信箱) -->
   <div class="modal-mask" id="modal-mail">
     <div class="modal-card" style="max-height: 85vh;">
       <div class="modal-header">
@@ -231,31 +346,34 @@
         </div>
         <button onclick="closeModal('modal-mail')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
       </div>
-
       <div id="mail-list-container" style="max-height: 420px; overflow-y: auto;"></div>
-
       <div style="margin-top:10px; padding-top:8px; border-top:1px solid #333d4b; display:flex; justify-content:space-between; align-items:center;">
         <small style="color:#8ca0b3;" id="mail-sync-time">已連線天機閣驛站</small>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:11.5px; border-color:var(--cyan); color:var(--cyan);" onclick="fetchOfficialMails(true)">
-          🔄 檢查新信件
-        </button>
+        <button class="wuxia-btn" style="padding:4px 10px; font-size:11.5px; border-color:var(--cyan); color:var(--cyan);" onclick="fetchOfficialMails(true)">🔄 檢查新信件</button>
       </div>
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 角色屬性與覺醒天賦 -->
+  <!-- ★ 俠客典籍面板：已整合雲端帳號中心入口 ★ -->
   <div class="modal-mask" id="modal-hero-profile">
     <div class="modal-card">
       <div class="modal-header">
         <h3 style="color:var(--gold); font-size:16px;">📜 俠客典籍・身體素質</h3>
         <button onclick="closeModal('modal-hero-profile')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
       </div>
+
+      <!-- 雲端帳號中心快捷欄 -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:6px 10px; background:#131822; border-radius:5px; border:1px solid #2b374a;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:11px; color:#8ca0b3;">雲端同步：</span>
+          <span id="auth-status-label" style="font-size:11.5px; color:var(--cyan); font-weight:bold;">⚡ 本地遊玩中</span>
+        </div>
+        <button id="btn-auth-open" class="wuxia-btn" style="padding:2px 10px; font-size:11px; border-color:var(--cyan); color:var(--cyan);" onclick="openModal('modal-auth')">登入 / 帳號</button>
+      </div>
+
       <div style="font-size:12px; font-weight:bold; color:#cad3df; margin-bottom:4px;">【改換俠士容貌 (武俠風格手繪)】</div>
       <div class="avatar-gallery" id="avatar-gallery-box"></div>
-      
-      <div style="font-size:12px; font-weight:bold; color:var(--cyan); margin:10px 0 6px;">
-        【先天六維素質 (點擊任一項查看分解詳情)】
-      </div>
+      <div style="font-size:12px; font-weight:bold; color:var(--cyan); margin:10px 0 6px;">【先天六維素質 (點擊查看詳情)】</div>
       <div class="stats-grid">
         <div class="stat-card-clickable" onclick="showStatDetail('arm')">
           <div>臂力：<span class="stat-highlight" id="st-arm">--</span></div>
@@ -282,14 +400,11 @@
           <div class="stat-src-line" id="st-luck-source">計算中...</div>
         </div>
       </div>
-
-      <!-- 覺醒天賦展示區塊 -->
       <div style="font-size:12px; font-weight:bold; color:var(--gold); margin:12px 0 6px; display:flex; justify-content:space-between; align-items:center;">
         <span>【宿命天命・當前覺醒天賦】</span>
         <span id="hero-talent-count" style="font-size:11px; color:#aaa;">(0 個)</span>
       </div>
       <div id="hero-talents-display" style="display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto; margin-bottom:10px;"></div>
-
       <div style="margin-top:14px; padding-top:10px; border-top:1px solid #333d4b; text-align:center;">
         <button class="wuxia-btn" id="btn-reincarnate-trigger" style="width:100%; border-color:#e74c3c; color:#ff7675; font-weight:bold; padding:10px;" onclick="openReincarnationModal()">
           🔮 破虛輪迴・轉世重修 (當前：第 <span id="reincarnate-count-btn">1</span> 世)
@@ -298,7 +413,6 @@
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 新手開局故事與隨機天賦 5 次重抽 -->
   <div class="modal-mask" id="modal-newbie-intro">
     <div class="modal-card" style="text-align: center; max-width: 380px;">
       <h3 style="color:var(--gold); font-size:17px; margin-bottom:8px;">📜 身世卷軸・初入江湖</h3>
@@ -307,67 +421,45 @@
         你本是牛家村中一名默默無聞的孤兒，自幼在長堤邊以木劍為伴，聽過往行腳僧道講述前朝劍聖與北丐降龍的舊事。<br>
         今晨，天際忽現一抹紫氣，你自石碑下拾得一枚古舊令牌，體內血脈莫名激盪，自此踏入恩怨交織的萬丈紅塵！
       </div>
-
-      <div style="font-size:12.5px; font-weight:bold; color:var(--cyan); margin-bottom:6px; text-align:left;">
-        🎲 天命初定（隨機獲得兩個先天宿命天賦）：
-      </div>
+      <div style="font-size:12.5px; font-weight:bold; color:var(--cyan); margin-bottom:6px; text-align:left;">🎲 天命初定（隨機獲得兩個先天宿命天賦）：</div>
       <div id="starter-talents-box"></div>
-
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-        <button class="wuxia-btn" style="flex:1; margin-right:8px; border-color:var(--cyan); color:var(--cyan);" onclick="rerollStarterTalents()">
-          🔄 重擲天命 (<span id="starter-reroll-count">5</span>次)
-        </button>
-        <button class="wuxia-btn" style="flex:1; border-color:#2ecc71; color:#2ecc71; font-weight:bold;" onclick="confirmStarterIntro()">
-          踏入江湖！
-        </button>
+        <button class="wuxia-btn" style="flex:1; margin-right:8px; border-color:var(--cyan); color:var(--cyan);" onclick="rerollStarterTalents()">🔄 重擲天命 (<span id="starter-reroll-count">5</span>次)</button>
+        <button class="wuxia-btn" style="flex:1; border-color:#2ecc71; color:#2ecc71; font-weight:bold;" onclick="confirmStarterIntro()">踏入江湖！</button>
       </div>
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 轉世輪迴與天賦抽卡 -->
   <div class="modal-mask" id="modal-reincarnation">
     <div class="modal-card" style="max-height: 88vh;">
       <div class="modal-header">
         <h3 style="color:#ff7675; font-size:16px;">🔮 六道輪迴・轉世重修</h3>
         <button onclick="closeModal('modal-reincarnation')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
       </div>
-
       <div id="reincarnate-step-1">
-        <p style="font-size:12px; color:#bbb; line-height:1.5;">
-          踏入下一世可選擇保留 <b style="color:var(--gold);" id="reincarnate-allowed-count">1</b> 項前世傳承（包含已習得天賦、武學或神兵，共享名額）。
-        </p>
+        <p style="font-size:12px; color:#bbb; line-height:1.5;">踏入下一世可選擇保留 <b style="color:var(--gold);" id="reincarnate-allowed-count">1</b> 項前世傳承。</p>
         <div style="font-size:12.5px; font-weight:bold; color:var(--cyan); margin:8px 0 4px;">勾選傳承遺產：</div>
         <div id="reincarnate-selection-list" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"></div>
-
-        <button class="wuxia-btn" style="width:100%; border-color:#5dade2; color:#5dade2; font-weight:bold; padding:9px;" onclick="goToTalentDraftStep()">
-          ✨ 鎖定傳承・進入天道抽籤 (抽取 10 個天賦) ➔
-        </button>
+        <button class="wuxia-btn" style="width:100%; border-color:#5dade2; color:#5dade2; font-weight:bold; padding:9px;" onclick="goToTalentDraftStep()">✨ 鎖定傳承・進入天道抽籤 ➔</button>
       </div>
-
       <div id="reincarnate-step-2" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <b style="color:var(--gold); font-size:13px;">🎲 天道顯聖・天賦 10 選 <span id="draft-pick-count">1</span></b>
-          <small style="color:#8ca0b3;" id="draft-rule-hint">(重生次數 - 1，最多 3 個)</small>
+          <small style="color:#8ca0b3;" id="draft-rule-hint">(重生次數 - 1)</small>
         </div>
         <div id="talent-draft-container" style="max-height:300px; overflow-y:auto; margin-bottom:12px;"></div>
-
-        <button class="wuxia-btn" style="width:100%; border-color:#e74c3c; color:#ff4757; font-weight:bold; padding:10px;" onclick="confirmReincarnationWithTalents()">
-          ⚡ 破虛轉世・攜帶新天命踏入下一世！
-        </button>
+        <button class="wuxia-btn" style="width:100%; border-color:#e74c3c; color:#ff4757; font-weight:bold; padding:10px;" onclick="confirmReincarnationWithTalents()">⚡ 破虛轉世・踏入下一世！</button>
       </div>
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 行囊 -->
   <div class="modal-mask" id="modal-bag">
     <div class="modal-card">
       <div class="modal-header">
         <h3 style="color:#f1c40f; font-size:16px;">🎒 隨身行囊</h3>
         <button onclick="closeModal('modal-bag')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
       </div>
-      <button class="wuxia-btn" style="width:100%; border-color:var(--gold); color:var(--gold); font-size:12px; margin-bottom:10px; padding:6px;" onclick="openPawnshopModal()">
-        🏮 前往百寶閣當鋪（出售多餘行囊換取銀兩）
-      </button>
+      <button class="wuxia-btn" style="width:100%; border-color:var(--gold); color:var(--gold); font-size:12px; margin-bottom:10px; padding:6px;" onclick="openPawnshopModal()">🏮 前往百寶閣當鋪</button>
       <div class="bag-slot-box">
         <div class="bag-equip-card">
           <div><small style="color:var(--gold);">[佩戴兵刃]</small><br><b id="bag-cur-weapon-name" style="font-size:12.5px; color:#fff;">--</b></div>
@@ -382,50 +474,6 @@
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 武學 -->
-  <div class="modal-mask" id="modal-kungfu">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div><h3 style="color:#5dade2; font-size:16px;">🥋 武學修煉與裝備槽位</h3><small style="color:#aaa;">可用修為：<b id="kf-cur-exp" style="color:var(--gold);">120</b> 點</small></div>
-        <button onclick="closeModal('modal-kungfu')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
-      </div>
-
-      <div class="slot-grid">
-        <div class="kungfu-slot-card" id="slot-card-internal">
-          <div class="slot-label">心法功體</div><div class="slot-content" id="slot-name-internal">未佩戴</div>
-          <button class="slot-btn-unequip" onclick="unequipSlot('internal')">卸下</button>
-        </div>
-        <div class="kungfu-slot-card" id="slot-card-qinggong">
-          <div class="slot-label">步法輕功</div><div class="slot-content" id="slot-name-qinggong">未佩戴</div>
-          <button class="slot-btn-unequip" onclick="unequipSlot('qinggong')">卸下</button>
-        </div>
-        <div class="kungfu-slot-card" id="slot-card-ext0">
-          <div class="slot-label">外功招式 壹</div><div class="slot-content" id="slot-name-ext0">未佩戴</div>
-          <button class="slot-btn-unequip" onclick="unequipSlot('ext0')">卸下</button>
-        </div>
-        <div class="kungfu-slot-card" id="slot-card-ext1">
-          <div class="slot-label">外功招式 貳</div><div class="slot-content" id="slot-name-ext1">未佩戴</div>
-          <button class="slot-btn-unequip" onclick="unequipSlot('ext1')">卸下</button>
-        </div>
-      </div>
-
-      <!-- 篩選列 -->
-      <div class="kungfu-filter-bar">
-        <button class="kf-filter-btn active" onclick="setKungfuFilter('全部', this)">全部</button>
-        <button class="kf-filter-btn" onclick="setKungfuFilter('劍', this)">劍法</button>
-        <button class="kf-filter-btn" onclick="setKungfuFilter('刀', this)">刀法</button>
-        <button class="kf-filter-btn" onclick="setKungfuFilter('拳', this)">拳掌</button>
-        <button class="kf-filter-btn" onclick="setKungfuFilter('棍', this)">棍法</button>
-        <button class="kf-filter-btn" onclick="setKungfuFilter('暗器', this)">暗器</button>
-        <button class="kf-filter-btn" onclick="setKungfuFilter('心法', this)">心法</button>
-        <button class="kf-filter-btn" onclick="setKungfuFilter('輕功', this)">輕功</button>
-      </div>
-
-      <div id="learned-kungfu-list"></div>
-    </div>
-  </div>
-
-  <!-- 彈窗 Modal: 打坐 -->
   <div class="modal-mask" id="modal-meditate">
     <div class="modal-card" style="text-align:center;">
       <h3 style="color:#2ecc71; font-size:17px; margin-bottom:6px;">🧘 閉目調息・打坐修煉</h3>
@@ -439,88 +487,20 @@
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 無盡歷練 (通天塔) -->
-  <div class="modal-mask" id="modal-tower">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <h3 style="color:#f39c12; font-size:16px;">🏔️ 無盡歷練・通天試煉塔</h3>
-          <small id="tower-floor-title" style="color:#aaa;">第 1 層 (歷史極限: 第 1 層)</small>
-        </div>
-        <button onclick="closeTowerModal()" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
-      </div>
-
-      <div class="tower-arena">
-        <!-- 1. 血條在頂 -->
-        <div class="tower-hp-container">
-          <div class="tower-hp-info">
-            <span id="tower-hp-text">100 / 100</span>
-            <span id="tower-boss-timer" style="color:#e74c3c; font-weight:bold; display:none;">⏳ 首領狂暴: 30s</span>
-          </div>
-          <div class="tower-hp-track">
-            <div id="tower-hp-fill" class="tower-hp-fill"></div>
-          </div>
-        </div>
-
-        <!-- 2. 人形強敵立繪 (置中點擊出招，附帶多角度刀光層) -->
-        <div class="tower-enemy-wrapper" id="tower-target-box" onclick="strikeTowerTarget()" title="點擊出招！">
-          <div id="tower-enemy-figure" class="tower-enemy-figure"></div>
-          <div id="tower-slash-layer" class="tower-slash-layer"></div>
-        </div>
-
-        <!-- 3. 名字在底 -->
-        <div id="tower-target-name" class="tower-enemy-name">試煉強敵</div>
-
-        <!-- 4. 戰力與攻速提示 (外功均值與身法) -->
-        <div class="tower-stat-hint">
-          <span>⚔️ 外功均值掌力: <b id="tower-arm-dmg" style="color:var(--gold);">--</b></span>
-          <span>⚡ 身法狂擊頻率: <b id="tower-spd-rate" style="color:var(--cyan);">--</b></span>
-        </div>
-
-        <!-- 預估時收展示 -->
-        <div class="tower-hourly-box" id="tower-hourly-rates">
-          <span>⏳ 預估時收:</span>
-          <span>修為 <b style="color:#f1c40f;" id="tower-hr-exp">+0/hr</b></span>
-          <span>銀兩 <b style="color:var(--gold);" id="tower-hr-gold">+0/hr</b></span>
-          <span>學點 <b style="color:var(--cyan);" id="tower-hr-learn">+0/hr</b></span>
-        </div>
-      </div>
-
-      <div style="display:flex; justify-content:space-between; align-items:center; background:#141923; padding:8px 12px; border-radius:4px; margin-bottom:10px;">
-        <label style="font-size:12px; color:#ddd; display:flex; align-items:center; gap:6px; cursor:pointer;">
-          <input type="checkbox" id="tower-auto-advance" checked style="transform:scale(1.2); cursor:pointer;"> 自動挑戰下一層
-        </label>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; border-color:var(--gold); color:var(--gold);" onclick="strikeTowerTarget()">
-          💥 點擊掌力猛擊！
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 彈窗 Modal: 百寶閣當鋪 -->
   <div class="modal-mask" id="modal-pawnshop">
     <div class="modal-card">
       <div class="modal-header">
-        <div>
-          <h3 style="color:var(--gold); font-size:16px;">🏮 百寶閣當鋪・隨身變現</h3>
-          <small style="color:#aaa;">掌櫃：「童叟無欺，兵刃防具珍藥皆可換銀兩！」</small>
-        </div>
+        <div><h3 style="color:var(--gold); font-size:16px;">🏮 百寶閣當鋪</h3></div>
         <button onclick="closeModal('modal-pawnshop')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
       </div>
-
       <div style="display:flex; justify-content:space-between; align-items:center; background:#141923; padding:8px 12px; border-radius:4px; margin-bottom:10px;">
         <span style="font-size:12px;">持有銀兩：<b id="pawn-gold-disp" style="color:var(--gold);">0兩</b></span>
-        <button class="wuxia-btn" style="padding:4px 8px; font-size:11px; border-color:#e67e22; color:#f39c12;" onclick="quickSellJunk()">
-          ♻️ 一鍵典當凡品裝備
-        </button>
+        <button class="wuxia-btn" style="padding:4px 8px; font-size:11px; border-color:#e67e22; color:#f39c12;" onclick="quickSellJunk()">♻️ 一鍵典當凡品裝備</button>
       </div>
-
-      <div style="font-size:12px; color:#cad3df; margin-bottom:6px; font-weight:bold;">【行囊中可典當之物】：</div>
       <div id="pawn-item-list" style="max-height: 380px; overflow-y: auto;"></div>
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 宗門 -->
   <div class="modal-mask" id="modal-sect-hall">
     <div class="modal-card">
       <div class="modal-header">
@@ -531,7 +511,6 @@
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 場景店鋪/切磋 -->
   <div class="modal-mask" id="modal-scene">
     <div class="modal-card">
       <div class="modal-header">
@@ -543,7 +522,6 @@
     </div>
   </div>
 
-  <!-- 彈窗 Modal: 改名 -->
   <div class="modal-mask" id="modal-name">
     <div class="modal-card" style="width: 310px;">
       <h3 style="font-size:16px; margin-bottom:8px; text-align:center;">✏️ 改換尊姓大名</h3>
@@ -557,16 +535,17 @@
 
 </div>
 
-<!-- 1. 引入 Firebase 官方 CDN (Compat 模式免打包) -->
+<!-- Firebase CDN -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-<!-- 2. 引入遊戲核心與拆分模組 (嚴格按照依賴順序) -->
+<!-- 遊戲核心模組 -->
 <script src="data_skills.js"></script>
 <script src="data_items.js"></script>
 <script src="data_map.js"></script>
 <script src="data_talents.js"></script>
+<script src="combat_vfx.js"></script>
 <script src="combat.js"></script>
 <script src="sect.js"></script>
 <script src="character.js"></script>

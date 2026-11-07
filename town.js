@@ -1,11 +1,10 @@
 /**
  * ========================================================
- * 你的江湖 - 入世與坤輿全圖模組 (town.js) [坐標導航與自然邊界修正版]
- * 修復項目：
- * 1. 修正無錫城 [0, 3]：移除錯誤的東方太湖，保持東面自然留白；西為宜興，南為蘇州，北為揚州。
- * 2. 修正太湖 [-1, 2]：坐標位於無錫城西南、蘇州之西。東 (5) 連蘇州府，北 (1) 連宜興鎮。
- * 3. 解決襄陽城與宜興鎮坐標重疊問題：襄陽移至 [-2, 4]，連接中原西北，消除衝突。
- * 4. 嚴格對稱性：十字路網（1北、5東、7南、3西）保證 100% 互逆相通。
+ * 你的江湖 - 入世、全圖與江湖情報站 (town.js) [自動置底滾動版]
+ * 支援：
+ * 1. 對話框發布任何新訊息或切換頻道時，自動平滑滑動至最底端顯示最新消息
+ * 2. 訊息永久留存，不隨換地圖、過圖而清空
+ * 3. 五大頻道獨立彩色／暗灰開關過濾
  * ========================================================
  */
 
@@ -19,10 +18,148 @@ function getSceneIcon(type) {
   return '🏮';
 }
 
-// ==================== 1. 江湖各城鎮整數網格坐標 (X, Y) ====================
-// 北為 Y 正、東為 X 正；牛家村為中心基準點 (0, 0)
+// ==================== ★ 全局情報日誌系統 ★ ====================
+let globalChatLogs = [
+  { id: 1, time: "晨光", channel: "world", tag: "【江湖昭告】", text: "南宋烽煙動盪，各路英豪匯聚江南，神兵絕學現世！", color: "#5dade2" },
+  { id: 2, time: "即刻", channel: "system", tag: "【天機指引】", text: "點擊上方「打坐」可修煉內力，「歷練」可挑戰通天塔！", color: "#ff9f43" }
+];
+
+const chatChannels = {
+  all: true,
+  system: true,
+  world: true,
+  current: true,
+  combat: true
+};
+
+let isChatExpanded = false;
+
+function pushChatMessage(channel, tag, text, color = "#cad3df") {
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  
+  globalChatLogs.push({
+    id: Date.now() + Math.random(),
+    time: timeStr,
+    channel: channel,
+    tag: tag,
+    text: text,
+    color: color
+  });
+
+  if (globalChatLogs.length > 200) {
+    globalChatLogs.shift();
+  }
+
+  renderChatMessages();
+}
+window.pushChatMessage = pushChatMessage;
+
+function toggleChatChannel(chName) {
+  if (chName === 'all') {
+    const newState = !chatChannels.all;
+    ['all', 'system', 'world', 'current', 'combat'].forEach(k => {
+      chatChannels[k] = newState;
+    });
+  } else {
+    chatChannels[chName] = !chatChannels[chName];
+    chatChannels.all = (chatChannels.system && chatChannels.world && chatChannels.current && chatChannels.combat);
+  }
+
+  updateChannelButtonsUI();
+  renderChatMessages();
+}
+window.toggleChatChannel = toggleChatChannel;
+
+function updateChannelButtonsUI() {
+  ['all', 'system', 'world', 'current', 'combat'].forEach(k => {
+    const btn = document.getElementById(`ch-btn-${k}`);
+    if (btn) {
+      if (chatChannels[k]) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+  });
+}
+window.updateChannelButtonsUI = updateChannelButtonsUI;
+
+function renderChatMessages() {
+  const container = document.getElementById('chat-messages-container');
+  const box = document.getElementById('chat-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const filtered = globalChatLogs.filter(msg => chatChannels[msg.channel]);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="text-align:center; color:#555; padding:25px; font-size:11.5px;">當前頻道暫無訊息。可於上方開啟更多頻道！</div>`;
+    return;
+  }
+
+  filtered.forEach(msg => {
+    const d = document.createElement('div');
+    d.style.marginBottom = '4px';
+    d.style.lineHeight = '1.5';
+    d.style.fontSize = '12px';
+    d.innerHTML = `
+      <span style="color:#64748b; font-family:monospace; font-size:10.5px;">[${msg.time}]</span>
+      <span style="font-weight:bold; margin-right:3px;">${msg.tag}</span>
+      <span style="color:${msg.color};">${msg.text}</span>
+    `;
+    container.appendChild(d);
+  });
+
+  const scrollToBottom = () => {
+    if (box) {
+      box.scrollTop = box.scrollHeight;
+    }
+  };
+
+  scrollToBottom();
+  setTimeout(scrollToBottom, 10);
+  setTimeout(scrollToBottom, 60);
+}
+window.renderChatMessages = renderChatMessages;
+
+function toggleChatExpand(e) {
+  if (e) e.stopPropagation();
+  isChatExpanded = !isChatExpanded;
+  applyChatExpandState();
+}
+window.toggleChatExpand = toggleChatExpand;
+
+function handleChatBoxClick(e) {
+  if (!isChatExpanded) {
+    isChatExpanded = true;
+    applyChatExpandState();
+  }
+}
+window.handleChatBoxClick = handleChatBoxClick;
+
+function applyChatExpandState() {
+  const phone = document.getElementById('phone-app');
+  const expandBtn = document.getElementById('btn-toggle-expand');
+  const hintEl = document.getElementById('basic-mode-hint');
+
+  if (isChatExpanded) {
+    if (phone) phone.classList.add('chat-expanded');
+    if (expandBtn) expandBtn.innerHTML = '✕ 收起';
+    if (hintEl) hintEl.style.display = 'inline-block';
+  } else {
+    if (phone) phone.classList.remove('chat-expanded');
+    if (expandBtn) expandBtn.innerHTML = '⛶ 放大';
+    if (typeof switchToNormalMode === 'function') {
+      switchToNormalMode();
+    }
+  }
+
+  renderChatMessages();
+}
+
+// ==================== 1. 江湖各城鎮坐標與拓撲 ====================
 const TOWN_COORDINATES = {
-  // 江南核心軸 (Y軸向北推進)
   "臨安府":   [ 0, -1],
   "牛家村":   [ 0,  0],
   "嘉興":     [ 0,  1],
@@ -33,19 +170,16 @@ const TOWN_COORDINATES = {
   "揚州城":   [ 0,  4],
   "金陵城":   [-1,  4],
   "鎮江府":   [ 1,  4],
-
-  // 沿海東南 (X軸向東/向南延伸)
   "福州府":   [ 0, -3],
   "泉州府":   [ 0, -4],
   "澎湖灣":   [ 1, -4],
   "福爾摩沙": [ 2, -4],
+  "東瀛":     [ 2, -3],
   "潮州府":   [ 0, -5],
   "廣州府":   [-1, -5],
   "佛山鎮":   [-2, -5],
   "香港":     [-1, -6],
   "澳門":     [-2, -6],
-
-  // 荊襄、巴蜀、中原與關陝 (襄陽移至 [-2, 4]，解決與宜興重疊)
   "襄陽城":   [-2,  4],
   "武當山":   [-3,  4],
   "漢中府":   [-4,  4],
@@ -61,10 +195,7 @@ const TOWN_COORDINATES = {
   "北京城":   [-4,  7]
 };
 
-// ==================== 2. 江湖真實相鄰拓撲路網 (1:北, 5:東, 7:南, 3:西) ====================
-// 嚴格保證十字互逆性（若 A 的 1 是 B，則 B 的 7 必為 A；若 A 的 5 是 B，則 B 的 3 必為 A）
 const JIANGHU_TOPOLOGY = {
-  // 江南與太湖核心網
   "牛家村":   { 1: "嘉興", 7: "臨安府" },
   "嘉興":     { 1: "蘇州府", 7: "牛家村" },
   "蘇州府":   { 1: "無錫城", 7: "嘉興", 3: "太湖" },
@@ -75,25 +206,20 @@ const JIANGHU_TOPOLOGY = {
   "金陵城":   { 5: "揚州城", 3: "襄陽城", 1: "登封鎮" },
   "鎮江府":   { 3: "揚州城" },
   "臨安府":   { 1: "牛家村", 7: "福州府" },
-
-  // 東南沿海與嶺南
   "福州府":   { 1: "臨安府", 7: "泉州府" },
   "泉州府":   { 1: "福州府", 5: "澎湖灣", 7: "潮州府" },
   "澎湖灣":   { 3: "泉州府", 5: "福爾摩沙" },
-  "福爾摩沙": { 3: "澎湖灣" },
+  "福爾摩沙": { 3: "澎湖灣", 1: "東瀛" },
+  "東瀛":     { 7: "福爾摩沙" },
   "潮州府":   { 1: "泉州府", 3: "廣州府" },
   "廣州府":   { 5: "潮州府", 3: "佛山鎮", 7: "香港" },
   "佛山鎮":   { 5: "廣州府", 7: "澳門" },
   "香港":     { 1: "廣州府", 3: "澳門" },
   "澳門":     { 1: "佛山鎮", 5: "香港" },
-
-  // 荊襄、巴蜀與武當
   "襄陽城":   { 5: "金陵城", 3: "武當山", 7: "重慶府" },
   "武當山":   { 5: "襄陽城", 3: "漢中府" },
   "漢中府":   { 5: "武當山", 1: "長安古都" },
   "重慶府":   { 1: "襄陽城" },
-
-  // 中原與西北軸線
   "登封鎮":   { 7: "金陵城", 3: "洛陽城", 5: "開封府", 1: "少室山" },
   "少室山":   { 7: "登封鎮" },
   "開封府":   { 3: "登封鎮" },
@@ -104,17 +230,13 @@ const JIANGHU_TOPOLOGY = {
   "北京城":   { 7: "真定府" }
 };
 
-// ==================== 3. 主畫面常駐半高坤輿全圖 ====================
 function renderNineGridMap() {
   const curName = (typeof player !== 'undefined' && player.curLoc) ? player.curLoc : "牛家村";
   const topo = JIANGHU_TOPOLOGY[curName] || {};
 
-  // 1. 更新右上角坐標 (X, Y)
   const coords = TOWN_COORDINATES[curName] || [0, 0];
   const coordEl = document.getElementById('map-coord-display');
-  if (coordEl) {
-    coordEl.innerText = `(${coords[0]}, ${coords[1]})`;
-  }
+  if (coordEl) coordEl.innerText = `(${coords[0]}, ${coords[1]})`;
 
   const cityEl = document.getElementById('jh-current-city');
   if (cityEl) cityEl.innerText = curName;
@@ -123,55 +245,29 @@ function renderNineGridMap() {
   if (!board) return;
   board.innerHTML = '';
 
-  // 9 個方位佈局：
-  // 0:西北, 1:正北, 2:東北
-  // 3:正西, 4:自身, 5:正東
-  // 6:西南, 7:正南, 8:東南
   const gridAssignments = new Array(9).fill(null);
-
-  // 2. 自身永遠居中
   gridAssignments[4] = { name: curName, isCenter: true };
 
-  // 3. 十字方向 (1:北, 5:東, 7:南, 3:西) 依拓撲放置
   const crossSlots = [1, 5, 7, 3];
   crossSlots.forEach(slot => {
-    if (topo[slot]) {
-      gridAssignments[slot] = { 
-        name: topo[slot], 
-        isWalkable: true 
-      };
-    }
+    if (topo[slot]) gridAssignments[slot] = { name: topo[slot], isWalkable: true };
   });
 
-  // 4. 斜角四格自然遠眺次級名城
   const northTown = topo[1];
   const southTown = topo[7];
   const eastTown  = topo[5];
   const westTown  = topo[3];
 
-  let nwTown = (northTown && JIANGHU_TOPOLOGY[northTown] && JIANGHU_TOPOLOGY[northTown][3]) || 
-               (westTown && JIANGHU_TOPOLOGY[westTown] && JIANGHU_TOPOLOGY[westTown][1]);
-  let neTown = (northTown && JIANGHU_TOPOLOGY[northTown] && JIANGHU_TOPOLOGY[northTown][5]) || 
-               (eastTown && JIANGHU_TOPOLOGY[eastTown] && JIANGHU_TOPOLOGY[eastTown][1]);
-  let swTown = (southTown && JIANGHU_TOPOLOGY[southTown] && JIANGHU_TOPOLOGY[southTown][3]) || 
-               (westTown && JIANGHU_TOPOLOGY[westTown] && JIANGHU_TOPOLOGY[westTown][7]);
-  let seTown = (southTown && JIANGHU_TOPOLOGY[southTown] && JIANGHU_TOPOLOGY[southTown][5]) || 
-               (eastTown && JIANGHU_TOPOLOGY[eastTown] && JIANGHU_TOPOLOGY[eastTown][7]);
+  let nwTown = (northTown && JIANGHU_TOPOLOGY[northTown] && JIANGHU_TOPOLOGY[northTown][3]) || (westTown && JIANGHU_TOPOLOGY[westTown] && JIANGHU_TOPOLOGY[westTown][1]);
+  let neTown = (northTown && JIANGHU_TOPOLOGY[northTown] && JIANGHU_TOPOLOGY[northTown][5]) || (eastTown && JIANGHU_TOPOLOGY[eastTown] && JIANGHU_TOPOLOGY[eastTown][1]);
+  let swTown = (southTown && JIANGHU_TOPOLOGY[southTown] && JIANGHU_TOPOLOGY[southTown][3]) || (westTown && JIANGHU_TOPOLOGY[westTown] && JIANGHU_TOPOLOGY[westTown][7]);
+  let seTown = (southTown && JIANGHU_TOPOLOGY[southTown] && JIANGHU_TOPOLOGY[southTown][5]) || (eastTown && JIANGHU_TOPOLOGY[eastTown] && JIANGHU_TOPOLOGY[eastTown][7]);
 
-  if (nwTown && nwTown !== curName && !gridAssignments.some(g => g && g.name === nwTown)) {
-    gridAssignments[0] = { name: nwTown, isDistant: true };
-  }
-  if (neTown && neTown !== curName && !gridAssignments.some(g => g && g.name === neTown)) {
-    gridAssignments[2] = { name: neTown, isDistant: true };
-  }
-  if (swTown && swTown !== curName && !gridAssignments.some(g => g && g.name === swTown)) {
-    gridAssignments[6] = { name: swTown, isDistant: true };
-  }
-  if (seTown && seTown !== curName && !gridAssignments.some(g => g && g.name === seTown)) {
-    gridAssignments[8] = { name: seTown, isDistant: true };
-  }
+  if (nwTown && nwTown !== curName && !gridAssignments.some(g => g && g.name === nwTown)) gridAssignments[0] = { name: nwTown, isDistant: true };
+  if (neTown && neTown !== curName && !gridAssignments.some(g => g && g.name === neTown)) gridAssignments[2] = { name: neTown, isDistant: true };
+  if (swTown && swTown !== curName && !gridAssignments.some(g => g && g.name === swTown)) gridAssignments[6] = { name: swTown, isDistant: true };
+  if (seTown && seTown !== curName && !gridAssignments.some(g => g && g.name === seTown)) gridAssignments[8] = { name: seTown, isDistant: true };
 
-  // 5. 渲染 9 格
   for (let i = 0; i < 9; i++) {
     const nodeData = gridAssignments[i];
     const cell = document.createElement('div');
@@ -191,7 +287,7 @@ function renderNineGridMap() {
       cell.style.color = "#5a6b82";
       cell.style.border = "1px dashed #222c3a";
       cell.innerHTML = `<div>${nodeData.name}</div>`;
-      cell.title = `【遠處眺望】${nodeData.name}（需循十字方位之中繼城鎮前往）`;
+      cell.title = `【遠眺】${nodeData.name}`;
     } else {
       cell.style.background = "transparent";
       cell.style.border = "1px dashed #1a222e";
@@ -213,7 +309,6 @@ function travelToTown(destKey) {
   refreshChatForCurrentLocation();
 }
 
-// ==================== 4. 主畫面入世建築按鈕 ====================
 function renderJianghuScenesOnMenu() {
   try {
     let cur = (typeof WORLD_MAP !== 'undefined') ? WORLD_MAP[player.curLoc] : null;
@@ -242,11 +337,10 @@ function renderJianghuScenesOnMenu() {
       });
     }
   } catch (err) {
-    console.error("入世選單渲染例外修復:", err);
+    console.error(err);
   }
 }
 
-// ==================== 5. 城鎮建築互動彈窗 ====================
 function openSceneModal(sc) {
   const titleEl = document.getElementById('scene-modal-title');
   const descEl = document.getElementById('scene-modal-desc');
@@ -321,15 +415,15 @@ function openSceneModal(sc) {
   } else if (sc.type === 'inn') {
     content.innerHTML = `
       <div class="bag-item-card">
-        <div><b>上房安歇一宿</b><br><small style="color:#aaa;">舒舒服服睡上一覺，氣血瞬間完全回滿</small></div>
+        <div><b>上房安歇一宿</b><br><small style="color:#aaa;">氣血與內力瞬間完全回滿</small></div>
         <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--green); border-color:var(--green);" onclick="restAtInn(5)">5兩 歇息</button>
       </div>
       <div class="bag-item-card">
-        <div><b>品茗聽說書</b><br><small style="color:#aaa;">聽說書先生演繹江湖掌故秘辛，增長見聞</small></div>
+        <div><b>品茗聽說書</b><br><small style="color:#aaa;">聽前代名宿軼事，增長見聞</small></div>
         <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--cyan); border-color:var(--cyan);" onclick="listenStoryteller(10)">10兩 品茗</button>
       </div>
       <div class="bag-item-card">
-        <div><b>百寶閣收購櫃台</b><br><small style="color:#aaa;">當鋪掌櫃常駐客棧，高價收購各色神兵雜物</small></div>
+        <div><b>百寶閣收購櫃台</b><br><small style="color:#aaa;">高價收購各色神兵雜物</small></div>
         <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--gold); border-color:var(--gold);" onclick="closeModal('modal-scene'); openPawnshopModal();">典當行囊</button>
       </div>
     `;
@@ -340,48 +434,36 @@ function openSceneModal(sc) {
 
 function restAtInn(cost) {
   cost = Number(cost) || 5;
-  if (player.gold < cost) {
-    alert("盤纏不足，無法住店安歇！");
-    return;
-  }
+  if (player.gold < cost) { alert("盤纏不足！"); return; }
   player.gold -= cost;
   player.hp = player.maxHp;
+  player.mp = player.maxMp;
 
   if (typeof updateProfileUI === 'function') updateProfileUI();
   if (typeof autoSave === 'function') autoSave();
   closeModal('modal-scene');
-  alert("🛏️ 上房安歇，酒暖被軟。通體真氣充沛，氣血已完全恢復圓滿！");
+  pushChatMessage('system', '【客棧調養】', '上房安歇一宿，酒暖被軟。氣血與內力皆已恢復圓滿！', '#2ecc71');
 }
 
 function listenStoryteller(cost) {
   cost = Number(cost) || 10;
-  if (player.gold < cost) {
-    alert("碎銀不足，難以點上一壺好茶聽書！");
-    return;
-  }
+  if (player.gold < cost) { alert("碎銀不足！"); return; }
   player.gold -= cost;
   player.learn += 30;
 
   if (typeof updateProfileUI === 'function') updateProfileUI();
   if (typeof autoSave === 'function') autoSave();
-  alert("☕ 一盞清茗，半晌評書！聽聞前代宗師掌故秘辛，茅塞頓開，學點 +30！");
+  pushChatMessage('system', '【品茗聽書】', '一盞清茗，半晌評書！聽聞前代宗師掌故，學點 +30！', '#f1c40f');
 }
 
-// 百寶閣當鋪
-const ITEM_PAWN_VALUES = {
-  "凡品": 8, "良品": 30, "上品": 90, "絕品": 180, "神品": 350
-};
-
+const ITEM_PAWN_VALUES = { "凡品": 8, "良品": 30, "上品": 90, "絕品": 180, "神品": 350 };
 function getItemPawnPrice(item) {
   if (!item) return 2;
   if (item.cost) return Math.max(2, Math.floor(item.cost * 0.5));
   return ITEM_PAWN_VALUES[item.rarity] || 10;
 }
 
-function openPawnshopModal() {
-  renderPawnshopUI();
-  openModal('modal-pawnshop');
-}
+function openPawnshopModal() { renderPawnshopUI(); openModal('modal-pawnshop'); }
 
 function renderPawnshopUI() {
   const goldDisp = document.getElementById('pawn-gold-disp');
@@ -392,7 +474,7 @@ function renderPawnshopUI() {
   box.innerHTML = '';
 
   if (!player.inventory || player.inventory.length === 0) {
-    box.innerHTML = `<div style="text-align:center; color:#888; font-size:12px; padding:25px;">隨身行囊空空如也，無可典當之物。</div>`;
+    box.innerHTML = `<div style="text-align:center; color:#888; font-size:12px; padding:25px;">隨身行囊空空如也。</div>`;
     return;
   }
 
@@ -413,9 +495,7 @@ function renderPawnshopUI() {
         <span class="rarity-badge rarity-${item.rarity}">${item.rarity}</span>
         <small style="color:var(--cyan); margin-left:3px;">${typeLabel}</small>
         ${countBadge}
-        <div style="font-size:11px; color:#8ca0b3; margin-top:2px;">
-          ${item.desc || '江湖尋常物事'}
-        </div>
+        <div style="font-size:11px; color:#8ca0b3; margin-top:2px;">${item.desc || '尋常物事'}</div>
       </div>
       <div>
         <button class="wuxia-btn" style="padding:4px 9px; font-size:11.5px; border-color:var(--gold); color:var(--gold);" onclick="sellItemToPawn(${idx})">
@@ -430,22 +510,15 @@ function renderPawnshopUI() {
 function sellItemToPawn(idx) {
   const item = player.inventory[idx];
   if (!item) return;
-
   const price = getItemPawnPrice(item);
 
   if (item.rarity === '神品' || item.rarity === '絕品') {
-    if (!confirm(`【百寶閣提醒】${item.name} 乃當世罕見的【${item.rarity}】，確定要以 ${price} 兩銀子典當換取嗎？`)) {
-      return;
-    }
+    if (!confirm(`【百寶閣提醒】${item.name} 乃當世罕見【${item.rarity}】，確定典當換取 ${price} 兩？`)) return;
   }
 
   player.gold += price;
-
-  if (item.count && item.count > 1) {
-    item.count -= 1;
-  } else {
-    player.inventory.splice(idx, 1);
-  }
+  if (item.count && item.count > 1) item.count -= 1;
+  else player.inventory.splice(idx, 1);
 
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
   renderPawnshopUI();
@@ -453,17 +526,7 @@ function sellItemToPawn(idx) {
 }
 
 function quickSellJunk() {
-  if (!player.inventory || player.inventory.length === 0) {
-    alert("行囊中並無任何物品！");
-    return;
-  }
-
-  const junkItems = player.inventory.filter(i => i.rarity === "凡品");
-  if (junkItems.length === 0) {
-    alert("行囊中沒有【凡品】雜物可快速典當！");
-    return;
-  }
-
+  if (!player.inventory || player.inventory.length === 0) { alert("行囊空空！"); return; }
   let totalGain = 0;
   player.inventory = player.inventory.filter(item => {
     if (item.rarity === "凡品") {
@@ -478,49 +541,47 @@ function quickSellJunk() {
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
   renderPawnshopUI();
   if (typeof renderBagUI === 'function') renderBagUI();
-  alert(`🏮 掌櫃清點完畢！一鍵典當凡品雜物，共收入碎銀 +${totalGain} 兩！`);
+  pushChatMessage('system', '【當鋪典當】', `一鍵典當凡品雜物，共收入碎銀 +${totalGain} 兩！`, '#f1c40f');
 }
 
 function startDuelWithEnemy(idx) {
   closeModal('modal-scene');
   const enemies = (WORLD_MAP[player.curLoc] && WORLD_MAP[player.curLoc].fieldEnemies) ? WORLD_MAP[player.curLoc].fieldEnemies : [];
-  if (enemies && enemies[idx] && typeof startBattleAgainst === 'function') {
-    startBattleAgainst(enemies[idx]);
+  if (enemies && enemies[idx]) {
+    const rawEnemy = enemies[idx];
+    const enemyData = {
+      ...rawEnemy,
+      stats: rawEnemy.stats || {
+        arm: Math.round((rawEnemy.atk || 20) * 0.7),
+        speed: rawEnemy.speed || 40,
+        bone: Math.round((rawEnemy.def || 10) * 1.5),
+        inner: Math.round((rawEnemy.atk || 20) * 0.5),
+        int: 20,
+        luck: 15
+      }
+    };
+    if (typeof startBattleAgainst === 'function') {
+      startBattleAgainst(enemyData, false);
+    } else {
+      console.error("startBattleAgainst 函式尚未掛載！");
+    }
   }
 }
 
 function refreshChatForCurrentLocation() {
-  const box = document.getElementById('chat-list');
-  if (!box || typeof WORLD_MAP === 'undefined') return;
-  box.innerHTML = '';
+  if (typeof WORLD_MAP === 'undefined') return;
   const loc = WORLD_MAP[player.curLoc] || WORLD_MAP["牛家村"];
   if (!loc || !loc.npcs) return;
-  loc.npcs.forEach(npc => {
-    const d = document.createElement('div');
-    d.innerHTML = `<span class="chat-tag">[${loc.name}]</span> <span class="chat-user">${npc.u}:</span> <span>${npc.critic}</span>`;
-    box.appendChild(d);
-  });
-}
 
-function outputBattleNarrativeAndComment(skillName, evalText, jinyongProse) {
-  const loc = (typeof WORLD_MAP !== 'undefined') ? (WORLD_MAP[player.curLoc] || WORLD_MAP["牛家村"]) : null;
-  if (!loc || !loc.npcs) return;
   const randNpc = loc.npcs[Math.floor(Math.random() * loc.npcs.length)];
-  appendCombatChat("【金庸筆意】", `少俠催動【${skillName}】（造詣：${evalText}），${jinyongProse}`, "#5dade2");
-  setTimeout(() => {
-    appendCombatChat(`[${loc.name}] ${randNpc.u}`, randNpc.critic, "#f1c40f");
-  }, 180);
+  pushChatMessage('current', `[${loc.name}] ${randNpc.u}`, randNpc.critic, '#f1c40f');
 }
 
 function appendCombatChat(tag, msg, tagColor) {
-  const box = document.getElementById('chat-list');
-  if (!box) return;
-  const d = document.createElement('div');
-  d.innerHTML = `<span style="color:${tagColor}; font-weight:bold;">${tag}:</span> <span class="jinyong-narrative">${msg}</span>`;
-  box.appendChild(d);
-  box.scrollTop = box.scrollHeight;
+  pushChatMessage('system', tag, msg, tagColor);
 }
 
+// 全域掛載
 window.renderNineGridMap = renderNineGridMap;
 window.travelToTown = travelToTown;
 window.renderJianghuScenesOnMenu = renderJianghuScenesOnMenu;
@@ -533,5 +594,4 @@ window.sellItemToPawn = sellItemToPawn;
 window.quickSellJunk = quickSellJunk;
 window.startDuelWithEnemy = startDuelWithEnemy;
 window.refreshChatForCurrentLocation = refreshChatForCurrentLocation;
-window.outputBattleNarrativeAndComment = outputBattleNarrativeAndComment;
 window.appendCombatChat = appendCombatChat;
