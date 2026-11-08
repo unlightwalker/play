@@ -1,10 +1,10 @@
 /**
  * ========================================================
- * 你的江湖 - 系統中樞模組 (main.js) [數值 k 單位智慧縮排版]
+ * 你的江湖 - 系統中樞模組 (main.js) [1~10重線性插值與六維結算完整版]
  * 支援：
- * 1. 氣血／內力／修為／學點／銀兩多於或等於 5 位數時自動以 k 顯示 (如 12345 ➔ 12.3k)
- * 2. 內力上限 = 內功 × 10 (maxMp)
- * 3. 嚴格實裝：所有一重 (Tier 1) 武功不提供六維，二重以上方可反哺成長
+ * 1. 支援武學 1 重至 10 重 (tier10Bonus) 線性插值計算，第 1 重起即享有先天加成
+ * 2. 氣血／內力／修為／學點／銀兩多於或等於 5 位數時自動以 k 顯示 (如 12345 ➔ 12.3k)
+ * 3. 內力上限 = 內功 × 10 (maxMp)
  * 4. 非戰鬥期間氣血與內力每秒自動回復 2%
  * ========================================================
  */
@@ -29,8 +29,8 @@ var player = {
   baseMaxHp: 300,
   maxHp: 350,
   hp: 350,
-  maxMp: 200, // 內力上限
-  mp: 200,    // 當前內力
+  maxMp: 200,
+  mp: 200,
   baseAtk: 20,
   baseDef: 6,
   def: 10,
@@ -47,7 +47,6 @@ var player = {
 var equippedSlots = { internal: null, qinggong: null, ext0: null, ext1: null };
 var myLearnedKungfu = [];
 
-// ★ 數值格式化：達到 5 位數 (>= 10,000) 自動以 k 顯示並取至小數點後一位 ★
 function formatNumberWithK(num) {
   const n = Number(num) || 0;
   if (Math.abs(n) >= 10000) {
@@ -121,6 +120,27 @@ function sanitizePlayerData() {
   }
 }
 
+// 取得武學在指定重數與進度下的屬性加成 (支援 1 重至 10 重平滑線性插值)
+function getKungfuInterpolatedStat(kf, statKey) {
+  if (!kf) return 0;
+
+  const b1 = (kf.statBonus && kf.statBonus[statKey] !== undefined) ? Number(kf.statBonus[statKey]) : 0;
+  const b10 = (kf.tier10Bonus && kf.tier10Bonus[statKey] !== undefined) 
+    ? Number(kf.tier10Bonus[statKey]) 
+    : (b1 * 3);
+
+  // 1 重 0% ~ 10 重 100% 映射為 0.0 ~ 1.0
+  const curTier = Math.min(10, Math.max(1, Number(kf.tier) || 1));
+  const curProg = Math.min(100, Math.max(0, Number(kf.progress) || 0));
+  
+  if (curTier >= 10 && curProg >= 100) return b10;
+
+  const totalProgress = (curTier - 1) + (curProg / 100); // 0.0 ~ 9.0
+  const ratio = Math.max(0, Math.min(1, totalProgress / 9));
+
+  return Math.floor(b1 + (b10 - b1) * ratio);
+}
+
 function recalcPlayerStats() {
   sanitizePlayerData();
 
@@ -145,52 +165,42 @@ function recalcPlayerStats() {
     }
   }
 
-  // 2. 武學加成 (一重武功不再提供六維，二重起生效)
+  // 2. 武學加成 (支援自 1 重起即時計算插值)
   const statsKungfu = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
   let kfHp = 0, kfDef = 0;
 
   const activeSkills = [equippedSlots.internal, equippedSlots.qinggong, equippedSlots.ext0, equippedSlots.ext1].filter(Boolean);
-  
+
   // (1) 裝備中的武學主動加成
   activeSkills.forEach(kf => {
-    if (kf.tier >= 2) {
-      const mult = 1 + (kf.tier - 2) * 0.2 + (kf.progress / 100) * 0.2;
-      if (kf.statBonus) {
-        for (let k in kf.statBonus) {
-          if (k !== 'int' && k !== 'luck') {
-            statsKungfu[k] += Math.floor(kf.statBonus[k] * mult);
-          }
-        }
-      }
-      if (kf.type === 'internal') {
-        kfHp += Math.floor((Number(kf.baseHpBonus) || 50) * mult);
-        kfDef += Math.floor((Number(kf.baseDefBonus) || 4) * mult);
-      }
-      if (kf.type === 'qinggong') {
-        statsKungfu.speed += Math.floor((Number(kf.baseSpeedBonus) || 12) * mult);
-      }
+    ['arm', 'speed', 'bone', 'inner', 'int', 'luck'].forEach(k => {
+      statsKungfu[k] += getKungfuInterpolatedStat(kf, k);
+    });
+
+    const mult = 1 + (Math.max(1, kf.tier) - 1) * 0.18 + ((kf.progress || 0) / 100) * 0.18;
+    if (kf.type === 'internal') {
+      kfHp += Math.floor((Number(kf.baseHpBonus) || 50) * mult);
+      kfDef += Math.floor((Number(kf.baseDefBonus) || 4) * mult);
+    }
+    if (kf.type === 'qinggong') {
+      statsKungfu.speed += Math.floor((Number(kf.baseSpeedBonus) || 12) * mult);
     }
   });
 
-  // (2) 未裝備之武學反哺加成
+  // (2) 未裝備之武學反哺加成 (打折回饋)
   myLearnedKungfu.forEach(kf => {
     const isEquipped = activeSkills.includes(kf);
-    if (!isEquipped && kf.tier >= 2) {
-      const tierPoints = Number(kf.tier) - 1;
-      if (kf.statBonus) {
-        for (let k in kf.statBonus) {
-          statsKungfu[k] += tierPoints;
-        }
-      } else {
-        ['arm', 'speed', 'bone', 'inner'].forEach(k => {
-          statsKungfu[k] += tierPoints;
-        });
-      }
+    if (!isEquipped) {
+      ['arm', 'speed', 'bone', 'inner'].forEach(k => {
+        const val = getKungfuInterpolatedStat(kf, k);
+        statsKungfu[k] += Math.floor(val * 0.35);
+      });
+
       if (kf.type === 'internal') {
-        kfHp += tierPoints * 15;
-        kfDef += tierPoints * 2;
+        kfHp += Math.floor(kf.tier * 12);
+        kfDef += Math.floor(kf.tier * 2);
       } else if (kf.type === 'qinggong') {
-        statsKungfu.speed += tierPoints;
+        statsKungfu.speed += Math.floor(kf.tier * 1.5);
       }
     }
   });
@@ -285,7 +295,6 @@ function evaluatePlayerRealm() {
   return "天人合一";
 }
 
-// ★ 更新個人狀態面板：五位數以上自動以 k 顯示並取一位小數 ★
 function updateProfileUI() {
   const nameEl = document.getElementById('disp-name');
   const locEl = document.getElementById('disp-loc');
@@ -335,35 +344,12 @@ function updateProfileUI() {
     }
   }
 
-  // ★ 氣血：五位數以上使用 k 格式化 (如 12.3k / 15.0k)
-  if (hpEl) {
-    hpEl.innerText = `${formatNumberWithK(player.hp)} / ${formatNumberWithK(player.maxHp)}`;
-  }
-
-  // ★ 內力：五位數以上使用 k 格式化
-  if (mpEl) {
-    mpEl.innerText = `${formatNumberWithK(player.mp)} / ${formatNumberWithK(player.maxMp)}`;
-  }
-
-  // ★ 修為：五位數以上使用 k 格式化
-  if (expEl) {
-    expEl.innerText = formatNumberWithK(player.exp);
-  }
-
-  // ★ 學點：五位數以上使用 k 格式化
-  if (lrnEl) {
-    lrnEl.innerText = formatNumberWithK(player.learn);
-  }
-
-  // 實戰
-  if (cbtEl) {
-    cbtEl.innerText = formatNumberWithK(player.combat);
-  }
-
-  // ★ 銀兩：五位數以上使用 k 格式化 (如 12.3k兩)
-  if (gldEl) {
-    gldEl.innerText = `${formatNumberWithK(player.gold)}兩`;
-  }
+  if (hpEl) hpEl.innerText = `${formatNumberWithK(player.hp)} / ${formatNumberWithK(player.maxHp)}`;
+  if (mpEl) mpEl.innerText = `${formatNumberWithK(player.mp)} / ${formatNumberWithK(player.maxMp)}`;
+  if (expEl) expEl.innerText = formatNumberWithK(player.exp);
+  if (lrnEl) lrnEl.innerText = formatNumberWithK(player.learn);
+  if (cbtEl) cbtEl.innerText = formatNumberWithK(player.combat);
+  if (gldEl) gldEl.innerText = `${formatNumberWithK(player.gold)}兩`;
 
   if (sEl) {
     if (player.sect !== "無門無派") {
@@ -433,7 +419,6 @@ function openMeditateModal() {
   if (mentalEl) mentalEl.innerText = equippedSlots.internal ? equippedSlots.internal.name : "自然吐納";
   openModal('modal-meditate');
 
-  // ★ 即時更新頂部欄位
   updateProfileUI();
 
   if (meditateTimer) clearInterval(meditateTimer);
@@ -473,7 +458,6 @@ function openMeditateModal() {
 function closeMeditateModal() {
   if (meditateTimer) clearInterval(meditateTimer);
   meditateTimer = null;
-  // ★ 結束打坐關閉時立即同步
   updateProfileUI();
   closeModal('modal-meditate');
 }
@@ -607,7 +591,7 @@ function initGame() {
 
 initGame();
 
-// ==================== 非戰鬥期間：氣血與內力每秒自動回復 2% ====================
+// 非戰鬥期間：氣血與內力每秒自動回復 2%
 setInterval(() => {
   const battleView = document.getElementById('battle-view');
   if (battleView && battleView.classList.contains('active')) return;
@@ -643,3 +627,4 @@ window.closeMeditateModal = closeMeditateModal;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.confirmRename = confirmRename;
+window.getKungfuInterpolatedStat = getKungfuInterpolatedStat;

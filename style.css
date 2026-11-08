@@ -97,7 +97,7 @@ body {
 .val-sect { color: var(--green); font-weight: bold; }
 .val-none { color: #95a5a6; }
 
-/* ★ 核心修正：頂部五項資源嚴格鎖定單行，絕不折行 ★ */
+/* 頂部五項資源嚴格鎖定單行 */
 .res-row {
   display: flex;
   justify-content: space-between;
@@ -171,7 +171,7 @@ body {
 }
 .battle-stage.active { display: flex !important; }
 
-/* ★ 核心修正：分類標題左側對齊修正 ★ */
+/* 分類標題左側對齊 */
 .category-title {
   font-size: 13.5px;
   color: #cad3df;
@@ -397,6 +397,7 @@ body {
 }
 @keyframes idleBreathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
+/* 動作物理形變動畫 */
 .anim-thrust-body { 
   animation: thrustBody 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) forwards !important; 
 }
@@ -838,4 +839,173 @@ body {
 .bag-item-card {
   background: #141822; border: 1px solid #354052; border-radius: 4px;
   padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+}
+
+/* ==========================================================================
+   現代手遊級高階視覺特效規範 (Shadow Fight & 國風動態光影架構)
+   ========================================================================== */
+
+/* 全螢幕現代手遊震撼震顫 (微縮放 + 色差感衝擊) */
+.impact-shake {
+  animation: modernImpactShake 0.38s cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+}
+@keyframes modernImpactShake {
+  0% { transform: scale(1) translate3d(0, 0, 0); filter: brightness(1.8) contrast(1.2); }
+  15% { transform: scale(1.035) translate3d(-6px, 4px, 0); filter: brightness(2.2); }
+  35% { transform: scale(0.985) translate3d(5px, -5px, 0); filter: brightness(1.4); }
+  60% { transform: scale(1.01) translate3d(-3px, 2px, 0); filter: brightness(1.1); }
+  85% { transform: scale(0.995) translate3d(1px, -1px, 0); }
+  100% { transform: scale(1) translate3d(0, 0, 0); filter: brightness(1); }
+}
+
+/* 命中微秒頓幀白閃 (Hitstop Flash Overlay) */
+.arena-hitstop-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 60%, transparent 90%);
+  pointer-events: none;
+  z-index: 28;
+  mix-blend-mode: overlay;
+  animation: hitstopFlashAnim 0.16s ease-out forwards;
+}
+@keyframes hitstopFlashAnim {
+  0% { opacity: 0; transform: scale(0.85); }
+  30% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+/* 現代衝刺拉伸 (Squash & Stretch Dash) */
+.anim-modern-dash-player {
+  animation: modernDashP 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+@keyframes modernDashP {
+  0% { transform: translateX(0) scale(1, 1); }
+  18% { transform: translateX(-24px) scale(0.82, 1.15) rotate(-6deg); filter: drop-shadow(0 0 10px rgba(93,173,226,0.6)); }
+  45% { transform: translateX(138px) scale(1.28, 0.78); filter: drop-shadow(-20px 0 15px rgba(255,255,255,0.8)); }
+  70% { transform: translateX(148px) scale(0.92, 1.08); }
+  100% { transform: translateX(0) scale(1, 1); }
+}
+
+.anim-modern-dash-enemy {
+  animation: modernDashE 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+@keyframes modernDashE {
+  0% { transform: scaleX(-1) translateX(0) scale(1, 1); }
+  18% { transform: scaleX(-1) translateX(-24px) scale(0.82, 1.15) rotate(-6deg); filter: drop-shadow(0 0 10px rgba(231,76,60,0.6)); }
+  45% { transform: scaleX(-1) translateX(138px) scale(1.28, 0.78); filter: drop-shadow(-20px 0 15px rgba(255,255,255,0.8)); }
+  70% { transform: scaleX(-1) translateX(148px) scale(0.92, 1.08); }
+  100% { transform: scaleX(-1) translateX(0) scale(1, 1); }
+}
+
+/* 現代動態手遊級重擊受擊 (物理反彈 + 軀幹扭曲形變) */
+.anim-modern-hit-recoil-player {
+  animation: modernHitRecoilP 0.52s cubic-bezier(0.05, 0.85, 0.25, 1) forwards !important;
+}
+@keyframes modernHitRecoilP {
+  0% { transform: translateX(0) rotate(0deg) scale(1, 1); }
+  12% { transform: translateX(-36px) rotate(-18deg) scale(0.8, 1.25); filter: brightness(3.5) drop-shadow(0 0 18px #ff4757); }
+  35% { transform: translateX(-56px) rotate(-26deg) scale(1.15, 0.85); }
+  65% { transform: translateX(-16px) rotate(4deg) scale(0.95, 1.05); }
+  85% { transform: translateX(-4px) rotate(-1deg); }
+  100% { transform: translateX(0) rotate(0deg) scale(1, 1); filter: brightness(1); }
+}
+
+.anim-modern-hit-recoil-enemy {
+  animation: modernHitRecoilE 0.52s cubic-bezier(0.05, 0.85, 0.25, 1) forwards !important;
+}
+@keyframes modernHitRecoilE {
+  0% { transform: scaleX(-1) translateX(0) rotate(0deg) scale(1, 1); }
+  12% { transform: scaleX(-1) translateX(-36px) rotate(-18deg) scale(0.8, 1.25); filter: brightness(3.5) drop-shadow(0 0 18px #ff4757); }
+  35% { transform: scaleX(-1) translateX(-56px) rotate(-26deg) scale(1.15, 0.85); }
+  65% { transform: scaleX(-1) translateX(-16px) rotate(4deg) scale(0.95, 1.05); }
+  85% { transform: scaleX(-1) translateX(-4px) rotate(-1deg); }
+  100% { transform: scaleX(-1) translateX(0) rotate(0deg) scale(1, 1); filter: brightness(1); }
+}
+
+/* 現代多段光刃斬擊動畫 */
+.vfx-modern-slash-mesh {
+  position: absolute;
+  pointer-events: none;
+  animation: modernSlashAnim 0.34s cubic-bezier(0.12, 0.9, 0.2, 1) forwards;
+}
+@keyframes modernSlashAnim {
+  0% { opacity: 0; transform: scale(0.3) rotate(var(--slash-angle, 0deg)); filter: brightness(2); }
+  35% { opacity: 1; transform: scale(1.25) rotate(var(--slash-angle, 0deg)); filter: brightness(2.6); }
+  100% { opacity: 0; transform: scale(1.48) rotate(var(--slash-angle, 0deg)) translateY(-10px); filter: brightness(0.8); }
+}
+
+/* 現代震波衝擊環 (Shockwave Ring) */
+.vfx-shockwave-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  box-sizing: border-box;
+  animation: shockwaveExpand 0.4s cubic-bezier(0.15, 0.85, 0.35, 1.2) forwards;
+}
+@keyframes shockwaveExpand {
+  0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; border-width: 8px; }
+  60% { opacity: 0.8; border-width: 3.5px; }
+  100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; border-width: 1px; }
+}
+
+/* 現代手遊爆裂光芒火花粒 (Sparks Spray) */
+.vfx-spark-particle {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+  animation: sparkSprayAnim 0.45s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+}
+@keyframes sparkSprayAnim {
+  0% { transform: translate(0, 0) scale(1.5); opacity: 1; }
+  100% { transform: translate(var(--spark-tx, 30px), var(--spark-ty, -30px)) scale(0.2); opacity: 0; }
+}
+
+/* 現代高階水墨黑幕與焦點聚光 (Dramatic Cutscene Blackout) */
+.vfx-cutscene-blackout {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 65% 55%, rgba(0,0,0,0.5) 0%, rgba(2,4,8,0.95) 75%);
+  z-index: 21;
+  pointer-events: none;
+  animation: blackoutFadeInOut 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes blackoutFadeInOut {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 居合空間裂縫光軌 (Dimensional Void Crack) */
+.vfx-void-crack {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: #ffffff;
+  box-shadow: 0 0 16px #00f2fe, 0 0 35px #4facfe, 0 0 50px #ffffff;
+  pointer-events: none;
+  z-index: 26;
+  transform-origin: center center;
+  animation: voidCrackSnap 0.46s cubic-bezier(0.1, 0.95, 0.25, 1) forwards;
+}
+@keyframes voidCrackSnap {
+  0% { transform: scaleX(0) scaleY(0.5); opacity: 0; }
+  20% { transform: scaleX(1) scaleY(1.8); opacity: 1; }
+  45% { transform: scaleX(1.05) scaleY(3.5); filter: brightness(3); }
+  100% { transform: scaleX(1.1) scaleY(0); opacity: 0; }
+}
+
+/* 現代精緻爆擊飄字浮動效果 */
+.dmg-crit {
+  animation: modernCritPop 0.75s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards !important;
+}
+@keyframes modernCritPop {
+  0% { transform: translateY(0) scale(0.4); opacity: 0; }
+  20% { transform: translateY(-16px) scale(1.35); opacity: 1; }
+  40% { transform: translateY(-24px) scale(1.05); }
+  75% { transform: translateY(-38px) scale(1); opacity: 0.9; }
+  100% { transform: translateY(-56px) scale(0.85); opacity: 0; }
 }

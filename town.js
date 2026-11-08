@@ -1,10 +1,10 @@
 /**
  * ========================================================
- * 你的江湖 - 入世、全圖與江湖情報站 (town.js) [自動置底滾動版]
+ * 你的江湖 - 入世、全圖與江湖情報站 (town.js) [動態武館與自動置底版]
  * 支援：
- * 1. 對話框發布任何新訊息或切換頻道時，自動平滑滑動至最底端顯示最新消息
- * 2. 訊息永久留存，不隨換地圖、過圖而清空
- * 3. 五大頻道獨立彩色／暗灰開關過濾
+ * 1. 演武大武館動態讀取 GLOBAL_SKILLS 中來源為當前城鎮武館之所有武學
+ * 2. 對話框發布任何新訊息或切換頻道時，自動滑動至最底端
+ * 3. 訊息永久留存，五大頻道獨立開關過濾
  * ========================================================
  */
 
@@ -397,21 +397,51 @@ function openSceneModal(sc) {
     }
     return;
   } else if (sc.type === 'kwoon') {
-    content.innerHTML = `
-      <div style="font-size:12px; color:#cad3df; margin-bottom:8px;"><b>【武館教頭研習】</b> 習得武學為【一重 0% 初學者】：</div>
-      <div class="bag-item-card">
-        <div><b class="color-良品">漫天花雨手法 (暗器・良品)</b><br><small style="color:#aaa;">需配備暗器施展</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="learnKwoonSkill('漫天花雨手法', 60, 25)">60學點+25兩</button>
-      </div>
-      <div class="bag-item-card">
-        <div><b class="color-良品">八卦六合刀 (刀法・良品)</b><br><small style="color:#aaa;">需配備刀類兵刃施展</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="learnKwoonSkill('八卦六合刀', 50, 20)">50學點+20兩</button>
-      </div>
-      <div class="bag-item-card">
-        <div><b class="color-良品">金剛鐵布衫 (心法・良品)</b><br><small style="color:#aaa;">常駐防禦 +12，氣血 +90</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="learnKwoonSkill('金剛鐵布衫', 60, 25)">60學點+25兩</button>
-      </div>
-    `;
+    // ★ 動態檢索全域武學庫中出處包含當前城鎮或武館的武學 ★
+    const curTown = player.curLoc || "牛家村";
+    const allSkills = (typeof GLOBAL_SKILLS !== 'undefined') ? GLOBAL_SKILLS : [];
+    
+    // 優先匹配包含當前城鎮名稱的技能，若為牛家村則包含「鄉野演武」或預設武館技
+    let availableSkills = allSkills.filter(sk => {
+      const src = sk.source || "";
+      if (src.includes(curTown)) return true;
+      if (curTown === "牛家村" && (src.includes("鄉野") || src.includes("牛家村"))) return true;
+      return false;
+    });
+
+    // 保底：若當前城鎮無專屬武學，展示預設江湖基礎武學
+    if (availableSkills.length === 0) {
+      availableSkills = allSkills.filter(sk => sk.rarity === "凡品" || sk.rarity === "良品").slice(0, 4);
+    }
+
+    let kwoonHtml = `<div style="font-size:12px; color:#cad3df; margin-bottom:8px;"><b>【武館教頭研習】</b> 習得武學初始為【一重 0% 初學者】：</div>`;
+
+    availableSkills.forEach(sk => {
+      const isLearned = (typeof myLearnedKungfu !== 'undefined') && myLearnedKungfu.some(k => k.name === sk.name);
+      const costLearn = sk.costLearn !== undefined ? sk.costLearn : (sk.rarity === "凡品" ? 40 : 60);
+      const costGold = sk.costGold !== undefined ? sk.costGold : (sk.rarity === "凡品" ? 15 : 25);
+      const colorClass = (typeof getRarityColorClass === 'function') ? getRarityColorClass(sk.rarity) : `color-${sk.rarity}`;
+      const typeLabel = sk.type === 'external' ? `${sk.weaponReq || '外功'}` : (sk.type === 'internal' ? '心法' : '輕功');
+
+      kwoonHtml += `
+        <div class="bag-item-card">
+          <div>
+            <b class="${colorClass}">${sk.name}</b>
+            <span class="rarity-badge rarity-${sk.rarity}">${sk.rarity}</span>
+            <small style="color:var(--cyan); margin-left:3px;">[${typeLabel}]</small><br>
+            <small style="color:#aaa;">${sk.specialDesc || sk.jinyongDesc || sk.effectDesc || '武館正統傳承'}</small>
+          </div>
+          <div>
+            ${isLearned
+              ? `<span style="font-size:11px; color:#2ecc71; font-weight:bold;">已通曉</span>`
+              : `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="learnKwoonSkill('${sk.name}', ${costLearn}, ${costGold})">${costLearn}學點+${costGold}兩</button>`
+            }
+          </div>
+        </div>
+      `;
+    });
+
+    content.innerHTML = kwoonHtml;
   } else if (sc.type === 'inn') {
     content.innerHTML = `
       <div class="bag-item-card">
