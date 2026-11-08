@@ -158,83 +158,25 @@ function applyChatExpandState() {
   renderChatMessages();
 }
 
-// ==================== 1. 江湖各城鎮坐標與拓撲 ====================
-const TOWN_COORDINATES = {
-  "臨安府":   [ 0, -1],
-  "牛家村":   [ 0,  0],
-  "嘉興":     [ 0,  1],
-  "蘇州府":   [ 0,  2],
-  "太湖":     [-1,  2],
-  "無錫城":   [ 0,  3],
-  "宜興鎮":   [-1,  3],
-  "揚州城":   [ 0,  4],
-  "金陵城":   [-1,  4],
-  "鎮江府":   [ 1,  4],
-  "福州府":   [ 0, -3],
-  "泉州府":   [ 0, -4],
-  "澎湖灣":   [ 1, -4],
-  "福爾摩沙": [ 2, -4],
-  "東瀛":     [ 2, -3],
-  "潮州府":   [ 0, -5],
-  "廣州府":   [-1, -5],
-  "佛山鎮":   [-2, -5],
-  "香港":     [-1, -6],
-  "澳門":     [-2, -6],
-  "襄陽城":   [-2,  4],
-  "武當山":   [-3,  4],
-  "漢中府":   [-4,  4],
-  "重慶府":   [-3,  3],
-  "登封鎮":   [-1,  5],
-  "少室山":   [-1,  6],
-  "開封府":   [ 0,  5],
-  "洛陽城":   [-2,  5],
-  "華山險道": [-3,  5],
-  "長安古都": [-4,  5],
-  "終南山道": [-3,  6],
-  "真定府":   [-4,  6],
-  "北京城":   [-4,  7]
-};
-
-const JIANGHU_TOPOLOGY = {
-  "牛家村":   { 1: "嘉興", 7: "臨安府" },
-  "嘉興":     { 1: "蘇州府", 7: "牛家村" },
-  "蘇州府":   { 1: "無錫城", 7: "嘉興", 3: "太湖" },
-  "太湖":     { 1: "宜興鎮", 5: "蘇州府" },
-  "無錫城":   { 1: "揚州城", 7: "蘇州府", 3: "宜興鎮" },
-  "宜興鎮":   { 5: "無錫城", 7: "太湖" },
-  "揚州城":   { 7: "無錫城", 3: "金陵城", 5: "鎮江府" },
-  "金陵城":   { 5: "揚州城", 3: "襄陽城", 1: "登封鎮" },
-  "鎮江府":   { 3: "揚州城" },
-  "臨安府":   { 1: "牛家村", 7: "福州府" },
-  "福州府":   { 1: "臨安府", 7: "泉州府" },
-  "泉州府":   { 1: "福州府", 5: "澎湖灣", 7: "潮州府" },
-  "澎湖灣":   { 3: "泉州府", 5: "福爾摩沙" },
-  "福爾摩沙": { 3: "澎湖灣", 1: "東瀛" },
-  "東瀛":     { 7: "福爾摩沙" },
-  "潮州府":   { 1: "泉州府", 3: "廣州府" },
-  "廣州府":   { 5: "潮州府", 3: "佛山鎮", 7: "香港" },
-  "佛山鎮":   { 5: "廣州府", 7: "澳門" },
-  "香港":     { 1: "廣州府", 3: "澳門" },
-  "澳門":     { 1: "佛山鎮", 5: "香港" },
-  "襄陽城":   { 5: "金陵城", 3: "武當山", 7: "重慶府" },
-  "武當山":   { 5: "襄陽城", 3: "漢中府" },
-  "漢中府":   { 5: "武當山", 1: "長安古都" },
-  "重慶府":   { 1: "襄陽城" },
-  "登封鎮":   { 7: "金陵城", 3: "洛陽城", 5: "開封府", 1: "少室山" },
-  "少室山":   { 7: "登封鎮" },
-  "開封府":   { 3: "登封鎮" },
-  "洛陽城":   { 5: "登封鎮", 3: "華山險道" },
-  "華山險道": { 5: "洛陽城", 3: "長安古都" },
-  "長安古都": { 5: "華山險道", 7: "漢中府", 1: "真定府" },
-  "真定府":   { 7: "長安古都", 1: "北京城" },
-  "北京城":   { 7: "真定府" }
-};
+// ==================== 1. 江湖各城鎮坐標與拓撲 (讀取 data_map.js) ====================
+// 九宮格槽位：1=北(上) 7=南(下) 3=西(左) 5=東(右)
+function getTownTopology(townName) {
+  const town = (typeof WORLD_MAP !== 'undefined') ? WORLD_MAP[townName] : null;
+  const ex = (town && town.exits) || {};
+  const topo = {};
+  if (ex.north && WORLD_MAP[ex.north]) topo[1] = ex.north;
+  if (ex.south && WORLD_MAP[ex.south]) topo[7] = ex.south;
+  if (ex.west && WORLD_MAP[ex.west]) topo[3] = ex.west;
+  if (ex.east && WORLD_MAP[ex.east]) topo[5] = ex.east;
+  return topo;
+}
 
 function renderNineGridMap() {
   const curName = (typeof player !== 'undefined' && player.curLoc) ? player.curLoc : "牛家村";
-  const topo = JIANGHU_TOPOLOGY[curName] || {};
+  const topo = getTownTopology(curName);
 
-  const coords = TOWN_COORDINATES[curName] || [0, 0];
+  const curTownData = (typeof WORLD_MAP !== 'undefined') ? WORLD_MAP[curName] : null;
+  const coords = (curTownData && curTownData.grid) || [0, 0];
   const coordEl = document.getElementById('map-coord-display');
   if (coordEl) coordEl.innerText = `(${coords[0]}, ${coords[1]})`;
 
@@ -258,10 +200,11 @@ function renderNineGridMap() {
   const eastTown  = topo[5];
   const westTown  = topo[3];
 
-  let nwTown = (northTown && JIANGHU_TOPOLOGY[northTown] && JIANGHU_TOPOLOGY[northTown][3]) || (westTown && JIANGHU_TOPOLOGY[westTown] && JIANGHU_TOPOLOGY[westTown][1]);
-  let neTown = (northTown && JIANGHU_TOPOLOGY[northTown] && JIANGHU_TOPOLOGY[northTown][5]) || (eastTown && JIANGHU_TOPOLOGY[eastTown] && JIANGHU_TOPOLOGY[eastTown][1]);
-  let swTown = (southTown && JIANGHU_TOPOLOGY[southTown] && JIANGHU_TOPOLOGY[southTown][3]) || (westTown && JIANGHU_TOPOLOGY[westTown] && JIANGHU_TOPOLOGY[westTown][7]);
-  let seTown = (southTown && JIANGHU_TOPOLOGY[southTown] && JIANGHU_TOPOLOGY[southTown][5]) || (eastTown && JIANGHU_TOPOLOGY[eastTown] && JIANGHU_TOPOLOGY[eastTown][7]);
+  const nb = (town, slot) => town ? getTownTopology(town)[slot] : undefined;
+  let nwTown = nb(northTown, 3) || nb(westTown, 1);
+  let neTown = nb(northTown, 5) || nb(eastTown, 1);
+  let swTown = nb(southTown, 3) || nb(westTown, 7);
+  let seTown = nb(southTown, 5) || nb(eastTown, 7);
 
   if (nwTown && nwTown !== curName && !gridAssignments.some(g => g && g.name === nwTown)) gridAssignments[0] = { name: nwTown, isDistant: true };
   if (neTown && neTown !== curName && !gridAssignments.some(g => g && g.name === neTown)) gridAssignments[2] = { name: neTown, isDistant: true };
@@ -302,6 +245,7 @@ function travelToTown(destKey) {
   if (typeof WORLD_MAP === 'undefined' || !WORLD_MAP[destKey]) return;
   player.lastTown = player.curLoc;
   player.curLoc = destKey;
+  closePlacePanel();
 
   renderNineGridMap();
   renderJianghuScenesOnMenu();
@@ -336,12 +280,20 @@ function renderJianghuScenesOnMenu() {
         grid.appendChild(btn);
       });
     }
+
+    renderStreetNpcs(cur);
   } catch (err) {
     console.error(err);
   }
 }
 
+let currentSceneRef = null;
+function refreshCurrentScene() {
+  if (currentSceneRef && typeof currentPlacePage !== 'undefined' && currentPlacePage === 'pg-scene') openSceneModal(currentSceneRef);
+}
+
 function openSceneModal(sc) {
+  currentSceneRef = sc;
   const titleEl = document.getElementById('scene-modal-title');
   const descEl = document.getElementById('scene-modal-desc');
   const content = document.getElementById('scene-modal-content');
@@ -350,48 +302,41 @@ function openSceneModal(sc) {
   if (!content) return;
   content.innerHTML = '';
 
+  const sceneNpcs = getTownNpcs(player.curLoc).filter(n => (n.scene || "") === sc.id);
+
   if (sc.type === 'field_combat') {
-    const loc = WORLD_MAP[player.curLoc] || WORLD_MAP["牛家村"];
-    const enemies = (loc && loc.fieldEnemies) ? loc.fieldEnemies : [];
-    let enemyListHtml = `<div style="font-size:12px; color:#cad3df; margin-bottom:8px;"><b>【演武挑戰】</b> 選擇對手切磋印證武學：</div>`;
-    enemies.forEach((e, idx) => {
-      enemyListHtml += `
+    const foes = sceneNpcs.filter(n => n.attackable);
+    const others = sceneNpcs.filter(n => !n.attackable);
+    let html = `<div style="font-size:12px; color:#cad3df; margin-bottom:8px;"><b>【演武挑戰】</b> 選擇對手切磋印證武學：</div>`;
+    html += foes.length > 0 ? foes.map(renderNpcCardHtml).join('') : `<div style="text-align:center; color:#777; font-size:12px; padding:12px;">此處暫無對手。</div>`;
+    html += others.map(renderNpcCardHtml).join('');
+    content.innerHTML = html;
+    openModal('modal-scene');
+    return;
+  }
+
+  if (sc.type === 'smithy' || sc.type === 'pharmacy') {
+    const goods = Array.isArray(sc.goods) ? sc.goods : [];
+    let html = `<div style="font-size:12px; color:#cad3df; margin-bottom:8px;"><b>【${sc.type === 'smithy' ? '鐵匠鍛造臺' : '藥鋪櫃台'}】</b> 購買後存入「行囊」：</div>`;
+    goods.forEach(g => {
+      const it = (typeof findItemByRef === 'function') ? findItemByRef(g.item) : null;
+      if (!it) return;
+      const price = Number(g.price) || it.cost || 10;
+      const typeLabel = it.type === 'weapon' ? (typeof getWeaponType === 'function' ? getWeaponType(it) : '兵器') : (it.type === 'armor' ? '防具' : '丹藥');
+      html += `
         <div class="bag-item-card">
-          <div>
-            <b style="color:#fff;">${e.name}</b>
-            <span style="color:#f1c40f; font-size:11px; margin-left:4px;">【${e.realm}】</span><br>
-            <small style="color:#aaa;">氣血 ${e.maxHp} | 外攻 ${e.atk} | 身法 ${e.speed}</small>
-          </div>
-          <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:#e74c3c; border-color:#e74c3c;" onclick="startDuelWithEnemy(${idx})">討伐切磋</button>
-        </div>
-      `;
+          <div><b class="color-${it.rarity}">${it.name} (${typeLabel})</b><br><small style="color:#aaa;">${it.desc || ''}</small></div>
+          <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="buyGoodsToBag('${it.id}', ${price})">${price}兩</button>
+        </div>`;
     });
-    content.innerHTML = enemyListHtml;
-  } else if (sc.type === 'smithy') {
-    content.innerHTML = `
-      <div style="font-size:12px; color:#cad3df; margin-bottom:8px;"><b>【鐵匠鍛造臺】</b> 購買後存入「行囊」：</div>
-      <div class="bag-item-card">
-        <div><b class="color-良品">百煉青鋼劍 (劍)</b><br><small style="color:#aaa;">外攻 +18，身法 +6</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="buyItemToBag('百煉青鋼劍', 60)">60兩</button>
-      </div>
-      <div class="bag-item-card">
-        <div><b class="color-良品">冷月厚背刀 (刀)</b><br><small style="color:#aaa;">外攻 +22，身法 +2</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="buyItemToBag('冷月厚背刀', 65)">65兩</button>
-      </div>
-      <div class="bag-item-card">
-        <div><b class="color-良品">齊眉熟銅棍 (棍)</b><br><small style="color:#aaa;">外攻 +20，防禦 +8</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="buyItemToBag('齊眉熟銅棍', 65)">65兩</button>
-      </div>
-      <div class="bag-item-card">
-        <div><b class="color-良品">鑌鐵指虎爪 (拳套)</b><br><small style="color:#aaa;">外攻 +18，身法 +6，防禦 +4</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="buyItemToBag('鑌鐵指虎爪', 55)">55兩</button>
-      </div>
-      <div class="bag-item-card">
-        <div><b class="color-良品">精鋼鎖子甲 (防具)</b><br><small style="color:#aaa;">防禦 +15，氣血 +120</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="buyItemToBag('精鋼鎖子甲', 85)">85兩</button>
-      </div>
-    `;
-  } else if (sc.type === 'sect') {
+    if (goods.length === 0) html += `<div style="text-align:center; color:#777; font-size:12px; padding:12px;">今日貨架空空，請改日再來。</div>`;
+    html += sceneNpcs.map(renderNpcCardHtml).join('');
+    content.innerHTML = html;
+    openModal('modal-scene');
+    return;
+  }
+
+  if (sc.type === 'sect') {
     if (typeof openSectHallModal === 'function') {
       openSectHallModal(sc.sectName);
     }
@@ -441,7 +386,7 @@ function openSceneModal(sc) {
       `;
     });
 
-    content.innerHTML = kwoonHtml;
+    content.innerHTML = kwoonHtml + sceneNpcs.map(renderNpcCardHtml).join('');
   } else if (sc.type === 'inn') {
     content.innerHTML = `
       <div class="bag-item-card">
@@ -454,9 +399,10 @@ function openSceneModal(sc) {
       </div>
       <div class="bag-item-card">
         <div><b>百寶閣收購櫃台</b><br><small style="color:#aaa;">高價收購各色神兵雜物</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--gold); border-color:var(--gold);" onclick="closeModal('modal-scene'); openPawnshopModal();">典當行囊</button>
+        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--gold); border-color:var(--gold);" onclick="openPawnshopModal()">典當行囊</button>
       </div>
     `;
+    content.innerHTML += sceneNpcs.map(renderNpcCardHtml).join('');
   }
 
   openModal('modal-scene');
@@ -471,7 +417,6 @@ function restAtInn(cost) {
 
   if (typeof updateProfileUI === 'function') updateProfileUI();
   if (typeof autoSave === 'function') autoSave();
-  closeModal('modal-scene');
   pushChatMessage('system', '【客棧調養】', '上房安歇一宿，酒暖被軟。氣血與內力皆已恢復圓滿！', '#2ecc71');
 }
 
@@ -574,37 +519,129 @@ function quickSellJunk() {
   pushChatMessage('system', '【當鋪典當】', `一鍵典當凡品雜物，共收入碎銀 +${totalGain} 兩！`, '#f1c40f');
 }
 
-function startDuelWithEnemy(idx) {
-  closeModal('modal-scene');
-  const enemies = (WORLD_MAP[player.curLoc] && WORLD_MAP[player.curLoc].fieldEnemies) ? WORLD_MAP[player.curLoc].fieldEnemies : [];
-  if (enemies && enemies[idx]) {
-    const rawEnemy = enemies[idx];
-    const enemyData = {
-      ...rawEnemy,
-      stats: rawEnemy.stats || {
-        arm: Math.round((rawEnemy.atk || 20) * 0.7),
-        speed: rawEnemy.speed || 40,
-        bone: Math.round((rawEnemy.def || 10) * 1.5),
-        inner: Math.round((rawEnemy.atk || 20) * 0.5),
-        int: 20,
-        luck: 15
-      }
-    };
-    if (typeof startBattleAgainst === 'function') {
-      startBattleAgainst(enemyData, false);
-    } else {
-      console.error("startBattleAgainst 函式尚未掛載！");
-    }
+// ==================== 城鎮人物 (NPC) ====================
+function getTownNpcs(townName) {
+  const town = (typeof WORLD_MAP !== 'undefined') ? WORLD_MAP[townName] : null;
+  return (town && Array.isArray(town.npcs)) ? town.npcs : [];
+}
+
+function findTownNpc(npcId) {
+  return getTownNpcs(player.curLoc).find(n => n.id === npcId) || null;
+}
+
+function renderNpcCardHtml(npc) {
+  const stat = npc.attackable
+    ? `<span style="color:#f1c40f; font-size:11px; margin-left:4px;">【${npc.realm || '江湖人'}】</span><br><small style="color:#aaa;">氣血 ${npc.maxHp} | 外攻 ${npc.atk} | 身法 ${npc.speed}</small>`
+    : `<br><small style="color:#aaa;">${npc.desc || '江湖中人'}</small>`;
+  const fightBtn = npc.attackable
+    ? `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:#e74c3c; border-color:#e74c3c;" onclick="startDuelWithNpc('${npc.id}')">討伐切磋</button>`
+    : '';
+  return `
+    <div class="bag-item-card">
+      <div><b style="color:#fff;">👤 ${npc.name}</b>${stat}</div>
+      <div style="display:flex; gap:4px;">
+        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--cyan); border-color:var(--cyan);" onclick="talkToNpc('${npc.id}')">交談</button>
+        ${fightBtn}
+      </div>
+    </div>`;
+}
+
+// 入世區：列出站在街頭 (未指定場景) 的人物
+function renderStreetNpcs(town) {
+  const box = document.getElementById('jh-npc-grid');
+  const title = document.getElementById('jh-npc-title');
+  if (!box) return;
+  const street = (town && Array.isArray(town.npcs)) ? town.npcs.filter(n => !n.scene) : [];
+  box.innerHTML = '';
+  if (title) title.style.display = street.length > 0 ? 'block' : 'none';
+  street.forEach(npc => {
+    const btn = document.createElement('button');
+    btn.className = 'wuxia-btn';
+    btn.innerHTML = `${npc.attackable ? '⚔️' : '👤'} ${npc.name}`;
+    btn.onclick = () => openNpcPanel(npc.id);
+    box.appendChild(btn);
+  });
+}
+
+// 點擊人物：以面板暫時覆蓋地圖區（不彈窗）
+let currentNpcPanelId = null;
+
+function npcPortraitSvg(npc) {
+  const col = npc.attackable ? '#e74c3c' : '#cad3df';
+  const weapon = npc.attackable ? `<line x1="68" y1="48" x2="92" y2="26" stroke="#f39c12" stroke-width="4" stroke-linecap="round"/>` : '';
+  return `<svg viewBox="0 0 100 120" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round">
+    <circle cx="50" cy="22" r="10" fill="${col}"/>
+    <line x1="50" y1="32" x2="50" y2="74"/><line x1="50" y1="42" x2="30" y2="62"/><line x1="50" y1="42" x2="68" y2="48"/>${weapon}
+    <line x1="50" y1="74" x2="36" y2="112"/><line x1="50" y1="74" x2="64" y2="112"/></svg>`;
+}
+
+function openNpcPanel(npcId) {
+  const npc = findTownNpc(npcId);
+  const panel = document.getElementById('npc-panel');
+  if (!npc || !panel) return;
+  currentNpcPanelId = npcId;
+  showPlacePage('pg-npc');
+
+  const lines = (Array.isArray(npc.dialogues) && npc.dialogues.length > 0) ? npc.dialogues : ['……'];
+  const stats = npc.attackable
+    ? `<div class="npc-stats"><span>氣血 <b>${npc.maxHp}</b></span><span>外攻 <b>${npc.atk}</b></span><span>防禦 <b>${npc.def}</b></span><span>身法 <b>${npc.speed}</b></span></div>`
+    : '';
+  panel.className = `npc-panel ${npc.attackable ? 'foe' : ''}`;
+  panel.innerHTML = `
+    <div class="npc-portrait">${npcPortraitSvg(npc)}<span class="npc-tag">${npc.attackable ? '可討伐' : '江湖人'}</span></div>
+    <div class="npc-body">
+      <div class="npc-name">${npc.name}${npc.attackable ? `<small>【${npc.realm || '江湖人'}】</small>` : ''}</div>
+      ${npc.desc ? `<div class="npc-desc">${npc.desc}</div>` : ''}
+      ${stats}
+      <div class="npc-bubble" id="npc-bubble">${lines[0]}</div>
+      <div class="npc-actions">
+        <button class="wuxia-btn" style="color:var(--cyan); border-color:var(--cyan);" onclick="talkToNpc('${npc.id}')">💬 交談</button>
+        ${npc.attackable ? `<button class="wuxia-btn" style="color:#e74c3c; border-color:#e74c3c;" onclick="startDuelWithNpc('${npc.id}')">⚔️ 討伐切磋</button>` : ''}
+      </div>
+    </div>`;
+  panel.dataset.lineIdx = '0';
+}
+
+function closeNpcPanel() {
+  currentNpcPanelId = null;
+  closePlacePanel('pg-npc');
+}
+
+function talkToNpc(npcId) {
+  const npc = findTownNpc(npcId);
+  if (!npc) return;
+  const lines = (Array.isArray(npc.dialogues) && npc.dialogues.length > 0) ? npc.dialogues : ['……'];
+  const panel = document.getElementById('npc-panel');
+  const bubble = document.getElementById('npc-bubble');
+  let line;
+  if (currentNpcPanelId === npcId && panel && bubble) {
+    // 面板中依序輪播台詞
+    const idx = (Number(panel.dataset.lineIdx) + 1) % lines.length;
+    panel.dataset.lineIdx = String(idx);
+    line = lines[idx];
+    bubble.innerText = line;
+  } else {
+    line = lines[Math.floor(Math.random() * lines.length)];
   }
+  pushChatMessage('current', `[${player.curLoc}] ${npc.name}`, line, '#f1c40f');
+}
+
+function startDuelWithNpc(npcId) {
+  const npc = findTownNpc(npcId);
+  if (!npc || !npc.attackable) return;
+  closeModal('modal-scene');
+  closePlacePanel();
+  startBattleAgainst(buildEnemyFromData(npc), false);
 }
 
 function refreshChatForCurrentLocation() {
   if (typeof WORLD_MAP === 'undefined') return;
   const loc = WORLD_MAP[player.curLoc] || WORLD_MAP["牛家村"];
-  if (!loc || !loc.npcs) return;
-
-  const randNpc = loc.npcs[Math.floor(Math.random() * loc.npcs.length)];
-  pushChatMessage('current', `[${loc.name}] ${randNpc.u}`, randNpc.critic, '#f1c40f');
+  if (!loc) return;
+  const talkers = getTownNpcs(loc.name).filter(n => Array.isArray(n.dialogues) && n.dialogues.length > 0);
+  if (talkers.length === 0) return;
+  const npc = talkers[Math.floor(Math.random() * talkers.length)];
+  pushChatMessage('current', `[${loc.name}] ${npc.name}`, npc.dialogues[Math.floor(Math.random() * npc.dialogues.length)], '#f1c40f');
 }
 
 function appendCombatChat(tag, msg, tagColor) {
@@ -622,6 +659,9 @@ window.openPawnshopModal = openPawnshopModal;
 window.renderPawnshopUI = renderPawnshopUI;
 window.sellItemToPawn = sellItemToPawn;
 window.quickSellJunk = quickSellJunk;
-window.startDuelWithEnemy = startDuelWithEnemy;
+window.startDuelWithNpc = startDuelWithNpc;
+window.talkToNpc = talkToNpc;
+window.openNpcPanel = openNpcPanel;
+window.closeNpcPanel = closeNpcPanel;
 window.refreshChatForCurrentLocation = refreshChatForCurrentLocation;
 window.appendCombatChat = appendCombatChat;

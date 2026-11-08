@@ -103,9 +103,7 @@ function sanitizePlayerData() {
   }
 
   if (!Array.isArray(myLearnedKungfu) || myLearnedKungfu.length === 0) {
-    myLearnedKungfu = (typeof GLOBAL_SKILLS !== 'undefined') ? [
-      GLOBAL_SKILLS[0], GLOBAL_SKILLS[1], GLOBAL_SKILLS[2], GLOBAL_SKILLS[3]
-    ] : [];
+    myLearnedKungfu = getStarterKungfuList();
   }
 
   if (!equippedSlots || typeof equippedSlots !== 'object') {
@@ -117,6 +115,95 @@ function sanitizePlayerData() {
   if (!equippedSlots.ext1) {
     const extList = myLearnedKungfu.filter(k => k.type === 'external' && k !== equippedSlots.ext0);
     equippedSlots.ext1 = extList.length > 0 ? extList[0] : null;
+  }
+}
+
+// ==================== 舞台切換 (主選單 / 通天塔 / 戰鬥) ====================
+function showStageView(view) {
+  if (view !== 'menu' && typeof stopMeditation === 'function') stopMeditation();
+  const m = document.getElementById('menu-view');
+  const t = document.getElementById('tower-view');
+  const b = document.getElementById('battle-view');
+  if (m) {
+    m.classList.toggle('hidden', view !== 'menu');
+    m.style.display = (view === 'menu') ? 'flex' : 'none';
+  }
+  if (t) {
+    t.classList.toggle('active', view === 'tower');
+    t.style.display = (view === 'tower') ? 'flex' : 'none';
+  }
+  if (b) {
+    b.classList.toggle('active', view === 'battle');
+    b.style.display = (view === 'battle') ? 'flex' : 'none';
+  }
+}
+
+// 以武學範本建立一份全新的習得紀錄（一重 0%）
+function createLearnedKungfu(template) {
+  return { ...template, id: "kf_" + Date.now() + "_" + Math.floor(Math.random() * 1000), templateId: template.id || null, starter: undefined, tier: 1, progress: 0 };
+}
+
+// 新手 / 轉世初始武學：取 data_skills.js 中標記 starter 的武學
+function getStarterKungfuList() {
+  if (typeof GLOBAL_SKILLS === 'undefined') return [];
+  let list = GLOBAL_SKILLS.filter(s => s.starter);
+  if (list.length === 0) list = GLOBAL_SKILLS.slice(0, 4);
+  return list.map(createLearnedKungfu);
+}
+
+// 依武學名稱 / 範本 id 找出資料檔中的最新武學設定
+function findKungfuTemplate(kf) {
+  if (!kf) return null;
+  if (typeof GLOBAL_SKILLS !== 'undefined') {
+    const byId = kf.templateId ? GLOBAL_SKILLS.find(s => s.id === kf.templateId) : null;
+    if (byId) return byId;
+    const byName = GLOBAL_SKILLS.find(s => s.name === kf.name);
+    if (byName) return byName;
+  }
+  if (typeof SECT_DATABASE !== 'undefined') {
+    for (const sName in SECT_DATABASE) {
+      const sk = (SECT_DATABASE[sName].skills || []).find(s => s.name === kf.name);
+      if (sk) return sk;
+    }
+  }
+  return null;
+}
+
+function findItemTemplate(item) {
+  if (!item || typeof GLOBAL_ITEMS === 'undefined') return null;
+  return GLOBAL_ITEMS.find(i => i.id === item.templateId) || GLOBAL_ITEMS.find(i => i.name === item.name) || null;
+}
+
+// 讀檔後：把存檔中的武學 / 裝備套上資料檔最新數值（保留重數、進度、數量等個人進度）
+function syncSaveWithGameData() {
+  myLearnedKungfu.forEach(kf => {
+    const tpl = findKungfuTemplate(kf);
+    if (!tpl) return;
+    const keep = { id: kf.id, tier: Number(kf.tier) || 1, progress: Number(kf.progress) || 0 };
+    Object.keys(kf).forEach(k => { if (!(k in keep)) delete kf[k]; });
+    Object.assign(kf, tpl, keep, { templateId: tpl.id || null });
+    delete kf.starter;
+  });
+
+  const syncItem = (item) => {
+    if (!item || item.type === 'book') {
+      if (item && item.skillData) {
+        const tpl = findKungfuTemplate(item.skillData);
+        if (tpl) item.skillData = { ...tpl };
+      }
+      return item;
+    }
+    const tpl = findItemTemplate(item);
+    if (!tpl) return item;
+    const keep = { id: item.id };
+    if (item.count) keep.count = item.count;
+    Object.keys(item).forEach(k => delete item[k]);
+    return Object.assign(item, tpl, keep, { templateId: tpl.id });
+  };
+  if (Array.isArray(player.inventory)) player.inventory.forEach(syncItem);
+  if (player.equippedGear) {
+    syncItem(player.equippedGear.weapon);
+    syncItem(player.equippedGear.armor);
   }
 }
 
@@ -141,6 +228,18 @@ function getKungfuInterpolatedStat(kf, statKey) {
   return Math.floor(b1 + (b10 - b1) * ratio);
 }
 
+// 武學重數倍率（戰鬥、屬性與介面顯示共用）
+function getKungfuTierMult(kf) {
+  return 1 + (Math.max(1, Number(kf.tier) || 1) - 1) * 0.18 + ((Number(kf.progress) || 0) / 100) * 0.18;
+}
+
+// 心法氣血/防禦、輕功身法基礎值（相容門派武學的 baseHp / baseDef / baseSpeed 欄位）
+function getKungfuBaseValue(kf, kind) {
+  if (kind === 'hp') return Number(kf.baseHpBonus ?? kf.baseHp) || 50;
+  if (kind === 'def') return Number(kf.baseDefBonus ?? kf.baseDef) || 4;
+  return Number(kf.baseSpeedBonus ?? kf.baseSpeed) || 12;
+}
+
 function recalcPlayerStats() {
   sanitizePlayerData();
 
@@ -148,22 +247,17 @@ function recalcPlayerStats() {
   const statsGear = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
   let gearAtk = 0, gearDef = 0, gearHp = 0;
 
-  if (player.equippedGear && player.equippedGear.weapon) {
-    const w = player.equippedGear.weapon;
-    gearAtk += Number(w.atk) || 0;
-    statsGear.speed += Number(w.speed) || 0;
-    if (w.statBonus) {
-      for (let k in w.statBonus) statsGear[k] = (statsGear[k] || 0) + (w.statBonus[k] || 0);
+  // 兵刃與防具的 外攻/身法/防禦/氣血/六維 皆生效（與 editor.html 設定欄位一致）
+  [player.equippedGear && player.equippedGear.weapon, player.equippedGear && player.equippedGear.armor].forEach(g => {
+    if (!g) return;
+    gearAtk += Number(g.atk) || 0;
+    statsGear.speed += Number(g.speed) || 0;
+    gearDef += Number(g.def) || 0;
+    gearHp += Number(g.hp) || 0;
+    if (g.statBonus) {
+      for (let k in g.statBonus) statsGear[k] = (statsGear[k] || 0) + (Number(g.statBonus[k]) || 0);
     }
-  }
-  if (player.equippedGear && player.equippedGear.armor) {
-    const a = player.equippedGear.armor;
-    gearDef += Number(a.def) || 0;
-    gearHp += Number(a.hp) || 0;
-    if (a.statBonus) {
-      for (let k in a.statBonus) statsGear[k] = (statsGear[k] || 0) + (a.statBonus[k] || 0);
-    }
-  }
+  });
 
   // 2. 武學加成 (支援自 1 重起即時計算插值)
   const statsKungfu = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
@@ -177,13 +271,13 @@ function recalcPlayerStats() {
       statsKungfu[k] += getKungfuInterpolatedStat(kf, k);
     });
 
-    const mult = 1 + (Math.max(1, kf.tier) - 1) * 0.18 + ((kf.progress || 0) / 100) * 0.18;
+    const mult = getKungfuTierMult(kf);
     if (kf.type === 'internal') {
-      kfHp += Math.floor((Number(kf.baseHpBonus) || 50) * mult);
-      kfDef += Math.floor((Number(kf.baseDefBonus) || 4) * mult);
+      kfHp += Math.floor(getKungfuBaseValue(kf, 'hp') * mult);
+      kfDef += Math.floor(getKungfuBaseValue(kf, 'def') * mult);
     }
     if (kf.type === 'qinggong') {
-      statsKungfu.speed += Math.floor((Number(kf.baseSpeedBonus) || 12) * mult);
+      statsKungfu.speed += Math.floor(getKungfuBaseValue(kf, 'speed') * mult);
     }
   });
 
@@ -309,7 +403,6 @@ function updateProfileUI() {
   const mpEl = document.getElementById('disp-mp');
   const expEl = document.getElementById('res-exp');
   const lrnEl = document.getElementById('res-learn');
-  const cbtEl = document.getElementById('res-combat');
   const gldEl = document.getElementById('res-gold');
   const sEl = document.getElementById('disp-sect');
   const realmEl = document.getElementById('disp-realm');
@@ -348,7 +441,6 @@ function updateProfileUI() {
   if (mpEl) mpEl.innerText = `${formatNumberWithK(player.mp)} / ${formatNumberWithK(player.maxMp)}`;
   if (expEl) expEl.innerText = formatNumberWithK(player.exp);
   if (lrnEl) lrnEl.innerText = formatNumberWithK(player.learn);
-  if (cbtEl) cbtEl.innerText = formatNumberWithK(player.combat);
   if (gldEl) gldEl.innerText = `${formatNumberWithK(player.gold)}兩`;
 
   if (sEl) {
@@ -369,38 +461,7 @@ function updateWeaponSVG() {
 
   const w = player.equippedGear ? player.equippedGear.weapon : null;
   const wType = (typeof getWeaponType === 'function') ? getWeaponType(w) : "拳";
-
-  if (wType === "暗器") {
-    if (leftArm) {
-      leftArm.setAttribute('x1', '50');
-      leftArm.setAttribute('y1', '38');
-      leftArm.setAttribute('x2', '45');
-      leftArm.setAttribute('y2', '65');
-    }
-    container.innerHTML = `
-      <g class="tossing-coin">
-        <circle cx="75" cy="44" r="5" fill="#f1c40f" stroke="#e67e22" stroke-width="1.5"/>
-        <path d="M73,42 L77,46 M77,42 L73,46" stroke="#b8860b" stroke-width="1"/>
-      </g>
-    `;
-  } else {
-    if (leftArm) {
-      leftArm.setAttribute('x1', '50');
-      leftArm.setAttribute('y1', '38');
-      leftArm.setAttribute('x2', '28');
-      leftArm.setAttribute('y2', '56');
-    }
-
-    if (wType === "劍") {
-      container.innerHTML = `<line x1="84" y1="40" x2="114" y2="18" stroke="#f1c40f" stroke-width="4.5"/><line x1="81" y1="43" x2="87" y2="37" stroke="#ffffff" stroke-width="6"/>`;
-    } else if (wType === "刀") {
-      container.innerHTML = `<path d="M84,40 Q105,25 118,10" stroke="#f39c12" stroke-width="6" fill="none" stroke-linecap="round"/>`;
-    } else if (wType === "棍") {
-      container.innerHTML = `<line x1="58" y1="62" x2="124" y2="8" stroke="#b87333" stroke-width="5" stroke-linecap="round"/>`;
-    } else {
-      container.innerHTML = `<circle cx="86" cy="40" r="5" fill="#f1c40f" stroke="#ffffff" stroke-width="1.5"/>`;
-    }
-  }
+  if (typeof renderStickWeapon === 'function') renderStickWeapon(wType, container, leftArm);
 }
 
 var meditateTimer = null;
@@ -455,10 +516,18 @@ function openMeditateModal() {
   }, 1000);
 }
 
-function closeMeditateModal() {
-  if (meditateTimer) clearInterval(meditateTimer);
+function stopMeditation() {
+  if (!meditateTimer) return;
+  clearInterval(meditateTimer);
   meditateTimer = null;
   updateProfileUI();
+  if (typeof pushChatMessage === 'function' && (currentSessionExp > 0 || currentSessionLearn > 0)) {
+    pushChatMessage('system', '【收功】', `打坐收功，本次共得修為 +${formatNumberWithK(currentSessionExp)}、學點 +${formatNumberWithK(currentSessionLearn)}。`, '#2ecc71');
+  }
+}
+
+function closeMeditateModal() {
+  stopMeditation();
   closeModal('modal-meditate');
 }
 
@@ -533,6 +602,7 @@ function loadSavedGame() {
     if (data && Array.isArray(data.myLearnedKungfu) && data.myLearnedKungfu.length > 0) {
       myLearnedKungfu = data.myLearnedKungfu;
     }
+    syncSaveWithGameData();
     if (data && data.equippedSlots) {
       equippedSlots.internal = myLearnedKungfu.find(k => k.id === data.equippedSlots.internalId) || null;
       equippedSlots.qinggong = myLearnedKungfu.find(k => k.id === data.equippedSlots.qinggongId) || null;
@@ -549,12 +619,53 @@ function loadSavedGame() {
   }
 }
 
+// ==================== 地點面板：取代彈窗，暫時覆蓋地圖區 ====================
+// 下列功能改為在主畫面地圖位置展開；其餘 (帳號、角色典籍、轉世、改名…) 仍為對話框
+const PLACE_PAGES = {
+  'modal-scene': 'pg-scene',
+  'modal-sect-hall': 'pg-sect',
+  'modal-pawnshop': 'pg-pawn',
+  'modal-bag': 'pg-bag',
+  'modal-mail': 'pg-mail',
+  'modal-meditate': 'pg-meditate',
+  'npc': 'pg-npc'
+};
+let currentPlacePage = null;
+
+function showPlacePage(pageId) {
+  if (currentPlacePage === 'pg-meditate' && pageId !== 'pg-meditate') stopMeditation();
+  // 武學內嵌畫面開啟時先切回一般畫面
+  if (typeof isKungfuInlineOpen !== 'undefined' && isKungfuInlineOpen && typeof switchToNormalMode === 'function') switchToNormalMode();
+  showStageView('menu');
+  const secMap = document.getElementById('sec-map');
+  const secPlace = document.getElementById('sec-place');
+  if (secMap) secMap.style.display = 'none';
+  if (secPlace) secPlace.style.display = 'block';
+  document.querySelectorAll('#sec-place .place-page').forEach(p => p.classList.toggle('active', p.id === pageId));
+  currentPlacePage = pageId;
+  const menu = document.getElementById('menu-view');
+  if (menu && secPlace) menu.scrollTop = Math.max(0, secPlace.offsetTop - 8);
+}
+
+function closePlacePanel(pageId) {
+  if (pageId && currentPlacePage !== pageId) return;
+  if (currentPlacePage === 'pg-meditate') stopMeditation();
+  currentPlacePage = null;
+  const secPlace = document.getElementById('sec-place');
+  if (secPlace) secPlace.style.display = 'none';
+  const kf = document.getElementById('sec-kungfu');
+  const secMap = document.getElementById('sec-map');
+  if (secMap && !(kf && kf.style.display === 'block')) secMap.style.display = 'block';
+}
+
 function openModal(id) {
+  if (PLACE_PAGES[id]) { showPlacePage(PLACE_PAGES[id]); return; }
   const el = document.getElementById(id);
   if (el) el.classList.add('show');
 }
 
 function closeModal(id) {
+  if (PLACE_PAGES[id]) { closePlacePanel(PLACE_PAGES[id]); return; }
   const el = document.getElementById(id);
   if (el) el.classList.remove('show');
 }
@@ -628,3 +739,12 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.confirmRename = confirmRename;
 window.getKungfuInterpolatedStat = getKungfuInterpolatedStat;
+window.getKungfuTierMult = getKungfuTierMult;
+window.getKungfuBaseValue = getKungfuBaseValue;
+window.showStageView = showStageView;
+window.showPlacePage = showPlacePage;
+window.closePlacePanel = closePlacePanel;
+window.stopMeditation = stopMeditation;
+window.createLearnedKungfu = createLearnedKungfu;
+window.getStarterKungfuList = getStarterKungfuList;
+window.syncSaveWithGameData = syncSaveWithGameData;

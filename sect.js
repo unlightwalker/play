@@ -174,7 +174,7 @@ function challengeMaster(sName) {
   if (!sData) return;
   alert(`⚡ 你身為【${sName}】長老，正式向【${sData.leaderName}】發起出師印證切磋！`);
   if (typeof startBattleAgainst === 'function') {
-    startBattleAgainst(sData.leaderStats, true);
+    startBattleAgainst(buildEnemyFromData(sData.leaderStats), true);
   }
 }
 
@@ -195,12 +195,8 @@ function learnFromElder(sName, skillName) {
   }
   player.learn -= sk.costLearn;
 
-  myLearnedKungfu.push({
-    ...sk,
-    id: "kf_" + Date.now(),
-    tier: 1,
-    progress: 0
-  });
+  // 武學庫 (data_skills.js) 有同名武學時以武學庫設定為準，否則使用門派內的設定
+  myLearnedKungfu.push(createLearnedKungfu(findSkillByRef(sk.name) || sk));
 
   recalcPlayerStats();
   openSectHallModal(sName);
@@ -231,18 +227,9 @@ function joinSect(sName) {
   openSectHallModal(sName);
 }
 
-function checkMySect() {
-  if (player.sect === "無門無派") {
-    alert("少俠當前孤身一人，尚未拜入門派！可前往重慶唐門、華山、全真、少林、武當或金刀門拜師！");
-  } else {
-    openSectHallModal(player.sect);
-  }
-}
-
 window.openSectHallModal = openSectHallModal;
 window.claimSectDaily = claimSectDaily;
 window.joinSect = joinSect;
-window.checkMySect = checkMySect;
 window.promoteRank = promoteRank;
 window.challengeMaster = challengeMaster;
 window.learnFromElder = learnFromElder;

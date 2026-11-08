@@ -145,6 +145,7 @@ body {
 
 #sec-basic { order: 1; }
 #sec-map { order: 2; }
+#sec-place { order: 2; }
 #sec-kungfu { order: 3; }
 #sec-scenes { order: 4; }
 
@@ -478,147 +479,59 @@ body {
 .tossing-coin { animation: coinTossAnim 1.25s infinite ease-in-out; transform-origin: 75px 44px; }
 @keyframes coinTossAnim { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-34px) rotate(360deg); filter: drop-shadow(0 0 6px #f1c40f); } 100% { transform: translateY(0) rotate(720deg); } }
 
-/* 招式特殊特效 */
-.vfx-ittoryu-curtain-top, .vfx-ittoryu-curtain-bottom { 
-  position: absolute; left: 0; width: 100%; height: 50%; background: #020408; z-index: 25; pointer-events: none; 
+/* ========== 招式角色動作 (combat_vfx.js playRigAnimation 調度；時長由 JS 依命中時機設定) ========== */
+.vfx-canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* 衝刺出招：後蹲蓄勢 → 殘影突進至敵前 (40% 為命中瞬間) → 收招歸位 */
+.stick-rig.anim-skill-lunge { animation: skillLunge 0.6s cubic-bezier(0.2, 0.8, 0.25, 1) forwards !important; }
+@keyframes skillLunge {
+  0%   { transform: translateX(0); }
+  16%  { transform: translateX(-16px) scale(1.06, 0.88); }
+  34%  { transform: translateX(168px) skewX(-10deg) scale(1.08, 0.94); filter: drop-shadow(-14px 0 0 rgba(93,173,226,0.45)) drop-shadow(-30px 0 2px rgba(93,173,226,0.2)); }
+  40%  { transform: translateX(176px) skewX(4deg); filter: brightness(1.6); }
+  62%  { transform: translateX(160px); filter: none; }
+  100% { transform: translateX(0); }
 }
-.vfx-ittoryu-curtain-top { top: 0; animation: ittoryuCurtainTop 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.vfx-ittoryu-curtain-bottom { top: 50%; animation: ittoryuCurtainBottom 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-@keyframes ittoryuCurtainTop { 0%, 35% { transform: translateY(0); opacity: 1; } 60%, 100% { transform: translateY(-100%); opacity: 0; } }
-@keyframes ittoryuCurtainBottom { 0%, 35% { transform: translateY(0); opacity: 1; } 60%, 100% { transform: translateY(100%); opacity: 0; } }
 
-.vfx-ittoryu-horizon-slash {
-  position: absolute; top: 50%; left: -5%; width: 110%; height: 4px; background: #fff;
-  box-shadow: 0 0 12px #00cec9, 0 0 25px #0984e3, 0 0 45px #fff; transform: translateY(-50%) scaleX(0);
-  transform-origin: left center; z-index: 30; pointer-events: none; animation: ittoryuHorizonCut 0.45s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+/* 原地運功：沉身聚氣 → 推掌發勁 */
+.stick-rig.anim-skill-cast { animation: skillCast 0.55s ease-out forwards !important; }
+@keyframes skillCast {
+  0%   { transform: none; }
+  30%  { transform: translateY(5px) scale(1.06, 0.9); filter: brightness(1.5) drop-shadow(0 0 10px rgba(93,173,226,0.9)); }
+  50%  { transform: translateX(14px) translateY(-4px); filter: brightness(1.9) drop-shadow(0 0 16px rgba(255,255,255,0.9)); }
+  100% { transform: none; filter: none; }
 }
-@keyframes ittoryuHorizonCut { 0% { transform: translateY(-50%) scaleX(0); } 25% { transform: translateY(-50%) scaleX(1); height: 6px; } 100% { transform: translateY(-50%) scaleX(1.05); opacity: 0; } }
 
-.vfx-ittoryu-horizon-flash {
-  position: absolute; top: 50%; left: 50%; width: 220px; height: 70px; transform: translate(-50%, -50%);
-  background: radial-gradient(ellipse at center, rgba(255,255,255,0.95) 0%, rgba(0,206,201,0.65) 45%, transparent 75%);
-  z-index: 31; pointer-events: none; animation: ittoryuHorizonFlash 0.42s ease-out forwards;
+/* 居合：按刀靜止 → 一閃穿身而過 → 背身收刀 */
+.stick-rig.anim-skill-iai { animation: skillIai 1s cubic-bezier(0.7, 0, 0.2, 1) forwards !important; }
+@keyframes skillIai {
+  0%   { transform: none; }
+  40%  { transform: translateX(-10px) scale(1.04, 0.86); filter: drop-shadow(0 0 8px rgba(127,233,255,0.8)); }
+  52%  { transform: translateX(-10px) scale(1.04, 0.86); }
+  55%  { transform: translateX(250px) skewX(-18deg); opacity: 0.35; }
+  68%  { transform: translateX(262px); opacity: 1; filter: brightness(1.8); }
+  85%  { transform: translateX(262px); filter: none; }
+  100% { transform: none; }
 }
-@keyframes ittoryuHorizonFlash { 0%, 15% { opacity: 0; transform: translate(-50%, -50%) scale(0.2, 1); } 35% { opacity: 1; transform: translate(-50%, -50%) scale(1.6, 0.5); } 100% { opacity: 0; } }
 
-.anim-ittoryu-sheathe-body { animation: ittoryuSheatheBody 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards !important; }
-@keyframes ittoryuSheatheBody { 0% { transform: translateX(0); } 15% { transform: translateX(-15px) scale(0.9, 0.85); filter: brightness(2) drop-shadow(0 0 10px #00cec9); } 35% { transform: translateX(180px); filter: brightness(3.5) drop-shadow(0 0 20px #fff); } 100% { transform: translateX(0); } }
-
-.anim-ittoryu-sheathe-arm { animation: ittoryuSheatheArm 0.95s ease-in-out forwards !important; }
-@keyframes ittoryuSheatheArm { 0% { transform: rotate(0); } 20% { transform: rotate(-30deg); } 35% { transform: rotate(70deg) scaleX(1.3); } 60% { transform: rotate(-55deg) scale(0.92); } 100% { transform: rotate(0); } }
-
-.vfx-ittoryu-glint {
-  position: absolute; left: 200px; top: 98px; width: 26px; height: 26px;
-  background: radial-gradient(circle, #fff 15%, #ffeaa7 55%, transparent 75%);
-  clip-path: polygon(50% 0%, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0% 50%, 38% 38%);
-  z-index: 22; pointer-events: none; animation: ittoryuGlintAnim 0.32s ease-out forwards;
+/* 受擊：閃白後仰 */
+.stick-rig.anim-hit-recoil-enemy { animation: hitRecoilE 0.42s cubic-bezier(0.15, 0.85, 0.3, 1) forwards !important; }
+@keyframes hitRecoilE {
+  0%   { transform: none; filter: none; }
+  10%  { transform: translateX(18px) rotate(8deg) scale(0.94, 1.06); filter: brightness(4) drop-shadow(0 0 10px #fff); }
+  35%  { transform: translateX(12px) rotate(5deg); filter: brightness(1.5); }
+  100% { transform: none; filter: none; }
 }
-@keyframes ittoryuGlintAnim { 0% { transform: scale(0); } 50% { transform: scale(1.75) rotate(90deg); opacity: 1; } 100% { transform: scale(0) rotate(180deg); } }
-
-.vfx-ittoryu-burst {
-  position: absolute; right: 50px; top: 45px; width: 85px; height: 85px; border-radius: 50%;
-  background: radial-gradient(circle, #fff 0%, #ff4757 30%, #e74c3c 65%, transparent 85%);
-  z-index: 22; pointer-events: none; animation: ittoryuBurstAnim 0.4s cubic-bezier(0.1, 0.85, 0.3, 1) forwards;
+.stick-rig.anim-hit-recoil-player { animation: hitRecoilP 0.42s cubic-bezier(0.15, 0.85, 0.3, 1) forwards !important; }
+@keyframes hitRecoilP {
+  0%   { transform: none; filter: none; }
+  10%  { transform: translateX(-18px) rotate(-8deg) scale(0.94, 1.06); filter: brightness(4) drop-shadow(0 0 10px #ff6b6b); }
+  35%  { transform: translateX(-12px) rotate(-5deg); filter: brightness(1.5); }
+  100% { transform: none; filter: none; }
 }
-@keyframes ittoryuBurstAnim { 0% { transform: scale(0.1); opacity: 0; } 35% { transform: scale(2.0); opacity: 1; } 100% { transform: scale(3.0); opacity: 0; } }
 
-.anim-dragon-body { animation: dragonCharge 0.55s ease-out forwards !important; }
-@keyframes dragonCharge { 0% { transform: translateX(0); } 30% { transform: translateX(-25px); filter: drop-shadow(0 0 15px #f1c40f); } 60% { transform: translateX(110px); } 100% { transform: translateX(0); } }
-.vfx-dragon-fly { position: absolute; left: 70px; top: 75px; width: 220px; height: 80px; z-index: 20; pointer-events: none; animation: dragonFlyAnim 0.48s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
-@keyframes dragonFlyAnim { 0% { transform: scale(0.3); opacity: 0; } 30% { transform: scale(1.1); opacity: 1; } 100% { transform: translateX(120px) scale(1.3); opacity: 0; } }
-
-.vfx-buddha-palm { position: absolute; right: 35px; top: 10px; width: 100px; height: 120px; z-index: 20; pointer-events: none; animation: buddhaPalmSmash 0.45s cubic-bezier(0.15, 0.9, 0.2, 1) forwards; }
-@keyframes buddhaPalmSmash { 0% { transform: translateY(-70px) scale(0.5); opacity: 0; } 45% { transform: translateY(0) scale(1.15); opacity: 1; } 100% { transform: translateY(10px) scale(1.3); opacity: 0; } }
-
-.anim-taiji-stance { animation: taijiStanceAnim 0.5s ease-out forwards !important; }
-@keyframes taijiStanceAnim { 0% { transform: translateX(0); } 30% { transform: rotate(8deg); } 60% { transform: translateX(70px) rotate(-8deg); } 100% { transform: translateX(0); } }
-.vfx-taiji-diagram { position: absolute; left: 140px; top: 60px; width: 90px; height: 90px; z-index: 20; pointer-events: none; animation: taijiSpin 0.45s ease-out forwards; }
-@keyframes taijiSpin { 0% { transform: scale(0.2) rotate(0deg); opacity: 0; } 50% { transform: scale(1.2) rotate(360deg); opacity: 1; filter: drop-shadow(0 0 15px #5dade2); } 100% { transform: scale(1.6) rotate(720deg); opacity: 0; } }
-
-.vfx-yiyang-beam { position: absolute; right: 65px; top: -20px; width: 22px; height: 200px; background: linear-gradient(180deg, #ffeaa7 0%, #f1c40f 50%, #e67e22 100%); box-shadow: 0 0 20px #f1c40f, 0 0 40px #fff; border-radius: 10px; z-index: 20; pointer-events: none; animation: yiyangBeamDrop 0.42s ease-out forwards; }
-@keyframes yiyangBeamDrop { 0% { transform: scaleY(0); } 40% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1) scaleX(1.8); opacity: 0; } }
-
-.anim-sanxian-dash { animation: sanxianDashAnim 0.5s ease-out forwards !important; }
-@keyframes sanxianDashAnim { 0% { transform: translateX(0); } 50% { transform: translateX(110px); } 100% { transform: translateX(0); } }
-.vfx-sanxian-line { position: absolute; width: 140px; height: 4px; background: #fff; box-shadow: 0 0 10px #5dade2, 0 0 20px #fff; z-index: 20; pointer-events: none; animation: sanxianRay 0.26s ease-out forwards; }
-.line-1 { left: 160px; top: 75px; transform: rotate(-15deg); }
-.line-2 { left: 165px; top: 95px; transform: rotate(15deg); }
-.line-3 { left: 155px; top: 85px; transform: rotate(0deg); }
-@keyframes sanxianRay { 0% { transform: scaleX(0); opacity: 0; } 40% { transform: scaleX(1); opacity: 1; } 100% { opacity: 0; } }
-
-.vfx-wind-slash { position: absolute; left: 140px; width: 110px; height: 6px; background: linear-gradient(90deg, transparent, #2ecc71, #fff, transparent); box-shadow: 0 0 10px #2ecc71; border-radius: 3px; z-index: 20; pointer-events: none; animation: windSlashAnim 0.26s ease-out forwards; }
-@keyframes windSlashAnim { 0% { transform: translateX(0); } 50% { transform: translateX(80px) scaleY(1.8); opacity: 1; } 100% { transform: translateX(150px) scaleY(0.2); opacity: 0; } }
-
-.anim-jindao-jump { animation: jindaoJumpAnim 0.5s ease-out forwards !important; }
-@keyframes jindaoJumpAnim { 0% { transform: translateX(0) translateY(0); } 30% { transform: translateX(60px) translateY(-50px); } 60% { transform: translateX(120px) translateY(0); } 100% { transform: translateX(0); } }
-.vfx-ground-crack { position: absolute; left: 120px; bottom: 25px; width: 180px; height: 18px; background: linear-gradient(90deg, transparent, #f39c12, #e74c3c, transparent); box-shadow: 0 0 16px #f39c12; clip-path: polygon(0 40%, 30% 0, 60% 80%, 100% 30%, 80% 100%, 20% 70%); z-index: 20; pointer-events: none; animation: groundCrackAnim 0.42s ease-out forwards; }
-@keyframes groundCrackAnim { 0% { transform: scaleX(0.2); } 40% { transform: scaleX(1); opacity: 1; } 100% { opacity: 0; } }
-
-.vfx-bagua-blade { position: absolute; left: 150px; top: 60px; width: 100px; height: 100px; border-radius: 50%; border: 4px dashed #f1c40f; box-shadow: 0 0 14px #e67e22; z-index: 20; pointer-events: none; animation: baguaBladeSpin 0.38s linear forwards; }
-@keyframes baguaBladeSpin { 0% { transform: scale(0.3) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(180deg); opacity: 1; } 100% { transform: scale(1.4) rotate(360deg); opacity: 0; } }
-
-.vfx-cross-slash { position: absolute; right: 55px; top: 65px; width: 70px; height: 70px; z-index: 20; pointer-events: none; background: conic-gradient(from 45deg, #fff 0deg 90deg, transparent 90deg 180deg, #fff 180deg 270deg, transparent 270deg 360deg); animation: crossSlashAnim 0.32s ease-out forwards; }
-@keyframes crossSlashAnim { 0% { transform: scale(0.2); opacity: 0; } 50% { transform: scale(1.3); opacity: 1; filter: drop-shadow(0 0 12px #fff); } 100% { opacity: 0; } }
-
-.vfx-ocean-wave { position: absolute; left: 130px; top: 60px; width: 140px; height: 80px; z-index: 20; pointer-events: none; background: radial-gradient(ellipse at center, rgba(52,152,219,0.85) 0%, rgba(41,128,185,0.4) 60%, transparent 80%); clip-path: polygon(0 100%, 30% 20%, 60% 60%, 100% 0, 80% 100%); animation: oceanWaveAnim 0.4s ease-out forwards; }
-@keyframes oceanWaveAnim { 0% { transform: scale(0.3); } 50% { transform: scale(1.2) translateX(40px); opacity: 1; } 100% { opacity: 0; } }
-
-.anim-shadowless-body { animation: shadowlessDash 0.5s ease-out forwards !important; }
-@keyframes shadowlessDash { 0% { transform: translateX(0); } 30% { transform: translateX(90px); filter: drop-shadow(-20px 0 0 rgba(41,128,185,0.6)); } 100% { transform: translateX(0); } }
-.vfx-shadowless-fist { position: absolute; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle, #fff 10%, #2980b9 60%, transparent 80%); box-shadow: 0 0 10px #5dade2; z-index: 20; pointer-events: none; animation: shadowlessFistAnim 0.22s ease-out forwards; }
-@keyframes shadowlessFistAnim { 0% { transform: scale(0.2); } 50% { transform: scale(1.4); opacity: 1; } 100% { opacity: 0; } }
-
-.vfx-tiger-claw { position: absolute; right: 55px; top: 65px; width: 65px; height: 65px; z-index: 20; pointer-events: none; background: linear-gradient(135deg, transparent 40%, #e74c3c 45%, #fff 50%, #e74c3c 55%, transparent 60%); animation: tigerClawAnim 0.3s ease-out forwards; }
-@keyframes tigerClawAnim { 0% { transform: scale(0.3); } 50% { transform: scale(1.3); opacity: 1; } 100% { opacity: 0; } }
-.vfx-crane-beak { position: absolute; right: 65px; top: 75px; width: 45px; height: 8px; background: linear-gradient(90deg, #fff, #bdc3c7); box-shadow: 0 0 8px #fff; border-radius: 4px; z-index: 20; pointer-events: none; animation: craneBeakAnim 0.24s ease-out forwards; }
-@keyframes craneBeakAnim { 0% { transform: scaleX(0.2); } 50% { transform: scaleX(1.4); opacity: 1; } 100% { opacity: 0; } }
-
-.vfx-riyue-punch { position: absolute; left: 160px; width: 45px; height: 20px; background: linear-gradient(90deg, #f39c12, #fff); border-radius: 10px; box-shadow: 0 0 10px #f1c40f; z-index: 20; pointer-events: none; animation: riyuePunchAnim 0.2s ease-out forwards; }
-@keyframes riyuePunchAnim { 0% { transform: translateX(0); } 50% { transform: translateX(70px) scale(1.2); opacity: 1; } 100% { opacity: 0; } }
-
-.anim-youming-kick { animation: youmingKickAnim 0.52s ease-out forwards !important; }
-@keyframes youmingKickAnim { 0% { transform: translateX(0) translateY(0); } 30% { transform: translateX(80px) translateY(-40px) rotate(30deg); } 100% { transform: translateX(0); } }
-.vfx-youming-flame { position: absolute; right: 50px; top: 55px; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, #fff 0%, #9b59b6 40%, #8e44ad 70%, transparent 85%); box-shadow: 0 0 20px #8e44ad; z-index: 20; pointer-events: none; animation: youmingFlameAnim 0.4s ease-out forwards; }
-@keyframes youmingFlameAnim { 0% { transform: scale(0.2); } 50% { transform: scale(1.6); opacity: 1; } 100% { opacity: 0; } }
-
-.anim-sweep-body { animation: sweepSpin 0.48s ease-out forwards !important; }
-@keyframes sweepSpin { 0% { transform: translateX(0) rotate(0deg); } 100% { transform: translateX(0) rotate(360deg); } }
-.vfx-sweep-tornado { position: absolute; left: 150px; bottom: 25px; width: 70px; height: 100px; background: radial-gradient(ellipse at center, rgba(149,165,166,0.8) 0%, transparent 70%); border-radius: 50%; z-index: 20; pointer-events: none; animation: sweepTornadoAnim 0.38s ease-out forwards; }
-@keyframes sweepTornadoAnim { 0% { transform: scale(0.3); } 50% { transform: scale(1.3) translateX(60px); opacity: 1; } 100% { opacity: 0; } }
-
-.vfx-tan-kick { position: absolute; right: 60px; bottom: 35px; width: 80px; height: 35px; background: radial-gradient(ellipse at center, #5dade2 0%, transparent 75%); border-radius: 50%; z-index: 20; pointer-events: none; animation: tanKickAnim 0.3s ease-out forwards; }
-@keyframes tanKickAnim { 0% { transform: scale(0.3); } 50% { transform: scale(1.3); opacity: 1; } 100% { opacity: 0; } }
-
-.vfx-storm-rain { position: absolute; left: 130px; top: 40px; width: 170px; height: 100px; background: repeating-linear-gradient(135deg, #fff 0px 4px, transparent 4px 14px); z-index: 20; pointer-events: none; animation: stormRainAnim 0.4s ease-out forwards; }
-@keyframes stormRainAnim { 0% { transform: scale(0.4); } 40% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 10px #fff); } 100% { opacity: 0; } }
-
-.vfx-flower-rain { position: absolute; left: 130px; top: 40px; width: 170px; height: 100px; background: radial-gradient(circle, #ff7675 20%, #fd79a8 50%, transparent 70%); z-index: 20; pointer-events: none; animation: flowerRainAnim 0.38s ease-out forwards; }
-@keyframes flowerRainAnim { 0% { transform: scale(0.2); } 50% { transform: scale(1.2); opacity: 1; } 100% { opacity: 0; } }
-
-.anim-tanzhi-body { animation: tanzhiLunge 0.45s ease-out forwards !important; }
-@keyframes tanzhiLunge { 0% { transform: translateX(0); } 30% { transform: translateX(-15px) rotate(-10deg); filter: drop-shadow(0 0 10px #54a0ff); } 100% { transform: translateX(0); } }
-.vfx-tanzhi-laser { position: absolute; height: 6px; background: linear-gradient(90deg, #fff, #00d2d3, #54a0ff); box-shadow: 0 0 15px #54a0ff, 0 0 5px #fff; border-radius: 3px; z-index: 20; pointer-events: none; animation: laserFly 0.26s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
-@keyframes laserFly { 0% { left: 90px; top: 108px; width: 10px; opacity: 1; } 50% { width: 180px; opacity: 1; } 100% { left: 330px; top: 108px; width: 30px; opacity: 0; } }
-
-.vfx-ancestor-fury { position: absolute; right: 40px; top: 20px; width: 120px; height: 120px; background: radial-gradient(circle, #2ecc71 10%, #1abc9c 40%, transparent 70%); border-radius: 50%; z-index: 20; pointer-events: none; animation: ancestorFuryAnim 0.45s ease-out forwards; }
-@keyframes ancestorFuryAnim { 0% { transform: scale(0.2); } 50% { transform: scale(1.4); opacity: 1; filter: drop-shadow(0 0 16px #2ecc71); } 100% { opacity: 0; } }
-
-.vfx-poison-dart { position: absolute; left: 110px; top: 90px; width: 130px; height: 6px; background: linear-gradient(90deg, #2ecc71, #27ae60, transparent); box-shadow: 0 0 10px #2ecc71; border-radius: 3px; z-index: 20; pointer-events: none; animation: dartFly 0.28s ease-out forwards; }
-@keyframes dartFly { 0% { transform: scaleX(0.2); } 50% { transform: scaleX(1) translateX(60px); opacity: 1; } 100% { transform: translateX(120px); opacity: 0; } }
-
-.vfx-quick-iai { position: absolute; left: 140px; top: 60px; width: 120px; height: 50px; border-bottom: 4px solid #54a0ff; border-radius: 50%; box-shadow: 0 4px 10px #00d2d3; z-index: 20; pointer-events: none; animation: quickIaiAnim 0.28s ease-out forwards; }
-@keyframes quickIaiAnim { 0% { transform: scale(0.2); } 50% { transform: scale(1.2); opacity: 1; } 100% { opacity: 0; } }
-
-.vfx-mad-staff { position: absolute; right: 55px; top: 35px; width: 14px; height: 110px; background: linear-gradient(180deg, #d35400, #b87333); box-shadow: 0 0 12px #d35400; border-radius: 7px; z-index: 20; pointer-events: none; animation: madStaffSmash 0.35s ease-out forwards; }
-@keyframes madStaffSmash { 0% { transform: rotate(-60deg) scale(0.5); opacity: 0; } 50% { transform: rotate(15deg) scale(1.2); opacity: 1; } 100% { opacity: 0; } }
-
-.vfx-taizu-blast { position: absolute; left: 140px; top: 70px; width: 80px; height: 50px; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(230,126,34,0.85) 0%, transparent 75%); z-index: 20; pointer-events: none; animation: taizuBlastAnim 0.26s ease-out forwards; }
-@keyframes taizuBlastAnim { 0% { transform: scale(0.2); } 50% { transform: scale(1.3) translateX(40px); opacity: 1; } 100% { opacity: 0; } }
-
-.vfx-basic-stab { position: absolute; left: 160px; top: 85px; width: 70px; height: 3px; background: #fff; box-shadow: 0 0 8px #fff; z-index: 20; pointer-events: none; animation: basicStabAnim 0.22s ease-out forwards; }
-@keyframes basicStabAnim { 0% { transform: scaleX(0.2); } 50% { transform: scaleX(1.3); opacity: 1; } 100% { opacity: 0; } }
-
-@keyframes qiShieldPulse { 0% { transform: scale(0.6); opacity: 0; } 40% { transform: scale(1.15); opacity: 0.95; } 100% { transform: scale(1.35); opacity: 0; } }
+/* 頓幀：命中瞬間所有角色動作暫停 */
+.hitstop-active .stick-rig, .hitstop-active .stick-rig * { animation-play-state: paused !important; }
 
 /* 傷害飄字 */
 .dmg-num {
@@ -688,6 +601,7 @@ body {
 }
 
 .game-phone.chat-expanded #sec-map,
+.game-phone.chat-expanded #sec-place,
 .game-phone.chat-expanded #sec-scenes,
 .game-phone.chat-expanded #sec-kungfu {
   display: none !important;
@@ -845,159 +759,6 @@ body {
    現代手遊級高階視覺特效規範 (Shadow Fight & 國風動態光影架構)
    ========================================================================== */
 
-/* 全螢幕現代手遊震撼震顫 (微縮放 + 色差感衝擊) */
-.impact-shake {
-  animation: modernImpactShake 0.38s cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
-}
-@keyframes modernImpactShake {
-  0% { transform: scale(1) translate3d(0, 0, 0); filter: brightness(1.8) contrast(1.2); }
-  15% { transform: scale(1.035) translate3d(-6px, 4px, 0); filter: brightness(2.2); }
-  35% { transform: scale(0.985) translate3d(5px, -5px, 0); filter: brightness(1.4); }
-  60% { transform: scale(1.01) translate3d(-3px, 2px, 0); filter: brightness(1.1); }
-  85% { transform: scale(0.995) translate3d(1px, -1px, 0); }
-  100% { transform: scale(1) translate3d(0, 0, 0); filter: brightness(1); }
-}
-
-/* 命中微秒頓幀白閃 (Hitstop Flash Overlay) */
-.arena-hitstop-flash {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 60%, transparent 90%);
-  pointer-events: none;
-  z-index: 28;
-  mix-blend-mode: overlay;
-  animation: hitstopFlashAnim 0.16s ease-out forwards;
-}
-@keyframes hitstopFlashAnim {
-  0% { opacity: 0; transform: scale(0.85); }
-  30% { opacity: 1; transform: scale(1.05); }
-  100% { opacity: 0; transform: scale(1.2); }
-}
-
-/* 現代衝刺拉伸 (Squash & Stretch Dash) */
-.anim-modern-dash-player {
-  animation: modernDashP 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
-@keyframes modernDashP {
-  0% { transform: translateX(0) scale(1, 1); }
-  18% { transform: translateX(-24px) scale(0.82, 1.15) rotate(-6deg); filter: drop-shadow(0 0 10px rgba(93,173,226,0.6)); }
-  45% { transform: translateX(138px) scale(1.28, 0.78); filter: drop-shadow(-20px 0 15px rgba(255,255,255,0.8)); }
-  70% { transform: translateX(148px) scale(0.92, 1.08); }
-  100% { transform: translateX(0) scale(1, 1); }
-}
-
-.anim-modern-dash-enemy {
-  animation: modernDashE 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
-@keyframes modernDashE {
-  0% { transform: scaleX(-1) translateX(0) scale(1, 1); }
-  18% { transform: scaleX(-1) translateX(-24px) scale(0.82, 1.15) rotate(-6deg); filter: drop-shadow(0 0 10px rgba(231,76,60,0.6)); }
-  45% { transform: scaleX(-1) translateX(138px) scale(1.28, 0.78); filter: drop-shadow(-20px 0 15px rgba(255,255,255,0.8)); }
-  70% { transform: scaleX(-1) translateX(148px) scale(0.92, 1.08); }
-  100% { transform: scaleX(-1) translateX(0) scale(1, 1); }
-}
-
-/* 現代動態手遊級重擊受擊 (物理反彈 + 軀幹扭曲形變) */
-.anim-modern-hit-recoil-player {
-  animation: modernHitRecoilP 0.52s cubic-bezier(0.05, 0.85, 0.25, 1) forwards !important;
-}
-@keyframes modernHitRecoilP {
-  0% { transform: translateX(0) rotate(0deg) scale(1, 1); }
-  12% { transform: translateX(-36px) rotate(-18deg) scale(0.8, 1.25); filter: brightness(3.5) drop-shadow(0 0 18px #ff4757); }
-  35% { transform: translateX(-56px) rotate(-26deg) scale(1.15, 0.85); }
-  65% { transform: translateX(-16px) rotate(4deg) scale(0.95, 1.05); }
-  85% { transform: translateX(-4px) rotate(-1deg); }
-  100% { transform: translateX(0) rotate(0deg) scale(1, 1); filter: brightness(1); }
-}
-
-.anim-modern-hit-recoil-enemy {
-  animation: modernHitRecoilE 0.52s cubic-bezier(0.05, 0.85, 0.25, 1) forwards !important;
-}
-@keyframes modernHitRecoilE {
-  0% { transform: scaleX(-1) translateX(0) rotate(0deg) scale(1, 1); }
-  12% { transform: scaleX(-1) translateX(-36px) rotate(-18deg) scale(0.8, 1.25); filter: brightness(3.5) drop-shadow(0 0 18px #ff4757); }
-  35% { transform: scaleX(-1) translateX(-56px) rotate(-26deg) scale(1.15, 0.85); }
-  65% { transform: scaleX(-1) translateX(-16px) rotate(4deg) scale(0.95, 1.05); }
-  85% { transform: scaleX(-1) translateX(-4px) rotate(-1deg); }
-  100% { transform: scaleX(-1) translateX(0) rotate(0deg) scale(1, 1); filter: brightness(1); }
-}
-
-/* 現代多段光刃斬擊動畫 */
-.vfx-modern-slash-mesh {
-  position: absolute;
-  pointer-events: none;
-  animation: modernSlashAnim 0.34s cubic-bezier(0.12, 0.9, 0.2, 1) forwards;
-}
-@keyframes modernSlashAnim {
-  0% { opacity: 0; transform: scale(0.3) rotate(var(--slash-angle, 0deg)); filter: brightness(2); }
-  35% { opacity: 1; transform: scale(1.25) rotate(var(--slash-angle, 0deg)); filter: brightness(2.6); }
-  100% { opacity: 0; transform: scale(1.48) rotate(var(--slash-angle, 0deg)) translateY(-10px); filter: brightness(0.8); }
-}
-
-/* 現代震波衝擊環 (Shockwave Ring) */
-.vfx-shockwave-ring {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  box-sizing: border-box;
-  animation: shockwaveExpand 0.4s cubic-bezier(0.15, 0.85, 0.35, 1.2) forwards;
-}
-@keyframes shockwaveExpand {
-  0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; border-width: 8px; }
-  60% { opacity: 0.8; border-width: 3.5px; }
-  100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; border-width: 1px; }
-}
-
-/* 現代手遊爆裂光芒火花粒 (Sparks Spray) */
-.vfx-spark-particle {
-  position: absolute;
-  pointer-events: none;
-  border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
-  animation: sparkSprayAnim 0.45s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
-}
-@keyframes sparkSprayAnim {
-  0% { transform: translate(0, 0) scale(1.5); opacity: 1; }
-  100% { transform: translate(var(--spark-tx, 30px), var(--spark-ty, -30px)) scale(0.2); opacity: 0; }
-}
-
-/* 現代高階水墨黑幕與焦點聚光 (Dramatic Cutscene Blackout) */
-.vfx-cutscene-blackout {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 65% 55%, rgba(0,0,0,0.5) 0%, rgba(2,4,8,0.95) 75%);
-  z-index: 21;
-  pointer-events: none;
-  animation: blackoutFadeInOut 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-@keyframes blackoutFadeInOut {
-  0% { opacity: 0; }
-  25% { opacity: 1; }
-  75% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-/* 居合空間裂縫光軌 (Dimensional Void Crack) */
-.vfx-void-crack {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: 5px;
-  background: #ffffff;
-  box-shadow: 0 0 16px #00f2fe, 0 0 35px #4facfe, 0 0 50px #ffffff;
-  pointer-events: none;
-  z-index: 26;
-  transform-origin: center center;
-  animation: voidCrackSnap 0.46s cubic-bezier(0.1, 0.95, 0.25, 1) forwards;
-}
-@keyframes voidCrackSnap {
-  0% { transform: scaleX(0) scaleY(0.5); opacity: 0; }
-  20% { transform: scaleX(1) scaleY(1.8); opacity: 1; }
-  45% { transform: scaleX(1.05) scaleY(3.5); filter: brightness(3); }
-  100% { transform: scaleX(1.1) scaleY(0); opacity: 0; }
-}
-
 /* 現代精緻爆擊飄字浮動效果 */
 .dmg-crit {
   animation: modernCritPop 0.75s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards !important;
@@ -1009,3 +770,51 @@ body {
   75% { transform: translateY(-38px) scale(1); opacity: 0.9; }
   100% { transform: translateY(-56px) scale(0.85); opacity: 0; }
 }
+
+/* ==================== 城鎮人物面板 (覆蓋地圖區) ==================== */
+.npc-panel {
+  background: #0d1117; border: 1.5px solid #283344; border-radius: 6px;
+  padding: 10px; margin-bottom: 10px; min-height: 146px;
+  display: flex; gap: 10px; animation: npcPanelIn 0.22s ease-out;
+}
+@keyframes npcPanelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.npc-panel.foe { border-color: #5c2a2a; box-shadow: inset 0 0 18px rgba(231, 76, 60, 0.12); }
+.npc-portrait {
+  width: 64px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.npc-portrait svg { width: 58px; height: 70px; }
+.npc-portrait .npc-tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; border: 1px solid #3d4a60; color: #8ca0b3; white-space: nowrap; }
+.npc-panel.foe .npc-tag { border-color: #e74c3c; color: #ff7675; }
+.npc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.npc-name { font-size: 14px; font-weight: bold; color: #fff; }
+.npc-name small { color: var(--gold); font-size: 11px; margin-left: 4px; font-weight: normal; }
+.npc-desc { font-size: 11px; color: #8ca0b3; line-height: 1.45; }
+.npc-stats { font-size: 11px; color: #cad3df; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.npc-stats b { color: var(--gold); font-weight: normal; }
+.npc-bubble {
+  position: relative; background: #171d27; border: 1px solid #334155; border-radius: 6px;
+  padding: 6px 9px; font-size: 12px; color: #f1e3b5; line-height: 1.5; min-height: 32px;
+}
+.npc-bubble::before {
+  content: ""; position: absolute; left: -6px; top: 10px; border: 6px solid transparent; border-left: 0; border-right-color: #334155;
+}
+.npc-actions { display: flex; gap: 6px; margin-top: auto; }
+.npc-actions .wuxia-btn { flex: 1; padding: 5px 4px; font-size: 12px; }
+
+/* 戰鬥狀態標籤（增益 / 減益） */
+.status-row { position: absolute; bottom: 100%; left: 0; width: 120px; display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 2px; }
+.status-badge { font-size: 9px; line-height: 1; padding: 2px 3px; border-radius: 3px; font-weight: bold; white-space: nowrap; }
+.status-badge sub { font-size: 7px; margin-left: 1px; vertical-align: baseline; opacity: 0.8; }
+.status-badge.good { background: rgba(52, 152, 219, 0.25); border: 1px solid #3498db; color: #8fd3ff; }
+.status-badge.bad { background: rgba(231, 76, 60, 0.22); border: 1px solid #e74c3c; color: #ff9a8f; }
+
+/* 地點面板（取代場景 / 門派 / 當鋪 / 行囊 / 信件 / 打坐彈窗，覆蓋地圖區） */
+.place-page { display: none; background: #0d1117; border: 1.5px solid #283344; border-radius: 6px; margin-bottom: 10px; animation: npcPanelIn 0.22s ease-out; }
+.place-page.active { display: block; }
+.place-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 7px 10px; border-bottom: 1px solid #283344; font-size: 13.5px; font-weight: bold; color: var(--cyan); }
+.place-back { padding: 1px 8px !important; font-size: 10.5px !important; border-color: var(--cyan) !important; color: var(--cyan) !important; flex-shrink: 0; }
+.place-body { padding: 10px; }
+.place-desc { font-size: 12px; color: #8ca0b3; margin-bottom: 10px; }
+#pg-npc .npc-panel { border: none; margin: 0; }
+.meditate-taiji { font-size: 32px; margin-bottom: 6px; display: inline-block; animation: taijiSpin 6s linear infinite; }
+@keyframes taijiSpin { to { transform: rotate(360deg); } }

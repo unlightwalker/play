@@ -166,6 +166,7 @@ function toggleKungfuInlineView() {
   const kfBtn = document.getElementById('btn-kungfu-toggle');
 
   if (isKungfuInlineOpen) {
+    if (typeof closePlacePanel === 'function') closePlacePanel();
     if (secMap) secMap.style.display = 'none';
     if (secScenes) secScenes.style.display = 'none';
     if (secKungfu) secKungfu.style.display = 'block';
@@ -184,11 +185,6 @@ function toggleKungfuInlineView() {
   }
 }
 
-// 相容舊函式介面
-function openKungfuModal() {
-  toggleKungfuInlineView();
-}
-
 function switchToNormalMode() {
   isKungfuInlineOpen = false;
   const secMap = document.getElementById('sec-map');
@@ -197,7 +193,9 @@ function switchToNormalMode() {
   const hintEl = document.getElementById('basic-mode-hint');
   const kfBtn = document.getElementById('btn-kungfu-toggle');
 
-  if (secMap) secMap.style.display = 'block';
+  // 地點面板開啟中時維持覆蓋地圖
+  const placeOpen = (typeof currentPlacePage !== 'undefined' && currentPlacePage);
+  if (secMap) secMap.style.display = placeOpen ? 'none' : 'block';
   if (secScenes) secScenes.style.display = 'block';
   if (secKungfu) secKungfu.style.display = 'none';
   if (hintEl) hintEl.style.display = 'none';
@@ -318,26 +316,24 @@ function renderLearnedKungfuList() {
     const reqW = (typeof getSkillWeaponReq === 'function') ? getSkillWeaponReq(kf) : "任意";
     const colorClass = getRarityColorClass(kf.rarity);
 
-    let statText = "";
-    if (kf.statBonus && kf.tier >= 2) {
-      const names = { arm: "臂力", speed: "身法", bone: "根骨", inner: "內功" };
-      const mult = 1 + (kf.tier - 2) * 0.2 + (kf.progress / 100) * 0.2;
-      statText = Object.keys(kf.statBonus).map(k => `${names[k]}+${Math.floor(kf.statBonus[k] * mult)}`).join(' ');
-    } else if (kf.tier < 2) {
-      statText = "一重暫無六維加成";
-    }
+    // 六維加成：與實際結算 (main.js getKungfuInterpolatedStat) 完全一致
+    const statNames = { arm: "臂力", speed: "身法", bone: "根骨", inner: "內功", int: "悟性", luck: "福緣" };
+    const statText = Object.keys(statNames)
+      .map(k => ({ k, v: getKungfuInterpolatedStat(kf, k) }))
+      .filter(s => s.v !== 0)
+      .map(s => `${statNames[s.k]}${s.v > 0 ? '+' : ''}${s.v}`)
+      .join(' ');
 
+    const tierMult = getKungfuTierMult(kf);
     let detailStats = "";
     if (kf.type === 'external') {
-      const curMult = ((Number(kf.baseMult) || 1.3) * (1 + (kf.tier - 1) * 0.18 + (kf.progress / 100) * 0.18)).toFixed(2);
+      const curMult = ((Number(kf.baseMult) || 1.3) * tierMult).toFixed(2);
       const isMatch = (typeof isSkillCompatibleWithWeapon === 'function') ? isSkillCompatibleWithWeapon(kf, curW) : true;
       detailStats = `威力：<b style="color:var(--cyan);">${curMult}x</b> | 兵刃: <b>${reqW}</b> ${isMatch ? '<span style="color:#2ecc71;">(契合)</span>' : '<span style="color:#e74c3c;">(未符)</span>'}`;
     } else if (kf.type === 'internal') {
-      const curHp = Math.floor((Number(kf.baseHpBonus) || 50) * (1 + (kf.tier - 1) * 0.22));
-      detailStats = `氣血+${curHp} 防禦+${Math.floor((Number(kf.baseDefBonus) || 4) * (1 + (kf.tier - 1) * 0.22))}`;
+      detailStats = `氣血+${Math.floor(getKungfuBaseValue(kf, 'hp') * tierMult)} 防禦+${Math.floor(getKungfuBaseValue(kf, 'def') * tierMult)}`;
     } else if (kf.type === 'qinggong') {
-      const curSpd = Math.floor((Number(kf.baseSpeedBonus) || 12) * (1 + (kf.tier - 1) * 0.25));
-      detailStats = `身法+${curSpd}`;
+      detailStats = `身法+${Math.floor(getKungfuBaseValue(kf, 'speed') * tierMult)}`;
     }
 
     const jumpProgressVal = (player.talents && player.talents.some(t => t.kfJumpProgress)) ? 50 : 25;
@@ -497,7 +493,7 @@ function learnKwoonSkill(name, costLearn, costGold) {
     return;
   }
   const sk = (typeof GLOBAL_SKILLS !== 'undefined') ? GLOBAL_SKILLS.find(s => s.name === name) : null;
-  const template = sk || { name, type: "external", weaponReq: "任意", rarity: "良品", tier: 1, progress: 0, baseMult: 1.6, statBonus: { arm: 4 }, jinyongDesc: "外家絕招！" };
+  if (!sk) { alert("武館查無此門武學！"); return; }
 
   if (myLearnedKungfu.some(k => k.name === name)) {
     alert("你早已領會此門武學！");
@@ -506,10 +502,10 @@ function learnKwoonSkill(name, costLearn, costGold) {
 
   player.learn -= costLearn;
   player.gold -= costGold;
-  myLearnedKungfu.push({ ...template, id: "kf_" + Date.now() });
+  myLearnedKungfu.push(createLearnedKungfu(sk));
 
   recalcPlayerStats();
-  closeModal('modal-scene');
+  if (typeof refreshCurrentScene === 'function') refreshCurrentScene();
   if (typeof pushChatMessage === 'function') {
     pushChatMessage('system', '【武館研習】', `參悟成功！你習得了【${name}】！初始為【初學者（一重 0%）】，請至「武學」配戴！`, '#ff9f43');
   }
@@ -532,12 +528,7 @@ function studyKungfuBook(itemIdx) {
   }
 
   player.learn -= reqLearn;
-  myLearnedKungfu.push({
-    ...sk,
-    id: "kf_" + Date.now(),
-    tier: 1,
-    progress: 0
-  });
+  myLearnedKungfu.push(createLearnedKungfu(sk));
 
   player.inventory.splice(itemIdx, 1);
   recalcPlayerStats();
@@ -687,35 +678,85 @@ function usePillFromBag(itemIdx) {
   renderBagUI();
 }
 
-function buyItemToBag(name, cost) {
-  if (player.gold < cost) { alert("銀兩不足！"); return; }
-  const template = (typeof GLOBAL_ITEMS !== 'undefined') ? GLOBAL_ITEMS.find(i => i.name === name) : null;
-  const itemObj = template ? { ...template } : {
-    name, type: "weapon", weaponType: "劍", rarity: "良品", atk: 18, speed: 4, desc: "精良兵刃"
-  };
-  player.gold -= cost;
-  player.inventory.push({ ...itemObj, id: "item_" + Date.now() });
-  recalcPlayerStats();
-  closeModal('modal-scene');
-  alert(`🛍️ 購置成功！【${name}】已放入行囊！`);
+// ==================== 物品入囊 (商店購買 / 戰利品掉落共用) ====================
+function findItemByRef(ref) {
+  if (typeof GLOBAL_ITEMS === 'undefined') return null;
+  return GLOBAL_ITEMS.find(i => i.id === ref) || GLOBAL_ITEMS.find(i => i.name === ref) || null;
 }
 
-function buyPillToBag(name, cost) {
-  if (player.gold < cost) { alert("銀兩不足！"); return; }
-  const template = (typeof GLOBAL_ITEMS !== 'undefined') ? GLOBAL_ITEMS.find(i => i.name === name) : null;
-  const pillObj = template ? { ...template } : {
-    name, type: "pill", rarity: "良品", healHp: 120, desc: "滋補靈丹"
-  };
-  player.gold -= cost;
-  const existing = player.inventory.find(i => i.name === name);
-  if (existing) {
-    existing.count = (existing.count || 1) + 1;
-  } else {
-    player.inventory.push({ ...pillObj, id: "pill_" + Date.now(), count: 1 });
+function findSkillByRef(ref) {
+  if (typeof GLOBAL_SKILLS === 'undefined') return null;
+  return GLOBAL_SKILLS.find(s => s.id === ref) || GLOBAL_SKILLS.find(s => s.name === ref) || null;
+}
+
+/**
+ * 放入行囊；kind: "item" (物品 id/名稱) 或 "book" (武學 id/名稱 → 秘笈)
+ * 回傳放入的物品名稱，找不到資料時回傳 null
+ */
+function grantLootToBag(kind, ref, count = 1) {
+  count = Math.max(1, Number(count) || 1);
+  if (kind === 'book') {
+    const sk = findSkillByRef(ref);
+    if (!sk) return null;
+    const rarity = sk.rarity || "良品";
+    for (let i = 0; i < count; i++) {
+      player.inventory.push({
+        id: "book_" + Date.now() + "_" + i,
+        name: `《${sk.name}秘笈》`,
+        type: "book",
+        rarity,
+        costLearn: (rarity === "神品") ? 180 : (rarity === "絕品" ? 100 : 50),
+        skillData: { ...sk },
+        desc: `記載著【${rarity}】絕技【${sk.name}】精深心法的秘笈殘卷。研讀需體悟耗費學點。`
+      });
+    }
+    return `《${sk.name}秘笈》`;
   }
+
+  const tpl = findItemByRef(ref);
+  if (!tpl) return null;
+  if (tpl.type === 'pill') {
+    const existing = player.inventory.find(i => i.type === 'pill' && i.name === tpl.name);
+    if (existing) existing.count = (existing.count || 1) + count;
+    else player.inventory.push({ ...tpl, templateId: tpl.id, id: "pill_" + Date.now(), count });
+  } else {
+    for (let i = 0; i < count; i++) {
+      player.inventory.push({ ...tpl, templateId: tpl.id, id: "item_" + Date.now() + "_" + i });
+    }
+  }
+  return tpl.name;
+}
+
+// 依掉落表 [{kind, ref, rate, count}] 擲骰，回傳獲得的物品名稱清單
+function rollDropTable(drops, sourceName) {
+  const got = [];
+  if (!Array.isArray(drops)) return got;
+  drops.forEach(d => {
+    if (!d || !d.ref) return;
+    if (Math.random() * 100 >= (Number(d.rate) || 0)) return;
+    const name = grantLootToBag(d.kind || 'item', d.ref, d.count);
+    if (name) {
+      const cnt = Math.max(1, Number(d.count) || 1);
+      got.push(cnt > 1 ? `${name} x${cnt}` : name);
+    }
+  });
+  if (got.length > 0 && typeof pushChatMessage === 'function') {
+    pushChatMessage('system', '【戰利品】', `擊敗【${sourceName}】，拾得 ${got.join('、')}，已放入行囊！`, '#f1c40f');
+  }
+  return got;
+}
+
+// 商店購買（場景 goods 清單）
+function buyGoodsToBag(ref, price) {
+  price = Number(price) || 0;
+  const tpl = findItemByRef(ref);
+  if (!tpl) { alert("掌櫃翻遍貨架也找不到這件貨品！"); return; }
+  if (player.gold < price) { alert("銀兩不足！"); return; }
+  player.gold -= price;
+  grantLootToBag('item', tpl.id || tpl.name, 1);
   recalcPlayerStats();
-  closeModal('modal-scene');
-  alert(`💊 購買成功！【${name}】已放入行囊！`);
+  if (typeof refreshCurrentScene === 'function') refreshCurrentScene();
+  alert(`🛍️ 購置成功！【${tpl.name}】已放入行囊！（餘 ${player.gold} 兩）`);
 }
 
 // ==================== 5. 轉生輪迴 (通天塔 50 層限制與 10 選 N) ====================
@@ -945,9 +986,7 @@ function confirmReincarnationWithTalents() {
   };
   player.statsEncounter = { arm: 0, speed: 0, bone: 0, inner: 0, int: 0, luck: 0 };
 
-  myLearnedKungfu = (typeof GLOBAL_SKILLS !== 'undefined') ? [
-    GLOBAL_SKILLS[0], GLOBAL_SKILLS[1], GLOBAL_SKILLS[2], GLOBAL_SKILLS[3]
-  ] : [];
+  myLearnedKungfu = getStarterKungfuList();
 
   keptKungfus.forEach(k => {
     if (!myLearnedKungfu.some(x => x.name === k.name)) {
@@ -965,11 +1004,12 @@ function confirmReincarnationWithTalents() {
     ...keptGears
   ];
 
+  const externals = myLearnedKungfu.filter(k => k.type === 'external');
   equippedSlots = {
-    internal: myLearnedKungfu.find(k => k.type === 'internal') || myLearnedKungfu[2],
-    qinggong: myLearnedKungfu.find(k => k.type === 'qinggong') || myLearnedKungfu[3],
-    ext0: myLearnedKungfu[0],
-    ext1: myLearnedKungfu[1]
+    internal: myLearnedKungfu.find(k => k.type === 'internal') || null,
+    qinggong: myLearnedKungfu.find(k => k.type === 'qinggong') || null,
+    ext0: externals[0] || null,
+    ext1: externals[1] || null
   };
 
   closeModal('modal-reincarnation');
@@ -989,7 +1029,6 @@ window.showStatDetail = showStatDetail;
 window.selectAvatar = selectAvatar;
 window.setKungfuFilter = setKungfuFilter;
 window.toggleKungfuInlineView = toggleKungfuInlineView;
-window.openKungfuModal = openKungfuModal;
 window.switchToNormalMode = switchToNormalMode;
 window.renderKungfuSlots = renderKungfuSlots;
 window.renderLearnedKungfuList = renderLearnedKungfuList;
@@ -1003,8 +1042,11 @@ window.renderBagUI = renderBagUI;
 window.equipGearFromBag = equipGearFromBag;
 window.unequipGear = unequipGear;
 window.usePillFromBag = usePillFromBag;
-window.buyItemToBag = buyItemToBag;
-window.buyPillToBag = buyPillToBag;
+window.buyGoodsToBag = buyGoodsToBag;
+window.grantLootToBag = grantLootToBag;
+window.rollDropTable = rollDropTable;
+window.findItemByRef = findItemByRef;
+window.findSkillByRef = findSkillByRef;
 window.openReincarnationModal = openReincarnationModal;
 window.toggleReincarnationHeritage = toggleReincarnationHeritage;
 window.goToTalentDraftStep = goToTalentDraftStep;

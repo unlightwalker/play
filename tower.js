@@ -1,9 +1,8 @@
 /**
  * ========================================================
- * 你的江湖 - 歷練通天塔系統模組 (tower.js) [入陣對決徹底修復版]
- * 支援：
- * 1. 點擊 BOSS 關卡無條件進入演武場 ATB 正式對決
- * 2. 50 層首領戰力校準（1 神品外攻 + 絕品武器約 50% 機率破關）
+ * 你的江湖 - 歷練通天塔系統模組 (tower.js)
+ * 1. 一般樓層自動 / 點擊攻擊，首領層須點擊「挑戰頭目」才會開戰
+ * 2. 首領數值、寶箱機率與指定掉落讀取自 data_tower.js (TOWER_BOSSES)
  * 3. 雙聯情報面板、通天樓層軌道、戰利品即時於下方頻道發布通知
  * ========================================================
  */
@@ -11,37 +10,8 @@
 let towerCurrentFloor = 1;
 let towerMonster = null;
 let towerTimer = null;
-let towerBossSeconds = 30;
 let isTowerModalOpen = false;
 let isChallengingBoss = false;
-
-// 獨立原生舞台切換（絕不依賴外部函式，100% 不報錯）
-function localShowTowerView() {
-  const m = document.getElementById('menu-view');
-  const t = document.getElementById('tower-view');
-  const b = document.getElementById('battle-view');
-  if (m) { m.classList.add('hidden'); m.style.display = 'none'; }
-  if (b) { b.classList.remove('active'); b.style.display = 'none'; }
-  if (t) { t.classList.add('active'); t.style.display = 'flex'; }
-}
-
-function localShowMenuView() {
-  const m = document.getElementById('menu-view');
-  const t = document.getElementById('tower-view');
-  const b = document.getElementById('battle-view');
-  if (t) { t.classList.remove('active'); t.style.display = 'none'; }
-  if (b) { b.classList.remove('active'); b.style.display = 'none'; }
-  if (m) { m.classList.remove('hidden'); m.style.display = 'block'; }
-}
-
-function localShowBattleView() {
-  const m = document.getElementById('menu-view');
-  const t = document.getElementById('tower-view');
-  const b = document.getElementById('battle-view');
-  if (m) { m.classList.add('hidden'); m.style.display = 'none'; }
-  if (t) { t.classList.remove('active'); t.style.display = 'none'; }
-  if (b) { b.classList.add('active'); b.style.display = 'flex'; }
-}
 
 const TOWER_HUMANOIDS = [
   {
@@ -132,56 +102,35 @@ const TOWER_HUMANOIDS = [
   }
 ];
 
-// 戰力曲線校準：50 層 BOSS 精準校準為約 50% 通過率
-function getTowerBossEnemy(floor) {
+// 取得首領設定：優先讀取 data_tower.js，未設定的樓層依公式生成
+function getTowerBossConfig(floor) {
+  const list = (typeof TOWER_BOSSES !== 'undefined' && Array.isArray(TOWER_BOSSES)) ? TOWER_BOSSES : [];
+  const cfg = list.find(b => Number(b.floor) === Number(floor));
+  if (cfg) return cfg;
+
   const maxHp = Math.floor(250 + Math.pow(floor, 1.45) * 6.5);
   const atk = Math.floor(18 + Math.pow(floor, 1.1) * 1.05);
   const def = Math.floor(8 + Math.pow(floor, 1.05) * 0.65);
   const speed = Math.floor(32 + Math.min(60, floor * 1.0));
-
-  let realm = "登峰造極";
-  let bossTitle = "赤血魔皇";
-  let skill = { name: "秘劍・一之太刀", baseMult: 2.2, rarity: "神品" };
-  let internal = { name: "萬毒枯榮心經", defReduce: 0.5 };
-
-  if (floor < 20) {
-    realm = "初窺門徑";
-    bossTitle = "試煉惡僧";
-    skill = { name: "太祖長拳", baseMult: 1.4, rarity: "凡品" };
-    internal = { name: "自然吐納訣", defReduce: 0.35 };
-  } else if (floor < 40) {
-    realm = "融會貫通";
-    bossTitle = "奪命劍煞";
-    skill = { name: "狂風快劍", baseMult: 1.7, rarity: "良品" };
-    internal = { name: "金剛鐵布衫", defReduce: 0.42 };
-  } else if (floor >= 55) {
-    realm = "返璞歸真";
-    bossTitle = "混沌天尊";
-    skill = { name: "降龍十八掌・亢龍有悔", baseMult: 2.8, rarity: "神品" };
-    internal = { name: "純陽太極功", defReduce: 0.55 };
-  }
-
+  const godRate = Math.min(100, 0.2 * floor);
   return {
-    name: `第 ${floor} 層首領・${bossTitle}`,
-    realm: realm,
-    maxHp: maxHp,
-    atk: atk,
-    def: def,
-    speed: speed,
+    floor,
+    name: `第 ${floor} 層首領・混沌天尊`,
+    realm: "返璞歸真",
+    maxHp, atk, def, speed,
+    stats: { arm: Math.floor(atk * 0.7), speed, bone: Math.floor(def * 1.5), inner: Math.floor(atk * 0.6), int: 30, luck: 25 },
     exp: Math.floor(100 + floor * 15),
     gold: Math.floor(40 + floor * 8),
     combat: 15,
-    stats: {
-      arm: Math.floor(atk * 0.7),
-      speed: speed,
-      bone: Math.floor(def * 1.5),
-      inner: Math.floor(atk * 0.6),
-      int: 30,
-      luck: 25
-    },
-    skills: [skill],
-    internalSkill: internal
+    skill: { name: "降龍十八掌・亢龍有悔", baseMult: 2.8, rarity: "神品" },
+    internalName: "純陽太極功",
+    chest: { godRate, supremeRate: Math.min(100 - godRate, 2.0 * floor), upperRate: 75, bookRate: 50 },
+    drops: []
   };
+}
+
+function getTowerBossEnemy(floor) {
+  return buildEnemyFromData(getTowerBossConfig(floor));
 }
 
 function getTowerAverageSkillAttackPower() {
@@ -224,7 +173,7 @@ function openTowerModal() {
     player.towerBgEarned = { exp: 0, gold: 0, learn: 0, kills: 0 };
   }
 
-  localShowTowerView();
+  showStageView('tower');
 
   initTowerFloor(towerCurrentFloor);
   startTowerAutoAttackEngine();
@@ -236,7 +185,7 @@ function closeTowerModal() {
   if (towerTimer) clearInterval(towerTimer);
   towerTimer = null;
 
-  localShowMenuView();
+  showStageView('menu');
 
   if (typeof refreshChatForCurrentLocation === 'function') {
     refreshChatForCurrentLocation();
@@ -245,7 +194,7 @@ function closeTowerModal() {
 
 function returnToTowerAfterBoss(isVictory = false) {
   isChallengingBoss = false;
-  localShowTowerView();
+  showStageView('tower');
 
   towerCurrentFloor = player.towerFloor || 1;
   initTowerFloor(towerCurrentFloor);
@@ -274,20 +223,21 @@ function initTowerFloor(floor) {
   let baseHp = Math.floor(80 + Math.pow(floor, 1.48) * 16);
   const hp = isBoss ? Math.floor(baseHp * 2.5) : baseHp;
 
-  let template = isBoss 
+  const template = isBoss 
     ? TOWER_HUMANOIDS[TOWER_HUMANOIDS.length - 1] 
     : TOWER_HUMANOIDS[(floor - 1) % (TOWER_HUMANOIDS.length - 1)];
+  const bossCfg = isBoss ? getTowerBossConfig(floor) : null;
+  const monsterHp = isBoss ? Number(bossCfg.maxHp) : Math.max(80, hp);
 
   towerMonster = {
     floor,
-    name: isBoss ? `👑 第 ${floor} 層首領・${template.name}` : `第 ${floor} 層・${template.name}`,
+    name: isBoss ? `👑 ${bossCfg.name}` : `第 ${floor} 層・${template.name}`,
     svg: template.svg,
     isBoss,
-    maxHp: Math.max(80, hp),
-    hp: Math.max(80, hp)
+    maxHp: monsterHp,
+    hp: monsterHp
   };
 
-  towerBossSeconds = 30;
   updateTowerUI();
 }
 
@@ -342,7 +292,6 @@ function updateTowerUI() {
   const hpText = document.getElementById('tower-hp-text');
   const hpFill = document.getElementById('tower-hp-fill');
   const figureEl = document.getElementById('tower-enemy-figure');
-  const bossTimerEl = document.getElementById('tower-boss-timer');
   const armDmgEl = document.getElementById('tower-arm-dmg');
   const spdRateEl = document.getElementById('tower-spd-rate');
   const bossAura = document.getElementById('tower-boss-aura');
@@ -410,7 +359,7 @@ function updateTowerUI() {
 
   if (bossCdEl) {
     bossCdEl.innerHTML = remain === 0 
-      ? `<b style="color:#ff4757;">⚠️ 當前為第 ${floor} 層首領戰！點擊出戰！</b>` 
+      ? `<b style="color:#ff4757;">⚠️ 第 ${floor} 層首領坐鎮！準備好後點擊「挑戰頭目」</b>` 
       : `距離首領戰尚餘: <b style="color:var(--gold);">${remain}</b> 層`;
   }
   if (previewText) {
@@ -423,7 +372,7 @@ function updateTowerUI() {
   // 按鈕動態切換
   if (actionBtn) {
     if (towerMonster.isBoss) {
-      actionBtn.innerHTML = `⚔️ 迎戰第 ${floor} 層首領！`;
+      actionBtn.innerHTML = `⚔️ 挑戰頭目`;
       actionBtn.style.borderColor = '#ff4757';
       actionBtn.style.color = '#ff7675';
     } else {
@@ -432,24 +381,25 @@ function updateTowerUI() {
       actionBtn.style.color = 'var(--gold)';
     }
   }
-
-  if (bossTimerEl) {
-    bossTimerEl.style.display = 'none';
-  }
 }
 
 function showNextBossLootDetail() {
   if (!towerMonster) return;
   const nextBoss = Math.ceil(towerMonster.floor / 5) * 5;
-  let pool = "• 良品武學秘笈（八卦刀、花雨手法）\n• 良品/上品神兵（百煉青鋼劍、熟銅棍、伏魔杖）\n• 滋補靈藥（少林大還丹）";
-  if (nextBoss >= 40) {
-    pool = "• 神品絕學秘笈（降龍十八掌、暴雨梨花針、一之太刀、一陽指）\n• 絕品神兵（屠龍刀、玄鐵重劍、打狗棒）\n• 絕品靈丹（千年雪參丸）";
-  } else if (nextBoss >= 20) {
-    pool = "• 上品/絕品武學秘笈（大力金剛掌、太極拳、三仙劍）\n• 專屬名刃（詠春八斬刀、備前長船太刀）\n• 上品靈丹（通脈易筋丸）";
-  }
-  alert(`🎁【第 ${nextBoss} 層通天首領寶箱・掉落池】\n` +
+  const cfg = getTowerBossConfig(nextBoss);
+  const chest = cfg.chest || {};
+  const god = Number(chest.godRate) || 0;
+  const sup = Number(chest.supremeRate) || 0;
+  const extra = (cfg.drops || []).map(d => {
+    const ref = d.kind === 'book' ? findSkillByRef(d.ref) : findItemByRef(d.ref);
+    const name = ref ? (d.kind === 'book' ? `《${ref.name}秘笈》` : ref.name) : d.ref;
+    return `• ${name} x${d.count || 1}（${d.rate}%）`;
+  }).join('\n');
+  alert(`🎁【${cfg.name}・寶箱掉落池】\n` +
         `------------------------------------\n` +
-        pool + `\n` +
+        `寶箱品階：神品 ${god}%、絕品 ${sup}%，其餘為上品/良品\n` +
+        `開出秘笈機率：${Number(chest.bookRate ?? 50)}%（否則為同品階裝備/靈藥）\n` +
+        (extra ? `額外掉落：\n${extra}\n` : '') +
         `------------------------------------\n` +
         `擊敗該層首領時自動開啟繳獲並存入行囊！`);
 }
@@ -457,9 +407,9 @@ function showNextBossLootDetail() {
 function strikeTowerTarget() {
   if (!towerMonster || towerMonster.hp <= 0) return;
 
-  // 首領關卡：點擊立即發起入陣戰鬥
+  // 首領關卡：不會自動開戰，須點擊「挑戰頭目」
   if (towerMonster.isBoss) {
-    challengeTowerBoss(towerMonster.floor);
+    spawnTowerFloatingDmg("點擊「挑戰頭目」開戰", false);
     return;
   }
 
@@ -472,7 +422,14 @@ function strikeTowerTarget() {
   dealTowerDamage(dmg, isCrit, true);
 }
 
-// 發起首領正式入陣戰鬥（雙向防呆）
+// 下方行動按鈕：首領層 = 挑戰頭目，一般層 = 狂擊
+function onTowerActionButton() {
+  if (!towerMonster) return;
+  if (towerMonster.isBoss) challengeTowerBoss(towerMonster.floor);
+  else strikeTowerTarget();
+}
+
+// 發起首領正式入陣戰鬥（僅由玩家點擊「挑戰頭目」觸發）
 function challengeTowerBoss(floor) {
   if (isChallengingBoss) return;
   isChallengingBoss = true;
@@ -483,29 +440,19 @@ function challengeTowerBoss(floor) {
   }
 
   try {
-    const bossObj = getTowerBossEnemy(floor);
-    localShowBattleView();
-    if (typeof startBattleAgainst === 'function') {
-      startBattleAgainst(bossObj, 'tower_boss', floor);
-    }
+    startBattleAgainst(getTowerBossEnemy(floor), 'tower_boss', floor);
   } catch (err) {
     console.error("首領戰發起保護:", err);
     isChallengingBoss = false;
-    localShowTowerView();
+    showStageView('tower');
   }
 }
 
 function towerAutoLoop() {
   if (!towerMonster || towerMonster.hp <= 0 || isChallengingBoss) return;
 
-  if (towerMonster.isBoss) {
-    const autoBox = document.getElementById('tower-auto-advance');
-    const canAdvance = autoBox ? autoBox.checked : false;
-    if (canAdvance && !isChallengingBoss) {
-      challengeTowerBoss(towerMonster.floor);
-    }
-    return;
-  }
+  // 首領層等待玩家手動挑戰
+  if (towerMonster.isBoss) return;
 
   const avgPower = getTowerAverageSkillAttackPower();
   const autoDmg = Math.max(5, Math.floor(avgPower * 0.85));
@@ -570,21 +517,10 @@ function dealTowerDamage(dmg, isCrit, isClick) {
 
     updateProfileUI();
 
-    const nextFloor = floor + 1;
-    const isNextBoss = (nextFloor % 5 === 0);
-
+    // 勾選「自動挑戰下一層」則前進（遇首領層停下等待挑戰），否則留在本層反覆歷練
     const autoBox = document.getElementById('tower-auto-advance');
     const canAdvance = autoBox ? autoBox.checked : true;
-
-    if (canAdvance) {
-      if (isNextBoss) {
-        setTimeout(() => challengeTowerBoss(nextFloor), 220);
-      } else {
-        setTimeout(() => initTowerFloor(nextFloor), 220);
-      }
-    } else {
-      setTimeout(() => initTowerFloor(nextFloor), 220);
-    }
+    setTimeout(() => initTowerFloor(canAdvance ? floor + 1 : floor), 220);
   }
 }
 
@@ -593,7 +529,7 @@ function spawnTowerFloatingDmg(dmg, isCrit) {
   if (!container) return;
   const p = document.createElement('div');
   p.className = `dmg-num ${isCrit ? 'dmg-crit' : 'dmg-normal'}`;
-  p.innerText = (isCrit ? "暴擊! -" : "-") + dmg;
+  p.innerText = (typeof dmg === 'string') ? dmg : ((isCrit ? "暴擊! -" : "-") + dmg);
   p.style.left = (30 + Math.random() * 80) + 'px';
   p.style.top = (20 + Math.random() * 40) + 'px';
   container.appendChild(p);
@@ -601,91 +537,40 @@ function spawnTowerFloatingDmg(dmg, isCrit) {
 }
 
 function autoDropBossLootToBag(floor) {
-  let godRate = 0;
-  let supremeRate = 0;
-
-  if (floor >= 40) {
-    godRate = Math.min(100, 0.2 * floor);
-    if (player.talents && player.talents.some(t => t.id === "t_007")) {
-      godRate = Math.min(100, godRate * 2.0);
-    }
-    supremeRate = Math.min(100 - godRate, 2.0 * floor);
+  const cfg = getTowerBossConfig(floor);
+  const chest = cfg.chest || {};
+  let godRate = Number(chest.godRate) || 0;
+  if (godRate > 0 && player.talents && player.talents.some(t => t.id === "t_007")) {
+    godRate = Math.min(100, godRate * 2.0);
   }
+  const supremeRate = Math.min(100 - godRate, Number(chest.supremeRate) || 0);
+  const upperRate = Number(chest.upperRate ?? 50);
+  const bookRate = Number(chest.bookRate ?? 50);
 
   const roll = Math.random() * 100;
-  let targetRarity = "良品";
-  if (roll < godRate) {
-    targetRarity = "神品";
-  } else if (roll < godRate + supremeRate) {
-    targetRarity = "絕品";
-  } else {
-    targetRarity = (Math.random() * 100 < Math.min(75, 25 + floor * 1.5)) ? "上品" : "良品";
+  let targetRarity;
+  if (roll < godRate) targetRarity = "神品";
+  else if (roll < godRate + supremeRate) targetRarity = "絕品";
+  else targetRarity = (Math.random() * 100 < upperRate) ? "上品" : "良品";
+
+  const color = targetRarity === "神品" ? "var(--gold)" : (targetRarity === "絕品" ? "var(--purple)" : "var(--cyan)");
+  const pickRandom = (arr) => arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : null;
+
+  let gotName = null;
+  if (Math.random() * 100 < bookRate) {
+    const sk = pickRandom((typeof GLOBAL_SKILLS !== 'undefined') ? GLOBAL_SKILLS.filter(s => s.rarity === targetRarity) : []);
+    if (sk) gotName = grantLootToBag('book', sk.id || sk.name, 1);
+  }
+  if (!gotName) {
+    const it = pickRandom((typeof GLOBAL_ITEMS !== 'undefined') ? GLOBAL_ITEMS.filter(i => i.rarity === targetRarity) : [])
+      || findItemByRef("item_snow_ginseng");
+    if (it) gotName = grantLootToBag('item', it.id || it.name, 1);
+  }
+  if (gotName && typeof appendCombatChat === 'function') {
+    appendCombatChat("【首領寶箱】", `擊敗第 ${floor} 層首領，繳獲【${targetRarity}】【${gotName}】已存入隨身「行囊」！`, color);
   }
 
-  const isSkillDrop = Math.random() < 0.5;
-
-  if (isSkillDrop) {
-    const skillsOfTier = (typeof GLOBAL_SKILLS !== 'undefined') 
-      ? GLOBAL_SKILLS.filter(s => s.rarity === targetRarity) 
-      : [];
-    const pickedSkill = (skillsOfTier.length > 0)
-      ? skillsOfTier[Math.floor(Math.random() * skillsOfTier.length)]
-      : (typeof GLOBAL_SKILLS !== 'undefined' ? GLOBAL_SKILLS[0] : null);
-
-    if (pickedSkill) {
-      const bookItem = {
-        id: "book_" + Date.now(),
-        name: `《${pickedSkill.name}秘笈》`,
-        type: "book",
-        rarity: targetRarity,
-        costLearn: (targetRarity === "神品") ? 180 : (targetRarity === "絕品" ? 100 : 50),
-        skillData: pickedSkill,
-        desc: `記載著【${targetRarity}】絕技【${pickedSkill.name}】精深心法的秘笈殘卷。研讀需體悟耗費學點。`
-      };
-
-      player.inventory.push(bookItem);
-
-      if (typeof appendCombatChat === 'function') {
-        const dropMsg = `擊敗第 ${floor} 層首領，繳獲【${targetRarity}】秘笈【《${pickedSkill.name}秘笈》】已存入隨身「行囊」！`;
-        appendCombatChat("【首領寶箱】", dropMsg, targetRarity === "神品" ? "var(--gold)" : "var(--purple)");
-      }
-    }
-  } else {
-    const itemsOfTier = (typeof GLOBAL_ITEMS !== 'undefined') 
-      ? GLOBAL_ITEMS.filter(i => i.rarity === targetRarity) 
-      : [];
-
-    let pickedItem = null;
-    if (itemsOfTier.length > 0) {
-      pickedItem = { ...itemsOfTier[Math.floor(Math.random() * itemsOfTier.length)] };
-    } else {
-      pickedItem = {
-        name: "千年雪參丸", type: "pill", rarity: "絕品",
-        hpAdd: 250, speedAdd: 15, expAdd: 250, cost: 200,
-        desc: "極品雪參靈丹，永久氣血+250，身法+15，修為+250！"
-      };
-    }
-
-    if (pickedItem.type === 'pill') {
-      const existing = player.inventory.find(i => i.name === pickedItem.name);
-      if (existing) {
-        existing.count = (existing.count || 1) + 1;
-      } else {
-        player.inventory.push({ ...pickedItem, id: "drop_" + Date.now(), count: 1 });
-      }
-      if (typeof appendCombatChat === 'function') {
-        const dropMsg = `擊敗第 ${floor} 層首領，拾得靈藥【${pickedItem.name}】已放入行囊！`;
-        appendCombatChat("【首領寶箱】", dropMsg, "var(--green)");
-      }
-    } else {
-      player.inventory.push({ ...pickedItem, id: "drop_" + Date.now() });
-      if (typeof appendCombatChat === 'function') {
-        const dropMsg = `擊敗第 ${floor} 層首領，繳獲神兵【${pickedItem.name}】已放入行囊！`;
-        appendCombatChat("【首領寶箱】", dropMsg, targetRarity === "神品" ? "var(--gold)" : "var(--cyan)");
-      }
-    }
-  }
-
+  rollDropTable(cfg.drops, cfg.name);
   recalcPlayerStats();
 }
 
@@ -726,5 +611,6 @@ window.closeTowerModal = closeTowerModal;
 window.strikeTowerTarget = strikeTowerTarget;
 window.showNextBossLootDetail = showNextBossLootDetail;
 window.challengeTowerBoss = challengeTowerBoss;
+window.onTowerActionButton = onTowerActionButton;
 window.returnToTowerAfterBoss = returnToTowerAfterBoss;
 window.autoDropBossLootToBag = autoDropBossLootToBag;

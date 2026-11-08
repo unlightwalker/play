@@ -73,6 +73,7 @@ const GLOBAL_SKILLS = [
   },
   {
     "id": "kf_taizu",
+    "starter": true,
     "name": "太祖長拳",
     "type": "external",
     "weaponReq": "拳",
@@ -104,6 +105,7 @@ const GLOBAL_SKILLS = [
   },
   {
     "id": "kf_wood_sword",
+    "starter": true,
     "name": "基本劍法",
     "type": "external",
     "weaponReq": "劍",
@@ -259,6 +261,7 @@ const GLOBAL_SKILLS = [
   },
   {
     "id": "kf_tuna",
+    "starter": true,
     "name": "吐納坐忘訣",
     "type": "internal",
     "weaponReq": "任意",
@@ -292,6 +295,7 @@ const GLOBAL_SKILLS = [
   },
   {
     "id": "kf_caoshangfei",
+    "starter": true,
     "name": "草上飛",
     "type": "qinggong",
     "weaponReq": "任意",

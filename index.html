@@ -87,6 +87,84 @@
         <div class="inline-nine-grid" id="main-inline-nine-grid"></div>
       </div>
 
+      <!-- 地點面板：場景 / 門派 / 當鋪 / 行囊 / 信件 / 打坐 / 人物 —— 暫時覆蓋地圖區，不再彈窗 -->
+      <div id="sec-place" style="display:none;">
+
+        <div class="place-page" id="pg-scene">
+          <div class="place-head"><span id="scene-modal-title">場景</span><button class="wuxia-btn place-back" onclick="closePlacePanel()">↩ 返回地圖</button></div>
+          <div class="place-body">
+            <p class="place-desc" id="scene-modal-desc"></p>
+            <div id="scene-modal-content"></div>
+          </div>
+        </div>
+
+        <div class="place-page" id="pg-npc">
+          <div class="place-head"><span>人物</span><button class="wuxia-btn place-back" onclick="closePlacePanel()">↩ 返回地圖</button></div>
+          <div class="npc-panel" id="npc-panel"></div>
+        </div>
+
+        <div class="place-page" id="pg-sect">
+          <div class="place-head"><span id="sect-hall-title" style="color:var(--green);">🏯 宗門大殿</span><button class="wuxia-btn place-back" onclick="closePlacePanel()">↩ 返回地圖</button></div>
+          <div class="place-body"><div id="sect-hall-content"></div></div>
+        </div>
+
+        <div class="place-page" id="pg-pawn">
+          <div class="place-head"><span style="color:var(--gold);">🏮 百寶閣當鋪</span><button class="wuxia-btn place-back" onclick="closePlacePanel()">↩ 返回地圖</button></div>
+          <div class="place-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#141923; padding:8px 12px; border-radius:4px; margin-bottom:10px;">
+              <span style="font-size:12px;">持有銀兩：<b id="pawn-gold-disp" style="color:var(--gold);">0兩</b></span>
+              <button class="wuxia-btn" style="padding:4px 8px; font-size:11px; border-color:#e67e22; color:#f39c12;" onclick="quickSellJunk()">♻️ 一鍵典當凡品裝備</button>
+            </div>
+            <div id="pawn-item-list"></div>
+          </div>
+        </div>
+
+        <div class="place-page" id="pg-bag">
+          <div class="place-head"><span style="color:#f1c40f;">🎒 隨身行囊</span><button class="wuxia-btn place-back" onclick="closePlacePanel()">↩ 返回地圖</button></div>
+          <div class="place-body">
+            <button class="wuxia-btn" style="width:100%; border-color:var(--gold); color:var(--gold); font-size:12px; margin-bottom:10px; padding:6px;" onclick="openPawnshopModal()">🏮 前往百寶閣當鋪</button>
+            <div class="bag-slot-box">
+              <div class="bag-equip-card">
+                <div><small style="color:var(--gold);">[佩戴兵刃]</small><br><b id="bag-cur-weapon-name" style="font-size:12.5px; color:#fff;">--</b></div>
+                <button class="wuxia-btn" style="padding:2px 8px; font-size:11px;" onclick="unequipGear('weapon')">卸下</button>
+              </div>
+              <div class="bag-equip-card">
+                <div><small style="color:var(--cyan);">[佩戴防具]</small><br><b id="bag-cur-armor-name" style="font-size:12.5px; color:#fff;">--</b></div>
+                <button class="wuxia-btn" style="padding:2px 8px; font-size:11px;" onclick="unequipGear('armor')">卸下</button>
+              </div>
+            </div>
+            <div id="bag-inventory-list"></div>
+          </div>
+        </div>
+
+        <div class="place-page" id="pg-mail">
+          <div class="place-head">
+            <span style="color:#5dade2;">📬 飛鴿傳書・江湖驛信 <span id="mail-unread-badge" style="background:#e74c3c; color:#fff; font-size:10px; padding:1px 6px; border-radius:10px; display:none;">0 未領</span></span>
+            <button class="wuxia-btn place-back" onclick="closePlacePanel()">↩ 返回地圖</button>
+          </div>
+          <div class="place-body">
+            <div id="mail-list-container"></div>
+            <div style="margin-top:10px; padding-top:8px; border-top:1px solid #333d4b; display:flex; justify-content:space-between; align-items:center;">
+              <small style="color:#8ca0b3;" id="mail-sync-time">已連線天機閣驛站</small>
+              <button class="wuxia-btn" style="padding:4px 10px; font-size:11.5px; border-color:var(--cyan); color:var(--cyan);" onclick="fetchOfficialMails(true)">🔄 檢查新信件</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="place-page" id="pg-meditate">
+          <div class="place-head"><span style="color:#2ecc71;">🧘 閉目調息・打坐修煉</span><button class="wuxia-btn place-back" onclick="closeMeditateModal()">↩ 返回地圖</button></div>
+          <div class="place-body" style="text-align:center;">
+            <p style="font-size:12px; color:#8ca0b3; margin-bottom:10px;">引氣歸元，周天運轉。悟性越高，修為增長越快，並可觸類旁通催化產生學點。</p>
+            <div style="background:#131822; padding:12px; border-radius:6px; border:1px solid #333f52; margin-bottom:10px;">
+              <div class="meditate-taiji">☯️</div>
+              <div style="font-size:13px; color:#fff;">正在運轉心法：<b id="meditate-mental-name" style="color:var(--cyan);">吐納坐忘訣</b></div>
+              <div style="font-size:14px; color:var(--gold); margin-top:8px;">當前累積：<b id="meditate-exp-gain">+0 修為 | +0 學點</b></div>
+            </div>
+            <button class="wuxia-btn" style="width:100%; border-color:#2ecc71; color:#2ecc71; padding:9px;" onclick="closeMeditateModal()">結束打坐・收功納氣</button>
+          </div>
+        </div>
+      </div>
+
       <!-- 內嵌武學研習區 -->
       <div id="sec-kungfu" style="display:none;">
         <div class="category-title" style="color:#5dade2; display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
@@ -133,6 +211,8 @@
           入世【<span id="jh-current-city" style="color:var(--cyan);">牛家村</span>】
         </div>
         <div class="btn-grid-scenes" id="jh-scenes-grid"></div>
+        <div class="category-title" id="jh-npc-title" style="display:none; margin-top:6px;">街頭人物</div>
+        <div class="btn-grid-scenes" id="jh-npc-grid"></div>
       </div>
     </div>
 
@@ -156,7 +236,6 @@
         <div class="tower-hp-container">
           <div class="tower-hp-info">
             <span id="tower-hp-text">100 / 100</span>
-            <span id="tower-boss-timer" style="color:#e74c3c; font-weight:bold; display:none;">⏳ 首領狂暴: 30s</span>
           </div>
           <div class="tower-hp-track">
             <div id="tower-hp-fill" class="tower-hp-fill"></div>
@@ -207,7 +286,7 @@
         <label style="font-size:12px; color:#ddd; display:flex; align-items:center; gap:6px; cursor:pointer;">
           <input type="checkbox" id="tower-auto-advance" checked style="transform:scale(1.2); cursor:pointer;"> 自動挑戰下一層
         </label>
-        <button class="wuxia-btn" id="btn-tower-action" style="padding:5px 14px; font-size:12.5px; border-color:var(--gold); color:var(--gold); font-weight:bold;" onclick="strikeTowerTarget()">
+        <button class="wuxia-btn" id="btn-tower-action" style="padding:5px 14px; font-size:12.5px; border-color:var(--gold); color:var(--gold); font-weight:bold;" onclick="onTowerActionButton()">
           💥 催動掌力狂擊！
         </button>
       </div>
@@ -217,7 +296,6 @@
     <div class="battle-stage" id="battle-view">
       <div class="battle-header">
         <h3 id="battle-loc-title" style="font-size:14px; color:var(--gold);">⚔️ 荒郊交鋒</h3>
-        <button class="wuxia-btn" style="padding:3px 10px; font-size:12px;" onclick="stopBattleAndExit()">脫離戰鬥</button>
       </div>
 
       <div class="arena" id="arena-box">
@@ -226,6 +304,7 @@
         
         <div class="stick-rig rig-player idle-stance" id="p-rig">
           <div class="bar-container">
+            <div class="status-row" id="p-status"></div>
             <div class="hp-strip"><div class="hp-fill" id="p-hp-bar"></div></div>
             <div class="mp-strip"><div class="mp-fill" id="p-mp-bar"></div></div>
           </div>
@@ -247,6 +326,7 @@
 
         <div class="stick-rig rig-enemy idle-stance" id="e-rig">
           <div class="bar-container">
+            <div class="status-row" id="e-status"></div>
             <div class="hp-strip"><div class="hp-fill" id="e-hp-bar"></div></div>
             <div class="mp-strip"><div class="mp-fill" id="e-mp-bar"></div></div>
           </div>
@@ -337,22 +417,6 @@
     </div>
   </div>
 
-  <div class="modal-mask" id="modal-mail">
-    <div class="modal-card" style="max-height: 85vh;">
-      <div class="modal-header">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <h3 style="color:#5dade2; font-size:16px; margin:0;">📬 飛鴿傳書・江湖驛信</h3>
-          <span id="mail-unread-badge" style="background:#e74c3c; color:#fff; font-size:10px; padding:1px 6px; border-radius:10px; display:none;">0 未領</span>
-        </div>
-        <button onclick="closeModal('modal-mail')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
-      </div>
-      <div id="mail-list-container" style="max-height: 420px; overflow-y: auto;"></div>
-      <div style="margin-top:10px; padding-top:8px; border-top:1px solid #333d4b; display:flex; justify-content:space-between; align-items:center;">
-        <small style="color:#8ca0b3;" id="mail-sync-time">已連線天機閣驛站</small>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:11.5px; border-color:var(--cyan); color:var(--cyan);" onclick="fetchOfficialMails(true)">🔄 檢查新信件</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ★ 俠客典籍面板：已整合雲端帳號中心入口 ★ -->
   <div class="modal-mask" id="modal-hero-profile">
@@ -453,74 +517,10 @@
     </div>
   </div>
 
-  <div class="modal-mask" id="modal-bag">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 style="color:#f1c40f; font-size:16px;">🎒 隨身行囊</h3>
-        <button onclick="closeModal('modal-bag')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
-      </div>
-      <button class="wuxia-btn" style="width:100%; border-color:var(--gold); color:var(--gold); font-size:12px; margin-bottom:10px; padding:6px;" onclick="openPawnshopModal()">🏮 前往百寶閣當鋪</button>
-      <div class="bag-slot-box">
-        <div class="bag-equip-card">
-          <div><small style="color:var(--gold);">[佩戴兵刃]</small><br><b id="bag-cur-weapon-name" style="font-size:12.5px; color:#fff;">--</b></div>
-          <button class="wuxia-btn" style="padding:2px 8px; font-size:11px;" onclick="unequipGear('weapon')">卸下</button>
-        </div>
-        <div class="bag-equip-card">
-          <div><small style="color:var(--cyan);">[佩戴防具]</small><br><b id="bag-cur-armor-name" style="font-size:12.5px; color:#fff;">--</b></div>
-          <button class="wuxia-btn" style="padding:2px 8px; font-size:11px;" onclick="unequipGear('armor')">卸下</button>
-        </div>
-      </div>
-      <div id="bag-inventory-list"></div>
-    </div>
-  </div>
 
-  <div class="modal-mask" id="modal-meditate">
-    <div class="modal-card" style="text-align:center;">
-      <h3 style="color:#2ecc71; font-size:17px; margin-bottom:6px;">🧘 閉目調息・打坐修煉</h3>
-      <p style="font-size:12px; color:#8ca0b3; margin-bottom:14px;">引氣歸元，周天運轉。悟性越高，修為增長越快，並可觸類旁通催化產生學點。</p>
-      <div style="background:#131822; padding:15px; border-radius:6px; border:1px solid #333f52; margin-bottom:14px;">
-        <div style="font-size:32px; margin-bottom:6px;">☯️</div>
-        <div style="font-size:13px; color:#fff;">正在運轉心法：<b id="meditate-mental-name" style="color:var(--cyan);">吐納坐忘訣</b></div>
-        <div style="font-size:14px; color:var(--gold); margin-top:8px;">當前累積：<b id="meditate-exp-gain">+0 修為 | +0 學點</b></div>
-      </div>
-      <button class="wuxia-btn" style="width:100%; border-color:#2ecc71; color:#2ecc71; padding:10px;" onclick="closeMeditateModal()">結束打坐・收功納氣</button>
-    </div>
-  </div>
 
-  <div class="modal-mask" id="modal-pawnshop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div><h3 style="color:var(--gold); font-size:16px;">🏮 百寶閣當鋪</h3></div>
-        <button onclick="closeModal('modal-pawnshop')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
-      </div>
-      <div style="display:flex; justify-content:space-between; align-items:center; background:#141923; padding:8px 12px; border-radius:4px; margin-bottom:10px;">
-        <span style="font-size:12px;">持有銀兩：<b id="pawn-gold-disp" style="color:var(--gold);">0兩</b></span>
-        <button class="wuxia-btn" style="padding:4px 8px; font-size:11px; border-color:#e67e22; color:#f39c12;" onclick="quickSellJunk()">♻️ 一鍵典當凡品裝備</button>
-      </div>
-      <div id="pawn-item-list" style="max-height: 380px; overflow-y: auto;"></div>
-    </div>
-  </div>
 
-  <div class="modal-mask" id="modal-sect-hall">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 id="sect-hall-title" style="color:var(--green); font-size:16px;">🏯 宗門大殿</h3>
-        <button onclick="closeModal('modal-sect-hall')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
-      </div>
-      <div id="sect-hall-content"></div>
-    </div>
-  </div>
 
-  <div class="modal-mask" id="modal-scene">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 id="scene-modal-title" style="color:var(--cyan); font-size:16px;">場景名</h3>
-        <button onclick="closeModal('modal-scene')" style="background:none; border:none; color:#999; font-size:22px; cursor:pointer;">×</button>
-      </div>
-      <p style="font-size:12px; color:#8ca0b3; margin-bottom:12px;" id="scene-modal-desc"></p>
-      <div id="scene-modal-content"></div>
-    </div>
-  </div>
 
   <div class="modal-mask" id="modal-name">
     <div class="modal-card" style="width: 310px;">
@@ -544,7 +544,9 @@
 <script src="data_skills.js"></script>
 <script src="data_items.js"></script>
 <script src="data_map.js"></script>
+<script src="data_tower.js"></script>
 <script src="data_talents.js"></script>
+<script src="combat_rules.js"></script>
 <script src="combat_vfx.js"></script>
 <script src="combat.js"></script>
 <script src="sect.js"></script>

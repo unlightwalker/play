@@ -156,6 +156,7 @@ async function loadCloudSave(uid) {
       if (Array.isArray(data.myLearnedKungfu) && typeof myLearnedKungfu !== 'undefined') {
         myLearnedKungfu = data.myLearnedKungfu;
       }
+      if (typeof syncSaveWithGameData === 'function') syncSaveWithGameData();
       if (data.equippedSlots && typeof equippedSlots !== 'undefined') {
         equippedSlots.internal = myLearnedKungfu.find(k => k.id === data.equippedSlots.internalId) || null;
         equippedSlots.qinggong = myLearnedKungfu.find(k => k.id === data.equippedSlots.qinggongId) || null;
