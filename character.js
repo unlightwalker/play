@@ -101,7 +101,7 @@ function openHeroProfileModal() {
           <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">${t.desc}</div>
         `;
         card.onclick = () => {
-          alert(`【天賦・${t.name}】（${t.rarity}）\n${t.desc}`);
+          gameNotify(`【天賦・${t.name}】（${t.rarity}）\n${t.desc}`);
         };
         tBox.appendChild(card);
       });
@@ -135,7 +135,7 @@ function showStatDetail(statKey) {
     innate: player.stats[statKey], kf: 0, enc: 0, gear: 0, talent: 0, total: player.stats[statKey]
   };
 
-  alert(`【${names[statKey]} 來源詳情】\n` +
+  gameNotify(`【${names[statKey]} 來源詳情】\n` +
         `------------------------------------\n` +
         `• 先天根基：${src.innate}\n` +
         `• 功法加成：${src.kf}\n` +
@@ -489,14 +489,14 @@ function upgradeKungfu(id) {
 
 function learnKwoonSkill(name, costLearn, costGold) {
   if (player.learn < costLearn || player.gold < costGold) {
-    alert("學點或銀兩不足！");
+    gameNotify("學點或銀兩不足！");
     return;
   }
   const sk = (typeof GLOBAL_SKILLS !== 'undefined') ? GLOBAL_SKILLS.find(s => s.name === name) : null;
-  if (!sk) { alert("武館查無此門武學！"); return; }
+  if (!sk) { gameNotify("武館查無此門武學！"); return; }
 
   if (myLearnedKungfu.some(k => k.name === name)) {
-    alert("你早已領會此門武學！");
+    gameNotify("你早已領會此門武學！");
     return;
   }
 
@@ -517,13 +517,13 @@ function studyKungfuBook(itemIdx) {
 
   const sk = item.skillData;
   if (myLearnedKungfu.some(k => k.name === sk.name)) {
-    alert(`少俠早已通曉【${sk.name}】，無需重複研讀！`);
+    gameNotify(`少俠早已通曉【${sk.name}】，無需重複研讀！`);
     return;
   }
 
   const reqLearn = item.costLearn || 40;
   if (player.learn < reqLearn) {
-    alert(`悟性學點不足！研讀《${item.name}》需體悟耗費 ${reqLearn} 點學點！`);
+    gameNotify(`悟性學點不足！研讀《${item.name}》需體悟耗費 ${reqLearn} 點學點！`);
     return;
   }
 
@@ -584,6 +584,8 @@ function renderBagUI() {
       actionBtn = `<button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:#2ecc71;" onclick="usePillFromBag(${idx})">服下</button>`;
     } else if (item.type === 'book') {
       actionBtn = `<button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:var(--gold);" onclick="studyKungfuBook(${idx})">研習(${item.costLearn || 40}學點)</button>`;
+    } else if (item.type === 'material') {
+      actionBtn = `<span style="font-size:11px; color:#a1887f;">[材料]</span>`;
     }
 
     card.innerHTML = `
@@ -605,7 +607,7 @@ function equipGearFromBag(itemIdx) {
   if (!item) return;
 
   if (item.type === 'armor' && player.talents && player.talents.some(t => t.noArmor)) {
-    alert("你身具【苦行頭陀】宿命，不可穿戴任何防具衣甲！");
+    gameNotify("你身具【苦行頭陀】宿命，不可穿戴任何防具衣甲！");
     return;
   }
 
@@ -614,13 +616,13 @@ function equipGearFromBag(itemIdx) {
     player.equippedGear.weapon = item;
     player.inventory.splice(itemIdx, 1);
     if (oldWeapon) player.inventory.push(oldWeapon);
-    alert(`🗡️ 你已自行囊裝備上了【${item.name}】！`);
+    gameNotify(`🗡️ 你已自行囊裝備上了【${item.name}】！`);
   } else if (item.type === 'armor') {
     const oldArmor = player.equippedGear.armor;
     player.equippedGear.armor = item;
     player.inventory.splice(itemIdx, 1);
     if (oldArmor) player.inventory.push(oldArmor);
-    alert(`🛡️ 你已自行囊披上了【${item.name}】！`);
+    gameNotify(`🛡️ 你已自行囊披上了【${item.name}】！`);
   }
 
   recalcPlayerStats();
@@ -632,7 +634,7 @@ function unequipGear(slotType) {
   if (!player.equippedGear) return;
   const current = player.equippedGear[slotType];
   if (!current) {
-    alert(slotType === 'weapon' ? "當前早已是赤手空拳，無需卸除！" : "當前並未穿戴任何護甲！");
+    gameNotify(slotType === 'weapon' ? "當前早已是赤手空拳，無需卸除！" : "當前並未穿戴任何護甲！");
     return;
   }
 
@@ -642,7 +644,7 @@ function unequipGear(slotType) {
   recalcPlayerStats();
   renderBagUI();
   renderKungfuSlots();
-  alert(slotType === 'weapon' ? "🗡️ 已收兵刃入鞘，身歸自然，切換為【空手 (拳)】！" : "🛡️ 已卸下護甲！");
+  gameNotify(slotType === 'weapon' ? "🗡️ 已收兵刃入鞘，身歸自然，切換為【空手 (拳)】！" : "🛡️ 已卸下護甲！");
 }
 
 function usePillFromBag(itemIdx) {
@@ -655,7 +657,7 @@ function usePillFromBag(itemIdx) {
   if (item.healHp) {
     const healVal = Math.floor(item.healHp * mult);
     player.hp = Math.min(player.maxHp, player.hp + healVal);
-    alert(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，氣血恢復 ${healVal} 點！`);
+    gameNotify(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，氣血恢復 ${healVal} 點！`);
   } else if (item.hpAdd || item.speedAdd || item.expAdd) {
     const hpGain = Math.floor((item.hpAdd || 0) * mult);
     const spdGain = Math.floor((item.speedAdd || 0) * mult);
@@ -665,7 +667,7 @@ function usePillFromBag(itemIdx) {
     player.statsEncounter.speed = (player.statsEncounter.speed || 0) + spdGain;
     if (expGain) player.exp += expGain;
 
-    alert(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，奇遇造化湧現：氣血上限 +${hpGain}，身法 +${spdGain}${expGain ? '，修為 +' + expGain : ''}！`);
+    gameNotify(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，奇遇造化湧現：氣血上限 +${hpGain}，身法 +${spdGain}${expGain ? '，修為 +' + expGain : ''}！`);
   }
 
   if (item.count && item.count > 1) {
@@ -715,8 +717,8 @@ function grantLootToBag(kind, ref, count = 1) {
 
   const tpl = findItemByRef(ref);
   if (!tpl) return null;
-  if (tpl.type === 'pill') {
-    const existing = player.inventory.find(i => i.type === 'pill' && i.name === tpl.name);
+  if (tpl.type === 'pill' || tpl.type === 'material') {
+    const existing = player.inventory.find(i => i.type === tpl.type && i.name === tpl.name);
     if (existing) existing.count = (existing.count || 1) + count;
     else player.inventory.push({ ...tpl, templateId: tpl.id, id: "pill_" + Date.now(), count });
   } else {
@@ -746,17 +748,43 @@ function rollDropTable(drops, sourceName) {
   return got;
 }
 
+// ==================== 奇遇：依物品 encounter 設定，在移動 / 打坐時機率獲得 ====================
+// encounter: { chance: 每次判定機率 %, on: "travel" | "meditate" | "both", towns: [城鎮名…]（空 = 任何地點）, text: 奇遇描述 }
+function rollEncounters(on) {
+  if (typeof GLOBAL_ITEMS === 'undefined' || !player) return null;
+  const here = player.curLoc;
+  const pool = GLOBAL_ITEMS.filter(it => {
+    const e = it.encounter;
+    if (!e || !(Number(e.chance) > 0)) return false;
+    if (e.on && e.on !== 'both' && e.on !== on) return false;
+    if (Array.isArray(e.towns) && e.towns.length > 0 && !e.towns.includes(here)) return false;
+    return true;
+  });
+  for (const it of pool.sort(() => Math.random() - 0.5)) {
+    if (Math.random() * 100 < Number(it.encounter.chance)) {
+      const name = grantLootToBag('item', it.id, 1);
+      if (!name) continue;
+      const text = it.encounter.text || (on === 'meditate' ? '靜坐之間，忽有所感' : '途中偶遇機緣');
+      if (typeof gameNotify === 'function') gameNotify(`✨【奇遇】${text}，獲得【${name}】！`, 'ok');
+      if (typeof pushChatMessage === 'function') pushChatMessage('system', '【奇遇】', `${text}，獲得【${name}】！`, '#f1c40f');
+      if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
+      return name;
+    }
+  }
+  return null;
+}
+
 // 商店購買（場景 goods 清單）
 function buyGoodsToBag(ref, price) {
   price = Number(price) || 0;
   const tpl = findItemByRef(ref);
-  if (!tpl) { alert("掌櫃翻遍貨架也找不到這件貨品！"); return; }
-  if (player.gold < price) { alert("銀兩不足！"); return; }
+  if (!tpl) { gameNotify("掌櫃翻遍貨架也找不到這件貨品！"); return; }
+  if (player.gold < price) { gameNotify("銀兩不足！"); return; }
   player.gold -= price;
   grantLootToBag('item', tpl.id || tpl.name, 1);
   recalcPlayerStats();
   if (typeof refreshCurrentScene === 'function') refreshCurrentScene();
-  alert(`🛍️ 購置成功！【${tpl.name}】已放入行囊！（餘 ${player.gold} 兩）`);
+  gameNotify(`🛍️ 購置成功！【${tpl.name}】已放入行囊！（餘 ${player.gold} 兩）`);
 }
 
 // ==================== 5. 轉生輪迴 (通天塔 50 層限制與 10 選 N) ====================
@@ -766,7 +794,7 @@ let selectedDraftedTalents = [];
 
 function openReincarnationModal() {
   if ((player.towerFloor || 1) <= 50) {
-    alert(`🔒 天道封印：通天試煉塔未破！\n少俠需通關通天塔【第 50 層】（當前極限：第 ${player.towerFloor || 1} 層），淬煉無上道果後方可破碎虛空轉世重修！`);
+    gameNotify(`🔒 天道封印：通天試煉塔未破！\n少俠需通關通天塔【第 50 層】（當前極限：第 ${player.towerFloor || 1} 層），淬煉無上道果後方可破碎虛空轉世重修！`);
     return;
   }
 
@@ -848,7 +876,7 @@ function toggleReincarnationHeritage(type, id, checkbox) {
   const allowed = 1 + (player.reincarnations || 0);
   if (checkbox.checked) {
     if (selectedReincarnationHeritage.length >= allowed) {
-      alert(`第 ${1 + player.reincarnations} 世輪迴最多只可保留 ${allowed} 項遺產！`);
+      gameNotify(`第 ${1 + player.reincarnations} 世輪迴最多只可保留 ${allowed} 項遺產！`);
       checkbox.checked = false;
       return;
     }
@@ -924,7 +952,7 @@ function toggleDraftPick(talent, pickLimit) {
     selectedDraftedTalents.splice(existIdx, 1);
   } else {
     if (selectedDraftedTalents.length >= pickLimit) {
-      alert(`當前最多只可挑選 ${pickLimit} 個天賦！`);
+      gameNotify(`當前最多只可挑選 ${pickLimit} 個天賦！`);
       return;
     }
     selectedDraftedTalents.push(talent);
@@ -1019,7 +1047,7 @@ function confirmReincarnationWithTalents() {
   if (typeof refreshChatForCurrentLocation === 'function') refreshChatForCurrentLocation();
 
   const talentNames = player.talents.map(t => `【${t.name}】`).join(' ');
-  alert(`✨ 雷劫洗禮，破虛飛昇！少俠已邁入【第 ${player.reincarnations + 1} 世】！\n通天試煉塔已重置至第 1 層！\n本世共承載天命：\n${talentNames || '無'}`);
+  gameNotify(`✨ 雷劫洗禮，破虛飛昇！少俠已邁入【第 ${player.reincarnations + 1} 世】！\n通天試煉塔已重置至第 1 層！\n本世共承載天命：\n${talentNames || '無'}`);
 }
 
 window.getRarityColorClass = getRarityColorClass;
@@ -1044,6 +1072,7 @@ window.unequipGear = unequipGear;
 window.usePillFromBag = usePillFromBag;
 window.buyGoodsToBag = buyGoodsToBag;
 window.grantLootToBag = grantLootToBag;
+window.rollEncounters = rollEncounters;
 window.rollDropTable = rollDropTable;
 window.findItemByRef = findItemByRef;
 window.findSkillByRef = findSkillByRef;

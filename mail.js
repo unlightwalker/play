@@ -109,7 +109,7 @@ async function fetchOfficialMails(isManual = false) {
   }
 
   if (isManual) {
-    alert("📬 飛鴿傳書更新完畢！已為少俠查驗最新江湖驛信！");
+    gameNotify("📬 飛鴿傳書更新完畢！已為少俠查驗最新江湖驛信！");
   }
 }
 
@@ -197,7 +197,7 @@ function claimSingleMail(mailId) {
   if (!mail) return;
 
   if (player.claimedMails && player.claimedMails.includes(mailId)) {
-    alert("此信件之附件早已領取完畢！");
+    gameNotify("此信件之附件早已領取完畢！");
     return;
   }
 
@@ -227,7 +227,7 @@ function claimSingleMail(mailId) {
 
   renderMailboxUI();
   updateMailRedDot();
-  alert(`🎉 領取成功！已收錄《${mail.title}》的隨函贈禮！`);
+  gameNotify(`🎉 領取成功！已收錄《${mail.title}》的隨函贈禮！`);
 }
 
 function sendOfficialMail(mailObj) {

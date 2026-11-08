@@ -479,6 +479,13 @@ function startBattleAgainst(enemyObj, battleType = false, bossFloor = 0) {
   triggerIfRules("戰鬥開始時", { isPlayer: true });
   triggerIfRules("戰鬥開始時", { isPlayer: false });
 
+  lastBattleOutcome = null;
+  enemyLowHpSpoken = false;
+  enemySpeechCooldown = 0;
+  const oldBubble = document.getElementById('enemy-speech');
+  if (oldBubble) oldBubble.classList.remove('show');
+  setTimeout(() => { if (!combatResolved) enemySay('start', true); }, 450);
+
   if (autoBattleTimer) clearInterval(autoBattleTimer);
   autoBattleTimer = setInterval(battleTick, 70);
 }
@@ -519,9 +526,62 @@ function stopBattleAndExit() {
 
   showStageView(currentCombatType === 'tower_boss' ? 'tower' : 'menu');
 
-  if (typeof refreshChatForCurrentLocation === 'function') {
+  // 城鎮切磋：路人對勝負發表感言；其餘（逃跑 / 通天塔 / 掌門）恢復一般閒聊
+  if (currentCombatType === 'field' && (lastBattleOutcome === 'win' || lastBattleOutcome === 'lose') && typeof bystanderReactToBattle === 'function') {
+    bystanderReactToBattle(lastBattleOutcome === 'win');
+  } else if (typeof refreshChatForCurrentLocation === 'function') {
     refreshChatForCurrentLocation();
   }
+  lastBattleOutcome = null;
+}
+
+// ==================== 敵人 / 首領戰鬥台詞 ====================
+let lastBattleOutcome = null;
+let enemySpeechCooldown = 0;
+let enemyLowHpSpoken = false;
+const DEFAULT_ENEMY_LINES = {
+  start: ["來吧！", "接招！", "讓我看看你的本事！"],
+  hurt: ["好傢伙！", "唔……有兩下子。", "你找死！"],
+  lowHp: ["可惡……", "我還沒輸！"],
+  skill: ["看招！", "吃我一記！"],
+  win: ["哼，不過如此。"],
+  lose: ["……我輸了。"]
+};
+
+// kind: start / hurt / lowHp / skill / win / lose
+function enemySay(kind, force = false) {
+  if (!currentEnemy) return;
+  const now = Date.now();
+  if (!force && now < enemySpeechCooldown) return;
+  const own = currentEnemy.battleLines && Array.isArray(currentEnemy.battleLines[kind]) && currentEnemy.battleLines[kind].length ? currentEnemy.battleLines[kind] : null;
+  const lines = own || DEFAULT_ENEMY_LINES[kind];
+  if (!lines || !lines.length) return;
+  const line = lines[Math.floor(Math.random() * lines.length)];
+  enemySpeechCooldown = now + 2200;
+  if (typeof pushChatMessage === 'function') pushChatMessage('combat', `【${currentEnemy.name}】`, `「${line}」`, '#ff9f8f');
+  if (window.GAME_SETTINGS && window.GAME_SETTINGS.speech === false) return;
+  const arena = document.getElementById('arena-box');
+  if (!arena) return;
+  let bubble = document.getElementById('enemy-speech');
+  if (!bubble) {
+    bubble = document.createElement('div');
+    bubble.id = 'enemy-speech';
+    bubble.className = 'enemy-speech';
+    arena.appendChild(bubble);
+  }
+  bubble.innerText = line;
+  bubble.classList.remove('show');
+  void bubble.offsetWidth;
+  bubble.classList.add('show');
+  clearTimeout(bubble.__t);
+  bubble.__t = setTimeout(() => bubble.classList.remove('show'), 2000);
+}
+
+// 玩家造成傷害後：機率性喊話、低血量時必喊一次
+function enemyReactToDamage() {
+  if (!currentEnemy || combatResolved || enemyHp <= 0) return;
+  if (!enemyLowHpSpoken && enemyHp / currentEnemy.maxHp <= 0.3) { enemyLowHpSpoken = true; enemySay('lowHp', true); return; }
+  if (Math.random() < 0.35) enemySay('hurt');
 }
 
 function lockAction(maxLockMs = 700) {
@@ -745,7 +805,7 @@ function showPlayerCommandPanel() {
   try {
     let panel = document.getElementById('battle-cmd-panel');
     if (!panel) return;
-    panel.style.display = 'flex';
+    panel.classList.remove('waiting');
 
     const equipped = (typeof equippedSlots !== 'undefined' && equippedSlots) ? equippedSlots : {};
     const sk0 = equipped.ext0 || null;
@@ -804,9 +864,15 @@ function closeAttackSubMenu() {
   if (g) g.style.display = 'grid';
 }
 
+// 非玩家回合：面板保留原位（按鈕轉暗不可按），避免戰鬥畫面上下跳動
 function hidePlayerCommandPanel() {
   const panel = document.getElementById('battle-cmd-panel');
-  if (panel) panel.style.display = 'none';
+  if (!panel) return;
+  if (!panel.innerHTML.trim() && typeof player !== 'undefined' && player.maxMp) showPlayerCommandPanel();
+  closeAttackSubMenu();
+  panel.classList.add('waiting');
+  const title = panel.querySelector('.cmd-row-top b');
+  if (title) title.innerHTML = '⏳ 身法蓄力中，等待出手時機…';
 }
 
 function handlePlayerAction(type) {
@@ -1026,6 +1092,7 @@ function executePlayerNormalAttack(wType, presetMove) {
 
       updateCombatBannerAndLog(`你使出【${move.act}式・${move.name}】命中造成 ${dmg} 點傷害！`, `少俠沉著出招，命中對手造成 ${dmg} 點實質創傷！`, "var(--cyan)");
       triggerIfRules("命中敵人時", { isPlayer: true, damage: dmg });
+      enemyReactToDamage();
       updateCombatBars();
 
       if (enemyHp <= 0) {
@@ -1182,6 +1249,7 @@ function executeEnemySkillAttack() {
     eRig.classList.add('anim-enemy-thrust-body');
   }
 
+  enemySay('skill', true);
   if (typeof playEnemySkillVfx === 'function') {
     playEnemySkillVfx(skill.name);
   }
@@ -1351,6 +1419,7 @@ function executeSkillAttack(skill, isMatch, slotIndex, onFinishCallback) {
 
       enemyHp = Math.max(0, enemyHp - baseDmg);
       triggerIfRules("命中敵人時", { isPlayer: true, skill, damage: baseDmg });
+      enemyReactToDamage();
       updateCombatBars();
 
       if (enemyHp <= 0) {
@@ -1381,13 +1450,15 @@ function checkPlayerDefeat() {
   if (player.talents && player.talents.some(t => t.reviveOnce) && !player._hasRevivedInCombat) {
     player._hasRevivedInCombat = true;
     player.hp = Math.round(player.maxHp * 0.5);
-    alert("🔥【天命顯聖・不死鳥之息】氣血歸元，免除致命死亡，當場浴火重生並回滿 50% 氣血！");
+    gameNotify("🔥【天命顯聖・不死鳥之息】氣血歸元，免除致命死亡，當場浴火重生並回滿 50% 氣血！");
     clearAllStatuses();
     updateCombatBars();
     unlockAction();
     return;
   }
 
+  enemySay('win', true);
+  lastBattleOutcome = 'lose';
   combatResolved = true;
   if (autoBattleTimer) clearInterval(autoBattleTimer);
   autoBattleTimer = null;
@@ -1398,7 +1469,7 @@ function checkPlayerDefeat() {
     if (typeof appendCombatChat === 'function') {
       appendCombatChat("【通天惜敗】", `通天塔第 ${currentTowerBossFloor} 層首領武功絕頂，少俠不支敗下陣來，退回至第 ${prevFloor} 層修整！`, "#e74c3c");
     }
-    alert(`惜敗！第 ${currentTowerBossFloor} 層首領實力深不可測，已自動退回第 ${prevFloor} 層！`);
+    gameNotify(`惜敗！第 ${currentTowerBossFloor} 層首領實力深不可測，已自動退回第 ${prevFloor} 層！`);
     player.hp = Math.round(player.maxHp * 0.3);
     stopBattleAndExit();
     if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
@@ -1406,7 +1477,7 @@ function checkPlayerDefeat() {
     return;
   }
 
-  alert("傷重不支，少俠只得暫行退避調養...");
+  gameNotify("傷重不支，少俠只得暫行退避調養...");
   player.hp = Math.round(player.maxHp * 0.3);
   stopBattleAndExit();
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
@@ -1415,6 +1486,8 @@ function checkPlayerDefeat() {
 function handleCombatVictory() {
   if (combatResolved) return;
   triggerIfRules("擊敗敵人時", { isPlayer: true });
+  enemySay('lose', true);
+  lastBattleOutcome = 'win';
   combatResolved = true;
   if (autoBattleTimer) clearInterval(autoBattleTimer);
   autoBattleTimer = null;
@@ -1453,7 +1526,7 @@ function handleCombatVictory() {
     player.sectRank = "出師大成";
     if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
     setTimeout(() => {
-      alert(`🏆 掌門長嘆：「青出於藍而勝於藍！少俠武功冠絕宗門，今日准你【出師大成】！」\n獲得修為 +${earnExp}、學點 +${earnLearn}！`);
+      gameNotify(`🏆 掌門長嘆：「青出於藍而勝於藍！少俠武功冠絕宗門，今日准你【出師大成】！」\n獲得修為 +${earnExp}、學點 +${earnLearn}！`);
       stopBattleAndExit();
     }, 300);
     return;
@@ -1463,7 +1536,7 @@ function handleCombatVictory() {
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
   setTimeout(() => {
     const lootText = lootNames.length > 0 ? `\n戰利品：${lootNames.join('、')}` : '';
-    alert(`🎉 切磋勝出！擊敗【${currentEnemy.name}】！\n獲得修為 +${earnExp}、銀兩 +${earnGold}兩、實戰心得 +${currentEnemy.combat || 6}、學點 +${earnLearn}！${lootText}`);
+    gameNotify(`🎉 切磋勝出！擊敗【${currentEnemy.name}】！\n獲得修為 +${earnExp}、銀兩 +${earnGold}兩、實戰心得 +${currentEnemy.combat || 6}、學點 +${earnLearn}！${lootText}`);
     stopBattleAndExit();
   }, 300);
 }
@@ -1471,6 +1544,7 @@ function handleCombatVictory() {
 // 全域掛載
 window.startBattleAgainst = startBattleAgainst;
 window.buildEnemyFromData = buildEnemyFromData;
+window.enemySay = enemySay;
 window.stopBattleAndExit = stopBattleAndExit;
 window.calcDerivedCombatRates = calcDerivedCombatRates;
 window.updateSingleAtbMetersUI = updateSingleAtbMetersUI;

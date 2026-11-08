@@ -32,7 +32,7 @@ function rollStarterTalents() {
 
 function rerollStarterTalents() {
   if (StoryEngine.rerollsLeft <= 0) {
-    alert("五次天命重擲機會已耗盡！");
+    gameNotify("五次天命重擲機會已耗盡！");
     return;
   }
   StoryEngine.rerollsLeft--;
@@ -77,7 +77,7 @@ function confirmStarterIntro() {
   closeModal('modal-newbie-intro');
   recalcPlayerStats();
   if (typeof autoSave === 'function') autoSave();
-  alert("🏮 命格已定，少俠自牛家村長堤悠悠醒轉，踏上了波瀾壯闊的江湖旅途！");
+  gameNotify("🏮 命格已定，少俠自牛家村長堤悠悠醒轉，踏上了波瀾壯闊的江湖旅途！");
 }
 
 window.checkAndShowNewbieIntro = checkAndShowNewbieIntro;

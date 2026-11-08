@@ -1078,8 +1078,10 @@ function spawnFloatingDmg(text, left, top, cssClass) {
 /**
  * 螢幕震顫
  */
+// 只震動戰鬥場地，下方指令面板與文字保持不動
 function triggerScreenShake() {
-  const app = document.getElementById('phone-app');
+  if (window.GAME_SETTINGS && window.GAME_SETTINGS.shake === false) return;
+  const app = document.getElementById('arena-box') || document.getElementById('phone-app');
   if (!app) return;
   app.classList.remove('shake');
   void app.offsetWidth;

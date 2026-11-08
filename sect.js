@@ -11,7 +11,7 @@
 function openSectHallModal(sName) {
   sName = sName || player.sect;
   if (!sName || sName === "無門無派") {
-    alert("少俠當前孤身一人，尚未拜入門派！可前往重慶唐門、華山、全真、少林、武當或金刀門拜師！");
+    gameNotify("少俠當前孤身一人，尚未拜入門派！可前往重慶唐門、華山、全真、少林、武當或金刀門拜師！");
     return;
   }
 
@@ -98,13 +98,13 @@ function claimSectDaily() {
   const cooldown = 180000; // 3分鐘 CD
   if (now - lastClaim < cooldown) {
     const remainSec = Math.ceil((cooldown - (now - lastClaim)) / 1000);
-    alert(`宗門俸祿每隔段時間發放，掌門交代請稍後再來領取！（尚餘約 ${remainSec} 秒）`);
+    gameNotify(`宗門俸祿每隔段時間發放，掌門交代請稍後再來領取！（尚餘約 ${remainSec} 秒）`);
     return;
   }
 
   // 天賦：窮困潦倒 (無法領取俸祿)
   if (player.talents && player.talents.some(t => t.noSectDaily)) {
-    alert("你身負【窮困潦倒】厄運，門派長老揮手將你逐出庫房，未能領取俸祿！");
+    gameNotify("你身負【窮困潦倒】厄運，門派長老揮手將你逐出庫房，未能領取俸祿！");
     return;
   }
 
@@ -123,7 +123,7 @@ function claimSectDaily() {
 
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
   if (typeof autoSave === 'function') autoSave();
-  alert(`💰 掌門賜下本期宗門例銀 ${addGold} 兩、學點 ${addLearn} 點！勉勵你刻苦用功！`);
+  gameNotify(`💰 掌門賜下本期宗門例銀 ${addGold} 兩、學點 ${addLearn} 點！勉勵你刻苦用功！`);
 }
 
 function checkStatsReq(userStats, reqStats) {
@@ -159,20 +159,20 @@ function getRankActionBtn(sName) {
 
 function promoteRank(newRank, reqCombat, reqExp) {
   if (player.combat < reqCombat || player.exp < reqExp) {
-    alert(`晉升門檻不足！需實戰心得達 ${reqCombat} 點、修為達 ${reqExp} 點！`);
+    gameNotify(`晉升門檻不足！需實戰心得達 ${reqCombat} 點、修為達 ${reqExp} 點！`);
     return;
   }
   player.sectRank = newRank;
   recalcPlayerStats();
   openSectHallModal(player.sect);
-  alert(`🎉 恭賀！你的宗門身份已正式晉升為【${newRank}】！`);
+  gameNotify(`🎉 恭賀！你的宗門身份已正式晉升為【${newRank}】！`);
 }
 
 function challengeMaster(sName) {
   closeModal('modal-sect-hall');
   const sData = (typeof SECT_DATABASE !== 'undefined') ? SECT_DATABASE[sName] : null;
   if (!sData) return;
-  alert(`⚡ 你身為【${sName}】長老，正式向【${sData.leaderName}】發起出師印證切磋！`);
+  gameNotify(`⚡ 你身為【${sName}】長老，正式向【${sData.leaderName}】發起出師印證切磋！`);
   if (typeof startBattleAgainst === 'function') {
     startBattleAgainst(buildEnemyFromData(sData.leaderStats), true);
   }
@@ -186,11 +186,11 @@ function learnFromElder(sName, skillName) {
 
   const statCheck = checkStatsReq(player.stats, sk.reqStats);
   if (!statCheck.ok) {
-    alert(`身體素質未達要求！${statCheck.reason}`);
+    gameNotify(`身體素質未達要求！${statCheck.reason}`);
     return;
   }
   if (player.learn < sk.costLearn) {
-    alert(`學點不足！請教【${sk.name}】需 ${sk.costLearn} 學點！`);
+    gameNotify(`學點不足！請教【${sk.name}】需 ${sk.costLearn} 學點！`);
     return;
   }
   player.learn -= sk.costLearn;
@@ -200,15 +200,15 @@ function learnFromElder(sName, skillName) {
 
   recalcPlayerStats();
   openSectHallModal(sName);
-  alert(`📖 傳功長老親授要訣！你習得了【${sk.rarity}】絕學【${sk.name}】！請至「武學」佩戴！`);
+  gameNotify(`📖 傳功長老親授要訣！你習得了【${sk.rarity}】絕學【${sk.name}】！請至「武學」佩戴！`);
 }
 
 function joinSect(sName) {
-  if (player.sect !== "無門無派") { alert("欺師滅祖乃江湖大忌！不可另投他派！"); return; }
+  if (player.sect !== "無門無派") { gameNotify("欺師滅祖乃江湖大忌！不可另投他派！"); return; }
 
   // 天賦：孤僻怪傑 (不可拜入任何門派)
   if (player.talents && player.talents.some(t => t.noSect)) {
-    alert("你身具【孤僻怪傑】命格，心性獨往獨來，受不得任何門派規矩約束！");
+    gameNotify("你身具【孤僻怪傑】命格，心性獨往獨來，受不得任何門派規矩約束！");
     return;
   }
 
@@ -217,10 +217,10 @@ function joinSect(sName) {
   // 天賦：一代宗師 (初始即為內門弟子)
   if (player.talents && player.talents.some(t => t.sectDirectInner)) {
     player.sectRank = "內門弟子";
-    alert(`🙇 掌門撫鬚大笑：「奇才！真乃天生武骨！」破格直接晉升你為【${sName}】內門弟子！`);
+    gameNotify(`🙇 掌門撫鬚大笑：「奇才！真乃天生武骨！」破格直接晉升你為【${sName}】內門弟子！`);
   } else {
     player.sectRank = "外門弟子";
-    alert(`🙇 三拜九叩！你已成為【${sName}】外門弟子！`);
+    gameNotify(`🙇 三拜九叩！你已成為【${sName}】外門弟子！`);
   }
 
   recalcPlayerStats();

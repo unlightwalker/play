@@ -13,9 +13,9 @@
 const TOWER_BOSSES = [
   {
     "floor": 5,
-    "name": "第 5 層首領・試煉惡僧",
+    "name": "第 5 層首領・「黑風寨主」閻老七",
     "realm": "初窺門徑",
-    "desc": "鎮守通天塔第 5 層之無上高手，實力深不可測。",
+    "desc": "盤踞黑風嶺十餘年的山大王，一把鬼頭刀砍翻過無數官兵，被請進塔中守第一道關。",
     "maxHp": 317,
     "atk": 24,
     "def": 11,
@@ -33,24 +33,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "太祖長拳",
+      "name": "黑風斷魂刀",
       "baseMult": 1.4,
       "rarity": "凡品"
     },
-    "internalName": "自然吐納訣",
+    "internalName": "粗淺吐納法",
     "chest": {
       "godRate": 0,
       "supremeRate": 0,
-      "upperRate": 32.5,
+      "upperRate": 25.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "小子，進了這塔還想活著出去？",
+        "黑風寨的規矩：過路的，留下買路錢——還有命！"
+      ],
+      "hurt": [
+        "喲呵，有點門道！",
+        "他娘的，這一下夠勁！"
+      ],
+      "lowHp": [
+        "不、不可能……老子縱橫黑風嶺十幾年！"
+      ],
+      "skill": [
+        "黑風起——斷你魂！",
+        "吃老子一記斷魂刀！"
+      ],
+      "win": [
+        "呸，回家種田去吧！"
+      ],
+      "lose": [
+        "你……你比官兵還狠……上面的人，可沒我這麼好說話……"
+      ]
+    }
   },
   {
     "floor": 10,
-    "name": "第 10 層首領・試煉惡僧",
+    "name": "第 10 層首領・「鐵臂惡僧」悟嗔",
     "realm": "初窺門徑",
-    "desc": "鎮守通天塔第 10 層之無上高手，實力深不可測。",
+    "desc": "少林棄徒，因犯殺戒被逐出山門。一雙鐵臂練得刀槍不入，自稱「以殺止殺」。",
     "maxHp": 433,
     "atk": 31,
     "def": 15,
@@ -68,24 +91,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "太祖長拳",
+      "name": "伏魔金剛掌",
       "baseMult": 1.4,
       "rarity": "凡品"
     },
-    "internalName": "自然吐納訣",
+    "internalName": "金剛鐵布衫",
     "chest": {
       "godRate": 0,
       "supremeRate": 0,
-      "upperRate": 40.0,
+      "upperRate": 30.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "阿彌陀佛，施主殺氣太重，貧僧替你超度。",
+        "貧僧這雙手，專打不服之人。"
+      ],
+      "hurt": [
+        "好硬的拳頭……正合貧僧心意！",
+        "罪過罪過，貧僧要動真格了。"
+      ],
+      "lowHp": [
+        "佛祖……弟子嗔念未消……還不能倒！"
+      ],
+      "skill": [
+        "伏魔金剛掌——給我跪下！",
+        "看貧僧金剛一掌！"
+      ],
+      "win": [
+        "回頭是岸，施主請回。"
+      ],
+      "lose": [
+        "善哉……原來執迷的人，是我。"
+      ]
+    }
   },
   {
     "floor": 15,
-    "name": "第 15 層首領・試煉惡僧",
+    "name": "第 15 層首領・「毒手藥王」祝無常",
     "realm": "初窺門徑",
-    "desc": "鎮守通天塔第 15 層之無上高手，實力深不可測。",
+    "desc": "曾是一方名醫，為求長生以活人試藥，被江湖人稱「毒手藥王」。袖中藏針，針針見骨。",
     "maxHp": 579,
     "atk": 38,
     "def": 19,
@@ -103,24 +149,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "太祖長拳",
+      "name": "腐骨百毒針",
       "baseMult": 1.4,
       "rarity": "凡品"
     },
-    "internalName": "自然吐納訣",
+    "internalName": "萬毒枯榮心經",
     "chest": {
       "godRate": 0,
       "supremeRate": 0,
-      "upperRate": 47.5,
+      "upperRate": 35.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "來得正好，老夫新配的毒，還缺個試藥的人。",
+        "別緊張，針上的毒……只會讓你痛上七天七夜。"
+      ],
+      "hurt": [
+        "嘖，壞了老夫一身好衣裳。",
+        "有趣，你的血……竟能抗毒？"
+      ],
+      "lowHp": [
+        "解藥……老夫的解藥呢……"
+      ],
+      "skill": [
+        "腐骨百毒針——中者三日骨化！",
+        "看針！"
+      ],
+      "win": [
+        "脈象虛浮，經脈已毒入膏肓。下一位。"
+      ],
+      "lose": [
+        "老夫一生醫人無數……卻醫不好自己的貪心……"
+      ]
+    }
   },
   {
     "floor": 20,
-    "name": "第 20 層首領・奪命劍煞",
+    "name": "第 20 層首領・「血刀老怪」寧不歸",
     "realm": "融會貫通",
-    "desc": "鎮守通天塔第 20 層之無上高手，實力深不可測。",
+    "desc": "血刀門最後的傳人，刀刃常年以人血淬煉，揮刀時腥風撲面。據說他已三十年未曾下山。",
     "maxHp": 750,
     "atk": 46,
     "def": 23,
@@ -138,24 +207,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "狂風快劍",
+      "name": "血刀劈山訣",
       "baseMult": 1.7,
       "rarity": "良品"
     },
-    "internalName": "金剛鐵布衫",
+    "internalName": "血河魔功",
     "chest": {
       "godRate": 0,
-      "supremeRate": 0,
-      "upperRate": 55.0,
+      "supremeRate": 2.0,
+      "upperRate": 35.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "嘿嘿嘿，又有新鮮的血來喂我的刀了。",
+        "我的刀，已經餓了很久。"
+      ],
+      "hurt": [
+        "好！好！你的血一定很香！",
+        "傷我？我的刀會記住你。"
+      ],
+      "lowHp": [
+        "血……我的血……也喂給刀吧！"
+      ],
+      "skill": [
+        "血刀劈山——開！",
+        "這一刀，連山都能劈開！"
+      ],
+      "win": [
+        "刀飽了，你可以走了——爬著走。"
+      ],
+      "lose": [
+        "三十年……原來外面……已經有你這樣的人……"
+      ]
+    }
   },
   {
     "floor": 25,
-    "name": "第 25 層首領・奪命劍煞",
+    "name": "第 25 層首領・「玉面狐」柳拂衣",
     "realm": "融會貫通",
-    "desc": "鎮守通天塔第 25 層之無上高手，實力深不可測。",
+    "desc": "看似溫婉的女子，實為江湖上惡名昭彰的採花賊之首。一襲白衣，花瓣過處，必有人死。",
     "maxHp": 941,
     "atk": 54,
     "def": 27,
@@ -173,24 +265,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "狂風快劍",
+      "name": "漫天飛花劫",
       "baseMult": 1.7,
       "rarity": "良品"
     },
-    "internalName": "金剛鐵布衫",
+    "internalName": "天魅迷心訣",
     "chest": {
       "godRate": 0,
-      "supremeRate": 0,
-      "upperRate": 62.5,
+      "supremeRate": 3.0,
+      "upperRate": 37.5,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "好俊的少俠，奴家捨不得殺你呢……才怪。",
+        "別看我的眼睛，否則你會忘了怎麼出招。"
+      ],
+      "hurt": [
+        "你……竟捨得傷我？",
+        "粗魯！"
+      ],
+      "lowHp": [
+        "我的臉……你敢傷我的臉！"
+      ],
+      "skill": [
+        "花開花落——飛花劫！",
+        "瞧，多美的花雨……"
+      ],
+      "win": [
+        "真可惜，又一朵花謝了。"
+      ],
+      "lose": [
+        "原來……真有人看得穿我的迷心訣……"
+      ]
+    }
   },
   {
     "floor": 30,
-    "name": "第 30 層首領・奪命劍煞",
+    "name": "第 30 層首領・「斷腸劍客」葉孤鴻",
     "realm": "融會貫通",
-    "desc": "鎮守通天塔第 30 層之無上高手，實力深不可測。",
+    "desc": "曾是名門大弟子，因愛人被害而心死，從此出劍只求快、只求斷人肝腸。",
     "maxHp": 1151,
     "atk": 62,
     "def": 31,
@@ -208,24 +323,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "狂風快劍",
+      "name": "斷腸快劍",
       "baseMult": 1.7,
       "rarity": "良品"
     },
-    "internalName": "金剛鐵布衫",
+    "internalName": "冷月心經",
     "chest": {
       "godRate": 0,
-      "supremeRate": 0,
-      "upperRate": 70.0,
+      "supremeRate": 4.0,
+      "upperRate": 40.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "拔劍吧。我不殺手無寸鐵之人。",
+        "我的劍很快，快到你來不及後悔。"
+      ],
+      "hurt": [
+        "……好劍法。可惜，不夠快。",
+        "你的劍，有心。"
+      ],
+      "lowHp": [
+        "她死的那天……也下著這樣的雨……"
+      ],
+      "skill": [
+        "斷腸快劍——一劍斷腸！",
+        "看清楚，這是最後一劍。"
+      ],
+      "win": [
+        "回去吧。劍心不定，練多少年都是枉然。"
+      ],
+      "lose": [
+        "終於……有人比我快了……我可以去找她了……"
+      ]
+    }
   },
   {
     "floor": 35,
-    "name": "第 35 層首領・奪命劍煞",
+    "name": "第 35 層首領・「赤練仙子」李寒煙",
     "realm": "融會貫通",
-    "desc": "鎮守通天塔第 35 層之無上高手，實力深不可測。",
+    "desc": "苗疆五毒教叛出的聖女，豢養赤練毒蛇，鏢上淬蛇毒，見血封喉。",
     "maxHp": 1376,
     "atk": 70,
     "def": 35,
@@ -243,24 +381,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "狂風快劍",
+      "name": "赤練蛇影鏢",
       "baseMult": 1.7,
       "rarity": "良品"
     },
-    "internalName": "金剛鐵布衫",
+    "internalName": "五毒神功",
     "chest": {
       "godRate": 0,
-      "supremeRate": 0,
-      "upperRate": 75,
+      "supremeRate": 5.0,
+      "upperRate": 42.5,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "我的小蛇兒們，已經聞到你的味道了。",
+        "跪下求我，或許能留你全屍。"
+      ],
+      "hurt": [
+        "你敢傷我？我的蛇不會放過你！",
+        "嘶——你激怒我了。"
+      ],
+      "lowHp": [
+        "蛇兒們……替我咬死他！"
+      ],
+      "skill": [
+        "赤練蛇影鏢——去吧！",
+        "看看是你快，還是我的蛇快！"
+      ],
+      "win": [
+        "蛇毒入心，你撐不過今晚。"
+      ],
+      "lose": [
+        "五毒教……再也回不去了……"
+      ]
+    }
   },
   {
     "floor": 40,
-    "name": "第 40 層首領・赤血魔皇",
+    "name": "第 40 層首領・「千面鬼手」司空離",
     "realm": "登峰造極",
-    "desc": "鎮守通天塔第 40 層之無上高手，實力深不可測。",
+    "desc": "易容術天下無雙的神偷，沒人見過他的真面目。出拳時身影化作千百殘像，讓人防不勝防。",
     "maxHp": 1617,
     "atk": 78,
     "def": 39,
@@ -278,24 +439,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "秘劍・一之太刀",
+      "name": "鬼影無影拳",
       "baseMult": 2.2,
       "rarity": "神品"
     },
-    "internalName": "萬毒枯榮心經",
+    "internalName": "移形換影功",
     "chest": {
-      "godRate": 8.0,
-      "supremeRate": 80.0,
-      "upperRate": 75,
+      "godRate": 1.0,
+      "supremeRate": 5.0,
+      "upperRate": 45.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "猜猜看，哪一個才是真的我？",
+        "你身上的東西……我全都要了。"
+      ],
+      "hurt": [
+        "打中了？那只是個影子罷了。",
+        "嘖，竟看穿了我的步法。"
+      ],
+      "lowHp": [
+        "這張臉……這張臉也被你打破了……"
+      ],
+      "skill": [
+        "鬼影無影拳——千手千影！",
+        "看得見我的拳嗎？"
+      ],
+      "win": [
+        "多謝少俠的錢袋。"
+      ],
+      "lose": [
+        "真正的我……是什麼樣子……連我自己都忘了……"
+      ]
+    }
   },
   {
     "floor": 45,
-    "name": "第 45 層首領・赤血魔皇",
+    "name": "第 45 層首領・「狂刀」霍天狼",
     "realm": "登峰造極",
-    "desc": "鎮守通天塔第 45 層之無上高手，實力深不可測。",
+    "desc": "塞外狼族出身的刀客，一對八斬刀如狼牙撕咬，越戰越狂，傷越重刀越快。",
     "maxHp": 1872,
     "atk": 87,
     "def": 43,
@@ -313,24 +497,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "秘劍・一之太刀",
+      "name": "狼牙八斬刀",
       "baseMult": 2.2,
       "rarity": "神品"
     },
-    "internalName": "萬毒枯榮心經",
+    "internalName": "狂血戰意",
     "chest": {
-      "godRate": 9.0,
-      "supremeRate": 90.0,
-      "upperRate": 75,
+      "godRate": 1.4,
+      "supremeRate": 6.2,
+      "upperRate": 46.5,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "嗷——！草原的狼，從不退縮！",
+        "讓我聞聞你的恐懼！"
+      ],
+      "hurt": [
+        "痛！好痛快！再來！",
+        "血的味道……讓我更興奮了！"
+      ],
+      "lowHp": [
+        "狼……就算剩最後一口氣……也要咬斷你的喉嚨！"
+      ],
+      "skill": [
+        "狼牙八斬——撕碎你！",
+        "八刀！八刀都要見血！"
+      ],
+      "win": [
+        "弱小的獵物，只配被吃掉。"
+      ],
+      "lose": [
+        "好……你是頭狼……"
+      ]
+    }
   },
   {
     "floor": 50,
-    "name": "第 50 層首領・赤血魔皇",
+    "name": "第 50 層首領・「赤血魔皇」厲天行",
     "realm": "登峰造極",
-    "desc": "鎮守通天塔第 50 層之無上高手，實力深不可測。",
+    "desc": "魔教前任教主，以血魔大法吸人精血，所過之處血浪滔天。通天塔半山的鎮關魔頭。",
     "maxHp": 2139,
     "atk": 95,
     "def": 47,
@@ -348,24 +555,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "秘劍・一之太刀",
+      "name": "赤血滔天浪",
       "baseMult": 2.2,
       "rarity": "神品"
     },
-    "internalName": "萬毒枯榮心經",
+    "internalName": "血魔大法",
     "chest": {
-      "godRate": 10.0,
-      "supremeRate": 90.0,
-      "upperRate": 75,
+      "godRate": 1.7,
+      "supremeRate": 7.5,
+      "upperRate": 48.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "哈哈哈！本座在此等了百年，你是第幾個？",
+        "跪下，本座賜你一個痛快的死法。"
+      ],
+      "hurt": [
+        "區區螻蟻，也敢傷本座！",
+        "血……本座的血……你該死！"
+      ],
+      "lowHp": [
+        "以血還血——本座不會倒下！"
+      ],
+      "skill": [
+        "赤血滔天——給本座跪下！",
+        "血浪翻天，萬物俱滅！"
+      ],
+      "win": [
+        "弱者，就該被吞噬。"
+      ],
+      "lose": [
+        "咳……想不到……本座竟敗於你手……魔教……完了……"
+      ]
+    }
   },
   {
     "floor": 55,
-    "name": "第 55 層首領・混沌天尊",
+    "name": "第 55 層首領・「幽冥鬼王」冥九淵",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 55 層之無上高手，實力深不可測。",
+    "desc": "據說曾死過一次又從墳中爬出的怪人，周身纏繞紫色鬼火，腿法陰狠詭譎。",
     "maxHp": 2419,
     "atk": 104,
     "def": 51,
@@ -383,24 +613,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "幽冥鬼焰腿",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "九幽陰風訣",
     "chest": {
-      "godRate": 11.0,
-      "supremeRate": 89.0,
-      "upperRate": 75,
+      "godRate": 2.0,
+      "supremeRate": 8.8,
+      "upperRate": 49.5,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "活人……好久沒見到活人了……",
+        "陪我……一起下九幽吧……"
+      ],
+      "hurt": [
+        "痛？我早就忘了痛是什麼。",
+        "嘻嘻……你的陽氣真旺……"
+      ],
+      "lowHp": [
+        "又要死了嗎……沒關係……我會再爬回來的……"
+      ],
+      "skill": [
+        "幽冥鬼焰——焚盡你的魂魄！",
+        "鬼火纏身，永世不得超生！"
+      ],
+      "win": [
+        "你的魂……歸我了。"
+      ],
+      "lose": [
+        "終於……可以安息了……"
+      ]
+    }
   },
   {
     "floor": 60,
-    "name": "第 60 層首領・混沌天尊",
+    "name": "第 60 層首領・「天魔劍」獨孤殤",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 60 層之無上高手，實力深不可測。",
+    "desc": "一人一劍挑戰天下名門，殺盡十三派掌門的劍魔。劍分三式，一式殺一人。",
     "maxHp": 2711,
     "atk": 112,
     "def": 55,
@@ -418,24 +671,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "天魔三仙劍",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "天魔解體大法",
     "chest": {
-      "godRate": 12.0,
-      "supremeRate": 88.0,
-      "upperRate": 75,
+      "godRate": 2.4,
+      "supremeRate": 10.0,
+      "upperRate": 51.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "我只出三劍。你能接住，就讓你過去。",
+        "天下劍客，皆是我劍下亡魂。"
+      ],
+      "hurt": [
+        "第一劍，你接住了。",
+        "有意思……你值得我用全力。"
+      ],
+      "lowHp": [
+        "天魔解體——我還有最後一劍！"
+      ],
+      "skill": [
+        "天魔三仙——三劍奪命！",
+        "看劍——一劍化三！"
+      ],
+      "win": [
+        "三劍都接不住，回去吧。"
+      ],
+      "lose": [
+        "三劍……全被你破了……好！好！"
+      ]
+    }
   },
   {
     "floor": 65,
-    "name": "第 65 層首領・混沌天尊",
+    "name": "第 65 層首領・「北冥龍君」敖滄",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 65 層之無上高手，實力深不可測。",
+    "desc": "自稱北海龍王轉世的狂人，掌力如蛟龍出海，以北冥真氣吸人內力化為己用。",
     "maxHp": 3014,
     "atk": 121,
     "def": 60,
@@ -453,24 +729,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "北冥降龍掌",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "北冥真氣",
     "chest": {
-      "godRate": 13.0,
-      "supremeRate": 87.0,
-      "upperRate": 75,
+      "godRate": 2.8,
+      "supremeRate": 11.2,
+      "upperRate": 52.5,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "凡人，見了龍君，還不下跪？",
+        "你的內力……本君收下了。"
+      ],
+      "hurt": [
+        "區區凡人，竟能傷及龍鱗！",
+        "你的掌力……竟能撼動本君！"
+      ],
+      "lowHp": [
+        "龍……是不會死的……北冥之水，給我回來！"
+      ],
+      "skill": [
+        "北冥降龍——蛟龍出海！",
+        "龍吟九天，萬掌歸一！"
+      ],
+      "win": [
+        "你的內力，本君笑納了。"
+      ],
+      "lose": [
+        "龍……也有失水的一天……"
+      ]
+    }
   },
   {
     "floor": 70,
-    "name": "第 70 層首領・混沌天尊",
+    "name": "第 70 層首領・「無影神指」燕無蹤",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 70 層之無上高手，實力深不可測。",
+    "desc": "輕功絕頂的刺客，來去無影，一指點出，穴道盡封、魂魄離體。江湖上無人見過他出手第二次。",
     "maxHp": 3328,
     "atk": 130,
     "def": 64,
@@ -488,24 +787,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "無影奪魂指",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "凌虛御風功",
     "chest": {
-      "godRate": 14.0,
-      "supremeRate": 86.0,
-      "upperRate": 75,
+      "godRate": 3.1,
+      "supremeRate": 12.5,
+      "upperRate": 54.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "見過我出手的人，都已經不在了。",
+        "別眨眼——眨一下，你就死了。"
+      ],
+      "hurt": [
+        "你……看得見我？",
+        "不可能，你怎能跟上我的身法！"
+      ],
+      "lowHp": [
+        "我……也會被人追上嗎……"
+      ],
+      "skill": [
+        "無影奪魂指——點你死穴！",
+        "這一指，奪你魂魄！"
+      ],
+      "win": [
+        "你甚至沒看到我出手。"
+      ],
+      "lose": [
+        "原來……被人看清的感覺……是這樣……"
+      ]
+    }
   },
   {
     "floor": 75,
-    "name": "第 75 層首領・混沌天尊",
+    "name": "第 75 層首領・「血衣羅剎」紅蓮",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 75 層之無上高手，實力深不可測。",
+    "desc": "一身血衣的女魔頭，修練紅蓮業火，所殺之人皆被燒成灰燼，只留一朵焦黑的紅蓮。",
     "maxHp": 3652,
     "atk": 139,
     "def": 68,
@@ -523,24 +845,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "羅剎焚心焰",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "紅蓮業火功",
     "chest": {
-      "godRate": 15.0,
-      "supremeRate": 85.0,
-      "upperRate": 75,
+      "godRate": 3.5,
+      "supremeRate": 13.8,
+      "upperRate": 55.5,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "業火焚身，你的罪孽，由我來燒乾淨。",
+        "又一朵紅蓮，要開了。"
+      ],
+      "hurt": [
+        "你的血……也是紅色的呢。",
+        "痛……很好，業火燒得更旺了！"
+      ],
+      "lowHp": [
+        "業火……反噬了嗎……不！再燒旺一點！"
+      ],
+      "skill": [
+        "羅剎焚心——紅蓮業火！",
+        "燒吧！把一切都燒成灰！"
+      ],
+      "win": [
+        "灰燼裡，又多了一朵紅蓮。"
+      ],
+      "lose": [
+        "火……終於熄了……好冷……"
+      ]
+    }
   },
   {
     "floor": 80,
-    "name": "第 80 層首領・混沌天尊",
+    "name": "第 80 層首領・「太陰魔尼」寂滅師太",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 80 層之無上高手，實力深不可測。",
+    "desc": "峨眉叛尼，將太極陰陽之理逆練，以陰制陽、以柔吞剛，掌力所至，寒冰刺骨。",
     "maxHp": 3985,
     "atk": 148,
     "def": 72,
@@ -558,24 +903,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "逆轉太極掌",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "太陰玄冰功",
     "chest": {
-      "godRate": 16.0,
-      "supremeRate": 84.0,
-      "upperRate": 75,
+      "godRate": 3.8,
+      "supremeRate": 15.0,
+      "upperRate": 57.0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "陰陽顛倒，乾坤逆轉。施主，你的命數到了。",
+        "貧尼修的是寂滅道，送你寂滅。"
+      ],
+      "hurt": [
+        "陽氣過盛……正好讓貧尼吸收。",
+        "嗯？你竟能破我陰柔之勁？"
+      ],
+      "lowHp": [
+        "陰極……陽生……不……不該是這樣……"
+      ],
+      "skill": [
+        "逆轉太極——陰陽倒懸！",
+        "太陰之寒，凍你三魂七魄！"
+      ],
+      "win": [
+        "寂滅，方是解脫。"
+      ],
+      "lose": [
+        "原來……陰陽本不可逆……是貧尼……錯了……"
+      ]
+    }
   },
   {
     "floor": 85,
-    "name": "第 85 層首領・混沌天尊",
+    "name": "第 85 層首領・「東瀛鬼丸」鬼丸斬月",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 85 層之無上高手，實力深不可測。",
+    "desc": "渡海而來的東瀛劍鬼，自稱一刀流叛徒。刀不出鞘則已，出鞘必斬斷目之所及的一切。",
     "maxHp": 4329,
     "atk": 157,
     "def": 76,
@@ -593,24 +961,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "鬼丸居合斬",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "無念無想",
     "chest": {
-      "godRate": 17.0,
-      "supremeRate": 83.0,
-      "upperRate": 75,
+      "godRate": 4.2,
+      "supremeRate": 16.2,
+      "upperRate": 58.5,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "……拔刀之前，先告訴我你的名字。",
+        "我的刀，只斬值得一斬之人。"
+      ],
+      "hurt": [
+        "……不錯。",
+        "你的刀意，很純粹。"
+      ],
+      "lowHp": [
+        "無念……無想……"
+      ],
+      "skill": [
+        "居合——鬼丸斬月！",
+        "一閃。"
+      ],
+      "win": [
+        "……不值一斬。"
+      ],
+      "lose": [
+        "好刀……能敗在你手下，是我的榮幸……"
+      ]
+    }
   },
   {
     "floor": 90,
-    "name": "第 90 層首領・混沌天尊",
+    "name": "第 90 層首領・「萬蠱天尊」烏骨",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 90 層之無上高手，實力深不可測。",
+    "desc": "苗疆深山裡的蠱神，以身飼萬蠱，體內蠱蟲化針射出，一針一蠱，穿心而過。",
     "maxHp": 4681,
     "atk": 166,
     "def": 81,
@@ -628,24 +1019,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "萬蠱穿心針",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "蠱神金身",
     "chest": {
-      "godRate": 18.0,
-      "supremeRate": 82.0,
-      "upperRate": 75,
+      "godRate": 4.5,
+      "supremeRate": 17.5,
+      "upperRate": 60,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "我的孩子們……餓了很久了……",
+        "你的身體，很適合養蠱。"
+      ],
+      "hurt": [
+        "傷了我，蠱就會從傷口爬出來哦。",
+        "嘻嘻……你殺不死我體內的萬蠱。"
+      ],
+      "lowHp": [
+        "孩子們……出來……吃了他……"
+      ],
+      "skill": [
+        "萬蠱穿心——一針一蠱！",
+        "去吧，鑽進他的心！"
+      ],
+      "win": [
+        "從今天起，你就是我的蠱巢了。"
+      ],
+      "lose": [
+        "蠱……都死了……我也……"
+      ]
+    }
   },
   {
     "floor": 95,
-    "name": "第 95 層首領・混沌天尊",
+    "name": "第 95 層首領・「地藏魔佛」無相",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 95 層之無上高手，實力深不可測。",
+    "desc": "一念成佛、一念成魔的苦行僧，坐關百年悟出無相魔功，掌下眾生平等——皆是死。",
     "maxHp": 5043,
     "atk": 175,
     "def": 85,
@@ -663,24 +1077,47 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "大悲無相魔佛掌",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "無相般若功",
     "chest": {
-      "godRate": 19.0,
-      "supremeRate": 81.0,
-      "upperRate": 75,
+      "godRate": 4.9,
+      "supremeRate": 18.8,
+      "upperRate": 60,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "眾生皆苦，貧僧渡你。",
+        "地獄不空，誓不成佛——那就讓我把地獄填滿。"
+      ],
+      "hurt": [
+        "痛，亦是修行。",
+        "你的掌中……有佛性。"
+      ],
+      "lowHp": [
+        "佛也好……魔也好……都是虛妄……"
+      ],
+      "skill": [
+        "大悲無相——魔佛一掌！",
+        "萬法皆空，掌下無生！"
+      ],
+      "win": [
+        "阿彌陀佛。又渡一人。"
+      ],
+      "lose": [
+        "原來……放下屠刀……是這種感覺……"
+      ]
+    }
   },
   {
     "floor": 100,
-    "name": "第 100 層首領・混沌天尊",
+    "name": "第 100 層首領・「混沌天尊」玄冥子",
     "realm": "返璞歸真",
-    "desc": "鎮守通天塔第 100 層之無上高手，實力深不可測。",
+    "desc": "通天塔之主，傳說中參透天地混沌之力的老怪物。九條混沌真龍隨掌而出，天地為之變色。",
     "maxHp": 5413,
     "atk": 184,
     "def": 89,
@@ -698,18 +1135,41 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 15,
     "skill": {
-      "name": "降龍十八掌・亢龍有悔",
+      "name": "混沌九龍滅世",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "純陽太極功",
+    "internalName": "混沌天元訣",
     "chest": {
-      "godRate": 20.0,
-      "supremeRate": 80.0,
-      "upperRate": 75,
+      "godRate": 100,
+      "supremeRate": 0,
+      "upperRate": 0,
       "bookRate": 50
     },
-    "drops": []
+    "drops": [],
+    "battleLines": {
+      "start": [
+        "凡人，你終於走到這裡了。",
+        "百層之上，無人能活著見我。你，會是第一個嗎？"
+      ],
+      "hurt": [
+        "……有趣。",
+        "竟能撼動本尊分毫。"
+      ],
+      "lowHp": [
+        "混沌之力……為何……不聽使喚……"
+      ],
+      "skill": [
+        "九龍出，天地滅——混沌滅世！",
+        "萬物歸墟，混沌初開！"
+      ],
+      "win": [
+        "渺小。"
+      ],
+      "lose": [
+        "……你，已觸及天道之門。這座塔……交給你了。"
+      ]
+    }
   }
 ];
 

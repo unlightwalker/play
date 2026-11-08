@@ -15,6 +15,7 @@ function getSceneIcon(type) {
   if (type === 'inn') return '🍶';
   if (type === 'pharmacy') return '💊';
   if (type === 'field_combat') return '⚔️';
+  if (type === 'gate') return '⛰️';
   return '🏮';
 }
 
@@ -177,6 +178,8 @@ function renderNineGridMap() {
 
   const curTownData = (typeof WORLD_MAP !== 'undefined') ? WORLD_MAP[curName] : null;
   const coords = (curTownData && curTownData.grid) || [0, 0];
+  const areaEl = document.getElementById('map-area-title');
+  if (areaEl) areaEl.innerText = (curTownData && curTownData.area) ? `${curTownData.area}・${(typeof SECT_DATABASE !== 'undefined' && SECT_DATABASE[curTownData.area]) ? '門派地圖' : '小地圖'}` : '坤輿全圖';
   const coordEl = document.getElementById('map-coord-display');
   if (coordEl) coordEl.innerText = `(${coords[0]}, ${coords[1]})`;
 
@@ -218,18 +221,18 @@ function renderNineGridMap() {
 
     if (nodeData && nodeData.isCenter) {
       cell.classList.add('current-pos');
-      cell.innerHTML = `<div>${nodeData.name}</div>`;
+      cell.innerHTML = `<div>${String(nodeData.name).split("・").pop()}</div>`;
       cell.title = `當前所在：${nodeData.name}`;
     } else if (nodeData && nodeData.isWalkable) {
       cell.classList.add('walkable');
-      cell.innerHTML = `<div>${nodeData.name}</div>`;
+      cell.innerHTML = `<div>${String(nodeData.name).split("・").pop()}</div>`;
       cell.title = `點擊前往【${nodeData.name}】`;
       cell.onclick = () => travelToTown(nodeData.name);
     } else if (nodeData && nodeData.isDistant) {
       cell.style.background = "#111620";
       cell.style.color = "#5a6b82";
       cell.style.border = "1px dashed #222c3a";
-      cell.innerHTML = `<div>${nodeData.name}</div>`;
+      cell.innerHTML = `<div>${String(nodeData.name).split("・").pop()}</div>`;
       cell.title = `【遠眺】${nodeData.name}`;
     } else {
       cell.style.background = "transparent";
@@ -251,6 +254,7 @@ function travelToTown(destKey) {
   renderJianghuScenesOnMenu();
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
   refreshChatForCurrentLocation();
+  if (typeof rollEncounters === 'function') rollEncounters('travel');
 }
 
 function renderJianghuScenesOnMenu() {
@@ -304,6 +308,11 @@ function openSceneModal(sc) {
 
   const sceneNpcs = getTownNpcs(player.curLoc).filter(n => (n.scene || "") === sc.id);
 
+  if (sc.type === 'gate') {
+    if (sc.target && WORLD_MAP[sc.target]) travelToTown(sc.target);
+    return;
+  }
+
   if (sc.type === 'field_combat') {
     const foes = sceneNpcs.filter(n => n.attackable);
     const others = sceneNpcs.filter(n => !n.attackable);
@@ -322,7 +331,7 @@ function openSceneModal(sc) {
       const it = (typeof findItemByRef === 'function') ? findItemByRef(g.item) : null;
       if (!it) return;
       const price = Number(g.price) || it.cost || 10;
-      const typeLabel = it.type === 'weapon' ? (typeof getWeaponType === 'function' ? getWeaponType(it) : '兵器') : (it.type === 'armor' ? '防具' : '丹藥');
+      const typeLabel = it.type === 'weapon' ? (typeof getWeaponType === 'function' ? getWeaponType(it) : '兵器') : (it.type === 'armor' ? '防具' : (it.type === 'material' ? '材料' : '丹藥'));
       html += `
         <div class="bag-item-card">
           <div><b class="color-${it.rarity}">${it.name} (${typeLabel})</b><br><small style="color:#aaa;">${it.desc || ''}</small></div>
@@ -410,7 +419,7 @@ function openSceneModal(sc) {
 
 function restAtInn(cost) {
   cost = Number(cost) || 5;
-  if (player.gold < cost) { alert("盤纏不足！"); return; }
+  if (player.gold < cost) { gameNotify("盤纏不足！"); return; }
   player.gold -= cost;
   player.hp = player.maxHp;
   player.mp = player.maxMp;
@@ -422,7 +431,7 @@ function restAtInn(cost) {
 
 function listenStoryteller(cost) {
   cost = Number(cost) || 10;
-  if (player.gold < cost) { alert("碎銀不足！"); return; }
+  if (player.gold < cost) { gameNotify("碎銀不足！"); return; }
   player.gold -= cost;
   player.learn += 30;
 
@@ -462,7 +471,8 @@ function renderPawnshopUI() {
     const countBadge = item.count ? `<span style="color:var(--gold); font-size:11px;">x${item.count}</span>` : '';
     const typeLabel = (item.type === 'weapon') 
       ? `[${(typeof getWeaponType === 'function') ? getWeaponType(item) : '兵器'}]` 
-      : (item.type === 'armor' ? '[防具]' : (item.type === 'book' ? '[秘笈]' : '[丹藥]'));
+      : (item.type === 'armor' ? '[防具]' : (item.type === 'book' ? '[秘笈]' : (item.type === 'material' ? '[材料]' : '[丹藥]')));
+    const noSell = (typeof findItemByRef === 'function') && (findItemByRef(item.templateId || item.name) || {}).noSell;
 
     card.innerHTML = `
       <div>
@@ -473,9 +483,9 @@ function renderPawnshopUI() {
         <div style="font-size:11px; color:#8ca0b3; margin-top:2px;">${item.desc || '尋常物事'}</div>
       </div>
       <div>
-        <button class="wuxia-btn" style="padding:4px 9px; font-size:11.5px; border-color:var(--gold); color:var(--gold);" onclick="sellItemToPawn(${idx})">
-          典當 +${price}兩
-        </button>
+        ${noSell
+          ? `<span style="font-size:11px; color:#777;">不收此物</span>`
+          : `<button class="wuxia-btn" style="padding:4px 9px; font-size:11.5px; border-color:var(--gold); color:var(--gold);" onclick="sellItemToPawn(${idx})">典當 +${price}兩</button>`}
       </div>
     `;
     box.appendChild(card);
@@ -485,6 +495,8 @@ function renderPawnshopUI() {
 function sellItemToPawn(idx) {
   const item = player.inventory[idx];
   if (!item) return;
+  const tpl = (typeof findItemByRef === 'function') ? findItemByRef(item.templateId || item.name) : null;
+  if (tpl && tpl.noSell) { gameNotify("掌櫃連連搖頭：「這東西，小店不收。」"); return; }
   const price = getItemPawnPrice(item);
 
   if (item.rarity === '神品' || item.rarity === '絕品') {
@@ -501,10 +513,11 @@ function sellItemToPawn(idx) {
 }
 
 function quickSellJunk() {
-  if (!player.inventory || player.inventory.length === 0) { alert("行囊空空！"); return; }
+  if (!player.inventory || player.inventory.length === 0) { gameNotify("行囊空空！"); return; }
   let totalGain = 0;
   player.inventory = player.inventory.filter(item => {
-    if (item.rarity === "凡品") {
+    const tpl = (typeof findItemByRef === 'function') ? findItemByRef(item.templateId || item.name) : null;
+    if (item.rarity === "凡品" && !(tpl && tpl.noSell)) {
       const cnt = item.count || 1;
       totalGain += getItemPawnPrice(item) * cnt;
       return false;
@@ -553,7 +566,10 @@ function renderStreetNpcs(town) {
   if (!box) return;
   const street = (town && Array.isArray(town.npcs)) ? town.npcs.filter(n => !n.scene) : [];
   box.innerHTML = '';
-  if (title) title.style.display = street.length > 0 ? 'block' : 'none';
+  if (title) {
+    title.style.display = street.length > 0 ? 'block' : 'none';
+    title.innerText = (town && town.area) ? '此地人物' : '街頭人物';
+  }
   street.forEach(npc => {
     const btn = document.createElement('button');
     btn.className = 'wuxia-btn';
@@ -593,9 +609,10 @@ function openNpcPanel(npcId) {
       <div class="npc-name">${npc.name}${npc.attackable ? `<small>【${npc.realm || '江湖人'}】</small>` : ''}</div>
       ${npc.desc ? `<div class="npc-desc">${npc.desc}</div>` : ''}
       ${stats}
-      <div class="npc-bubble" id="npc-bubble">${lines[0]}</div>
+      <div class="npc-bubble" id="npc-bubble"><span>${lines[0]}</span></div>
       <div class="npc-actions">
         <button class="wuxia-btn" style="color:var(--cyan); border-color:var(--cyan);" onclick="talkToNpc('${npc.id}')">💬 交談</button>
+        ${npc.service === 'sect_hall' ? `<button class="wuxia-btn" style="color:var(--green); border-color:var(--green);" onclick="openNpcService('${npc.id}')">🏯 門派事務</button>` : ''}
         ${npc.attackable ? `<button class="wuxia-btn" style="color:#e74c3c; border-color:#e74c3c;" onclick="startDuelWithNpc('${npc.id}')">⚔️ 討伐切磋</button>` : ''}
       </div>
     </div>`;
@@ -619,7 +636,10 @@ function talkToNpc(npcId) {
     const idx = (Number(panel.dataset.lineIdx) + 1) % lines.length;
     panel.dataset.lineIdx = String(idx);
     line = lines[idx];
-    bubble.innerText = line;
+    bubble.innerHTML = '';
+    const span = document.createElement('span');
+    span.innerText = line;
+    bubble.appendChild(span);
   } else {
     line = lines[Math.floor(Math.random() * lines.length)];
   }
@@ -634,8 +654,45 @@ function startDuelWithNpc(npcId) {
   startBattleAgainst(buildEnemyFromData(npc), false);
 }
 
+// NPC 提供的服務（門派事務：拜師、請教武學、晉升、例銀、出師挑戰）
+function openNpcService(npcId) {
+  const npc = findTownNpc(npcId);
+  const loc = WORLD_MAP[player.curLoc];
+  if (!npc || !loc) return;
+  if (npc.service === 'sect_hall' && typeof openSectHallModal === 'function') {
+    const sectName = loc.sect && SECT_DATABASE[loc.sect] ? loc.sect : null;
+    if (sectName) openSectHallModal(sectName);
+  }
+}
+
+function isInBattle() {
+  const b = document.getElementById('battle-view');
+  return !!(b && b.classList.contains('active'));
+}
+
+// 戰鬥結束後：在場的路人對勝負發表感言
+function bystanderReactToBattle(won) {
+  if (window.GAME_SETTINGS && window.GAME_SETTINGS.chatter === false) return;
+  const loc = WORLD_MAP[player.curLoc];
+  if (!loc) return;
+  const key = won ? 'reactWin' : 'reactLose';
+  const DEFAULT = won
+    ? ["好身手！", "打得漂亮！", "這一戰真是精彩。"]
+    : ["勝敗乃兵家常事。", "沒事吧？先歇一歇。", "下回再討回來便是。"];
+  const crowd = getTownNpcs(player.curLoc).filter(n => !n.attackable);
+  if (crowd.length === 0) return;
+  const npc = crowd[Math.floor(Math.random() * crowd.length)];
+  const lines = (Array.isArray(npc[key]) && npc[key].length > 0) ? npc[key] : DEFAULT;
+  setTimeout(() => {
+    if (isInBattle()) return;
+    pushChatMessage('current', `[${loc.name}] ${npc.name}`, lines[Math.floor(Math.random() * lines.length)], won ? '#f1c40f' : '#cad3df');
+  }, 600);
+}
+
 function refreshChatForCurrentLocation() {
   if (typeof WORLD_MAP === 'undefined') return;
+  if (isInBattle()) return; // 戰鬥中不播放路人台詞
+  if (window.GAME_SETTINGS && window.GAME_SETTINGS.chatter === false) return;
   const loc = WORLD_MAP[player.curLoc] || WORLD_MAP["牛家村"];
   if (!loc) return;
   const talkers = getTownNpcs(loc.name).filter(n => Array.isArray(n.dialogues) && n.dialogues.length > 0);
@@ -661,6 +718,9 @@ window.sellItemToPawn = sellItemToPawn;
 window.quickSellJunk = quickSellJunk;
 window.startDuelWithNpc = startDuelWithNpc;
 window.talkToNpc = talkToNpc;
+window.openNpcService = openNpcService;
+window.bystanderReactToBattle = bystanderReactToBattle;
+window.isInBattle = isInBattle;
 window.openNpcPanel = openNpcPanel;
 window.closeNpcPanel = closeNpcPanel;
 window.refreshChatForCurrentLocation = refreshChatForCurrentLocation;

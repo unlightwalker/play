@@ -98,6 +98,19 @@ function sanitizePlayerData() {
   });
 
   if (!Array.isArray(player.claimedMails)) player.claimedMails = [];
+  // 門派更名相容：舊存檔中的門派名稱 / 門派地點自動對應到新名稱（editor.html 會記錄 formerNames）
+  if (typeof SECT_DATABASE !== 'undefined') {
+    const renamedTo = oldName => Object.keys(SECT_DATABASE).find(k => (SECT_DATABASE[k].formerNames || []).includes(oldName));
+    if (player.sect && player.sect !== "無門無派" && !SECT_DATABASE[player.sect]) {
+      const nn = renamedTo(player.sect);
+      if (nn) player.sect = nn;
+    }
+    if (player.curLoc && typeof WORLD_MAP !== 'undefined' && !WORLD_MAP[player.curLoc] && player.curLoc.includes("・")) {
+      const [area, room] = player.curLoc.split("・");
+      const nn = renamedTo(area);
+      if (nn && WORLD_MAP[`${nn}・${room}`]) player.curLoc = `${nn}・${room}`;
+    }
+  }
   if (!player.curLoc || typeof WORLD_MAP === 'undefined' || !WORLD_MAP[player.curLoc]) {
     player.curLoc = "牛家村";
   }
@@ -501,6 +514,8 @@ function openMeditateModal() {
     player.mp = Math.min(player.maxMp, player.mp + 8);
 
     meditateTickCounter++;
+    // 每打坐 30 秒判定一次奇遇
+    if (meditateTickCounter % 30 === 0 && typeof rollEncounters === 'function') rollEncounters('meditate');
     const learnInterval = Math.max(2, Math.floor(7 - player.stats.int * 0.1));
     if (meditateTickCounter % learnInterval === 0) {
       let learnGain = 1;
@@ -619,6 +634,83 @@ function loadSavedGame() {
   }
 }
 
+// ==================== 遊戲內提示（取代瀏覽器 alert 彈窗） ====================
+// 非阻斷式、可點擊關閉；依內容自動判斷顏色，多行訊息停留較久
+function gameNotify(msg, type) {
+  const text = String(msg ?? "");
+  const app = document.getElementById('phone-app') || document.body;
+  let box = document.getElementById('game-toast-box');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'game-toast-box';
+    app.appendChild(box);
+  }
+  if (!type) {
+    if (/不足|無法|不可|早已|失敗|未達|耗盡|惜敗|不支|⚠|⛔|🔒|權限|空空|找不到|查無|大忌|厄運/.test(text)) type = 'warn';
+    else if (/🎉|✨|🏆|成功|習得|晉升|勝出|恭賀|大捷/.test(text)) type = 'ok';
+    else type = 'info';
+  }
+  const t = document.createElement('div');
+  t.className = `game-toast ${type}`;
+  t.innerText = text;
+  const close = () => { t.classList.add('out'); setTimeout(() => t.remove(), 220); };
+  t.onclick = close;
+  box.appendChild(t);
+  while (box.children.length > 3) box.firstChild.remove();
+  const lines = text.split('\n').length;
+  setTimeout(close, Math.min(9000, 2200 + text.length * 45 + lines * 400));
+}
+window.gameNotify = gameNotify;
+
+// ==================== 遊戲設定（點擊頭像開啟；存於本機） ====================
+const SETTINGS_KEY = "WUXIA_SETTINGS";
+var GAME_SETTINGS = { music: false, volume: 50, shake: true, speech: true, chatter: true };
+try { Object.assign(GAME_SETTINGS, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); } catch (e) { /* 使用預設值 */ }
+window.GAME_SETTINGS = GAME_SETTINGS;
+
+function saveGameSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(GAME_SETTINGS)); } catch (e) { /* 無痕模式等情況略過 */ }
+}
+
+function setGameSetting(key, value) {
+  GAME_SETTINGS[key] = value;
+  saveGameSettings();
+  if (typeof JianghuMusic === 'undefined') return;
+  if (key === 'volume') JianghuMusic.setVolume(value / 100);
+  if (key === 'music') {
+    if (value) { JianghuMusic.setVolume(GAME_SETTINGS.volume / 100); JianghuMusic.start(); }
+    else JianghuMusic.stop();
+  }
+}
+
+function openSettingsPanel() {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) { if (el.type === 'checkbox') el.checked = !!v; else el.value = v; } };
+  set('set-music', GAME_SETTINGS.music);
+  set('set-volume', GAME_SETTINGS.volume);
+  set('set-shake', GAME_SETTINGS.shake);
+  set('set-speech', GAME_SETTINGS.speech);
+  set('set-chatter', GAME_SETTINGS.chatter);
+  openModal('settings');
+}
+
+function resetLocalGame() {
+  if (!confirm("確定要清除本機存檔、從頭開始嗎？\n（已綁定雲端帳號的進度不受影響）")) return;
+  if (!confirm("再次確認：本機進度將永久刪除，無法復原。")) return;
+  window.autoSave = () => {};
+  localStorage.removeItem(MASTER_SAVE_KEY);
+  location.reload();
+}
+
+// 音樂已開啟時：瀏覽器需使用者互動後才能發聲，於第一次點擊時自動開始
+if (GAME_SETTINGS.music) {
+  const kick = () => { if (GAME_SETTINGS.music && typeof JianghuMusic !== 'undefined') { JianghuMusic.setVolume(GAME_SETTINGS.volume / 100); JianghuMusic.start(); } document.removeEventListener('pointerdown', kick); };
+  document.addEventListener('pointerdown', kick);
+}
+
+window.setGameSetting = setGameSetting;
+window.openSettingsPanel = openSettingsPanel;
+window.resetLocalGame = resetLocalGame;
+
 // ==================== 地點面板：取代彈窗，暫時覆蓋地圖區 ====================
 // 下列功能改為在主畫面地圖位置展開；其餘 (帳號、角色典籍、轉世、改名…) 仍為對話框
 const PLACE_PAGES = {
@@ -628,6 +720,8 @@ const PLACE_PAGES = {
   'modal-bag': 'pg-bag',
   'modal-mail': 'pg-mail',
   'modal-meditate': 'pg-meditate',
+  'modal-hero-profile': 'pg-profile',
+  'settings': 'pg-settings',
   'npc': 'pg-npc'
 };
 let currentPlacePage = null;
@@ -644,8 +738,37 @@ function showPlacePage(pageId) {
   document.querySelectorAll('#sec-place .place-page').forEach(p => p.classList.toggle('active', p.id === pageId));
   currentPlacePage = pageId;
   const menu = document.getElementById('menu-view');
-  if (menu && secPlace) menu.scrollTop = Math.max(0, secPlace.offsetTop - 8);
+  if (menu) { menu.classList.add('place-open'); menu.scrollTop = 0; }
+  const body = document.querySelector(`#${pageId} .place-body`);
+  if (body) body.scrollTop = 0;
+  fitPlaceLayout();
 }
+
+// 面板開啟時：基礎欄與聊天室固定不捲動，面板內容自行捲動；
+// 若「面板 + 入世 / 街頭人物」超出畫面高度，則暫時隱去入世區
+function fitPlaceLayout() {
+  const menu = document.getElementById('menu-view');
+  const scenes = document.getElementById('sec-scenes');
+  const basic = document.getElementById('sec-basic');
+  const page = currentPlacePage ? document.getElementById(currentPlacePage) : null;
+  if (!menu || !scenes || !basic || !page) return;
+  const cs = getComputedStyle(menu);
+  const avail = menu.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - basic.offsetHeight;
+  const head = page.querySelector('.place-head');
+  const body = page.querySelector('.place-body') || page.querySelector('.npc-panel');
+  const need = (head ? head.offsetHeight : 0) + (body ? body.scrollHeight : 0) + 16;
+  scenes.style.display = 'block';
+  const fits = need + scenes.offsetHeight <= avail;
+  scenes.style.display = fits ? 'block' : 'none';
+}
+
+if (typeof ResizeObserver !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
+    const target = document.getElementById('sec-place');
+    if (target) new ResizeObserver(() => { if (currentPlacePage) fitPlaceLayout(); }).observe(target);
+  });
+}
+window.addEventListener('resize', () => { if (currentPlacePage) fitPlaceLayout(); });
 
 function closePlacePanel(pageId) {
   if (pageId && currentPlacePage !== pageId) return;
@@ -653,6 +776,10 @@ function closePlacePanel(pageId) {
   currentPlacePage = null;
   const secPlace = document.getElementById('sec-place');
   if (secPlace) secPlace.style.display = 'none';
+  const menu = document.getElementById('menu-view');
+  if (menu) menu.classList.remove('place-open');
+  const scenes = document.getElementById('sec-scenes');
+  if (scenes && !(typeof isKungfuInlineOpen !== 'undefined' && isKungfuInlineOpen)) scenes.style.display = 'block';
   const kf = document.getElementById('sec-kungfu');
   const secMap = document.getElementById('sec-map');
   if (secMap && !(kf && kf.style.display === 'block')) secMap.style.display = 'block';
@@ -744,6 +871,7 @@ window.getKungfuBaseValue = getKungfuBaseValue;
 window.showStageView = showStageView;
 window.showPlacePage = showPlacePage;
 window.closePlacePanel = closePlacePanel;
+window.fitPlaceLayout = fitPlaceLayout;
 window.stopMeditation = stopMeditation;
 window.createLearnedKungfu = createLearnedKungfu;
 window.getStarterKungfuList = getStarterKungfuList;

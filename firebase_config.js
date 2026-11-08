@@ -54,45 +54,45 @@ auth.onAuthStateChanged(async (user) => {
 // ==================== 2. 帳密註冊、登入與登出 ====================
 async function handleUserRegister(email, password) {
   if (!email || !password) {
-    alert("請填寫完整的電子郵件與密碼！");
+    gameNotify("請填寫完整的電子郵件與密碼！");
     return;
   }
   if (password.length < 6) {
-    alert("密碼長度需至少 6 位字元！");
+    gameNotify("密碼長度需至少 6 位字元！");
     return;
   }
 
   try {
     const cred = await auth.createUserWithEmailAndPassword(email.trim(), password);
-    alert(`🎉 俠客帳號註冊成功！歡迎踏入江湖：${email}`);
+    gameNotify(`🎉 俠客帳號註冊成功！歡迎踏入江湖：${email}`);
     closeModal('modal-auth');
 
     // 註冊成功後，建立初始文件並將當前本地遊戲進度直接上傳雲端
     await uploadSaveToCloud();
   } catch (err) {
-    alert(`⚠️ 註冊失敗：${err.message}`);
+    gameNotify(`⚠️ 註冊失敗：${err.message}`);
   }
 }
 
 async function handleUserLogin(email, password) {
   if (!email || !password) {
-    alert("請輸入電子郵件與密碼！");
+    gameNotify("請輸入電子郵件與密碼！");
     return;
   }
 
   try {
     await auth.signInWithEmailAndPassword(email.trim(), password);
-    alert(`✨ 登入成功！已連通雲端藏經閣！`);
+    gameNotify(`✨ 登入成功！已連通雲端藏經閣！`);
     closeModal('modal-auth');
   } catch (err) {
-    alert(`⚠️ 登入失敗：${err.message}`);
+    gameNotify(`⚠️ 登入失敗：${err.message}`);
   }
 }
 
 async function handleUserLogout() {
   if (confirm("確定要登出當前帳號並切換回本地模式嗎？")) {
     await auth.signOut();
-    alert("已安全登出帳號。");
+    gameNotify("已安全登出帳號。");
     closeModal('modal-auth');
   }
 }
@@ -101,10 +101,10 @@ async function handleUserLogout() {
 async function handleGuestLogin() {
   try {
     await auth.signInAnonymously();
-    alert("已啟用遊客雲端連線模式！");
+    gameNotify("已啟用遊客雲端連線模式！");
     closeModal('modal-auth');
   } catch (err) {
-    alert(`遊客連線失敗：${err.message}`);
+    gameNotify(`遊客連線失敗：${err.message}`);
   }
 }
 
@@ -215,7 +215,7 @@ function renderDynamicGMSection(isGM) {
 // 執行 GM 全服發信
 async function executeGMBroadcastMail() {
   if (!isCurrentPlayerGM) {
-    alert("權限不足！只有資料庫認證的 GM 帳號方可發送信件！");
+    gameNotify("權限不足！只有資料庫認證的 GM 帳號方可發送信件！");
     return;
   }
 
@@ -230,7 +230,7 @@ async function executeGMBroadcastMail() {
   const learn = learnEl ? Number(learnEl.value) || 0 : 0;
 
   if (!title || !content) {
-    alert("請填寫信件標題與公告內文！");
+    gameNotify("請填寫信件標題與公告內文！");
     return;
   }
 
@@ -256,13 +256,13 @@ async function executeGMBroadcastMail() {
       sendOfficialMail(mailData);
     }
 
-    alert(`📢 全服詔令發布成功！已派發《${title}》！`);
+    gameNotify(`📢 全服詔令發布成功！已派發《${title}》！`);
     if (titleEl) titleEl.value = "";
     if (contentEl) contentEl.value = "";
     if (goldEl) goldEl.value = "";
     if (learnEl) learnEl.value = "";
   } catch (err) {
-    alert(`發布失敗：${err.message}`);
+    gameNotify(`發布失敗：${err.message}`);
   }
 }
 

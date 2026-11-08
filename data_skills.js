@@ -64,12 +64,13 @@ const GLOBAL_SKILLS = [
       "luck": 0
     },
     "vfxChain": {
-      "pre": "金龍衝霄",
-      "mid": "萬佛金光",
-      "post": "太極陰陽陣"
+      "pre": "無動畫",
+      "mid": "無動畫",
+      "post": "無動畫"
     },
     "ifRules": [],
-    "specialDesc": ""
+    "specialDesc": "",
+    "reqStats": {}
   },
   {
     "id": "kf_taizu",
@@ -96,9 +97,9 @@ const GLOBAL_SKILLS = [
       "bone": 3
     },
     "vfxChain": {
-      "pre": "金龍衝霄",
-      "mid": "萬佛金光",
-      "post": "太極陰陽陣"
+      "pre": "無動畫",
+      "mid": "無動畫",
+      "post": "無動畫"
     },
     "source": "【牛家村】鄉野演武大武館",
     "ifRules": []
@@ -128,7 +129,7 @@ const GLOBAL_SKILLS = [
     },
     "vfxChain": {
       "pre": "無動畫",
-      "mid": "剛猛拳罡波",
+      "mid": "無動畫",
       "post": "無動畫"
     },
     "source": "【牛家村】鄉野演武大武館",
@@ -161,7 +162,7 @@ const GLOBAL_SKILLS = [
     },
     "vfxChain": {
       "pre": "無動畫",
-      "mid": "剛猛拳罡波",
+      "mid": "無動畫",
       "post": "無動畫"
     },
     "source": "【牛家村】鄉野演武大武館",
@@ -194,7 +195,7 @@ const GLOBAL_SKILLS = [
     },
     "vfxChain": {
       "pre": "無動畫",
-      "mid": "剛猛拳罡波",
+      "mid": "無動畫",
       "post": "無動畫"
     },
     "source": "【牛家村】鄉野演武大武館",
@@ -228,6 +229,13 @@ const GLOBAL_SKILLS = [
       "inner": 0,
       "int": 0,
       "luck": 0
+    },
+    "ifRules": [],
+    "vfxChain": {
+      "pre": "無動畫",
+      "mid": "無動畫",
+      "post": "無動畫",
+      "postTarget": "target"
     }
   },
   {
@@ -257,6 +265,13 @@ const GLOBAL_SKILLS = [
       "inner": 0,
       "int": 0,
       "luck": 9
+    },
+    "ifRules": [],
+    "vfxChain": {
+      "pre": "無動畫",
+      "mid": "無動畫",
+      "post": "無動畫",
+      "postTarget": "target"
     }
   },
   {
@@ -291,6 +306,13 @@ const GLOBAL_SKILLS = [
       "inner": 12,
       "int": 0,
       "luck": 0
+    },
+    "ifRules": [],
+    "vfxChain": {
+      "pre": "無動畫",
+      "mid": "無動畫",
+      "post": "無動畫",
+      "postTarget": "target"
     }
   },
   {
@@ -318,6 +340,13 @@ const GLOBAL_SKILLS = [
       "inner": 0,
       "int": 0,
       "luck": 6
+    },
+    "ifRules": [],
+    "vfxChain": {
+      "pre": "無動畫",
+      "mid": "無動畫",
+      "post": "無動畫",
+      "postTarget": "target"
     }
   },
   {
@@ -348,7 +377,8 @@ const GLOBAL_SKILLS = [
       "inner": 0,
       "int": 0,
       "luck": 0
-    }
+    },
+    "ifRules": []
   },
   {
     "id": "kf_huayu",
@@ -1126,7 +1156,8 @@ const GLOBAL_SKILLS = [
       "inner": 60,
       "int": 18,
       "luck": 0
-    }
+    },
+    "ifRules": []
   },
   {
     "id": "kf_dragon_palm",
@@ -1191,7 +1222,8 @@ const GLOBAL_SKILLS = [
       "inner": 0,
       "int": 0,
       "luck": 24
-    }
+    },
+    "ifRules": []
   },
   {
     "id": "kf_storm_needles",
@@ -1223,6 +1255,13 @@ const GLOBAL_SKILLS = [
       "inner": 0,
       "int": 0,
       "luck": 24
+    },
+    "ifRules": [],
+    "vfxChain": {
+      "pre": "太極陰陽陣",
+      "mid": "暴雨梨花針",
+      "post": "漫天飛花",
+      "postTarget": "target"
     }
   },
   {
@@ -1285,6 +1324,13 @@ const GLOBAL_SKILLS = [
       "inner": 78,
       "int": 0,
       "luck": 0
+    },
+    "ifRules": [],
+    "vfxChain": {
+      "pre": "無動畫",
+      "mid": "青翠極光箭",
+      "post": "一陽指純陽柱",
+      "postTarget": "target"
     }
   },
   {
@@ -1317,6 +1363,13 @@ const GLOBAL_SKILLS = [
       "inner": 42,
       "int": 0,
       "luck": 0
+    },
+    "ifRules": [],
+    "vfxChain": {
+      "pre": "剛猛拳罡波",
+      "mid": "青翠極光箭",
+      "post": "祖靈萬魂刺",
+      "postTarget": "target"
     }
   },
   {
@@ -1354,7 +1407,8 @@ const GLOBAL_SKILLS = [
       "inner": 84,
       "int": 0,
       "luck": 0
-    }
+    },
+    "ifRules": []
   }
 ];
 window.GLOBAL_SKILLS = GLOBAL_SKILLS;

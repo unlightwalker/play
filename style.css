@@ -167,7 +167,8 @@ body {
   padding: 14px;
   display: none;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 6px;
   background: #0f131a;
 }
 .battle-stage.active { display: flex !important; }
@@ -791,10 +792,14 @@ body {
 .npc-desc { font-size: 11px; color: #8ca0b3; line-height: 1.45; }
 .npc-stats { font-size: 11px; color: #cad3df; display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .npc-stats b { color: var(--gold); font-weight: normal; }
+/* 對話氣泡固定兩行高：一行時上下置中，超過兩行以省略號截斷，避免版面跳動 */
 .npc-bubble {
   position: relative; background: #171d27; border: 1px solid #334155; border-radius: 6px;
-  padding: 6px 9px; font-size: 12px; color: #f1e3b5; line-height: 1.5; min-height: 32px;
+  padding: 0 9px; font-size: 12px; color: #f1e3b5; line-height: 18px;
+  height: 48px; min-height: 48px; max-height: 48px; flex-shrink: 0;
+  display: flex; align-items: center;
 }
+.npc-bubble > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; width: 100%; }
 .npc-bubble::before {
   content: ""; position: absolute; left: -6px; top: 10px; border: 6px solid transparent; border-left: 0; border-right-color: #334155;
 }
@@ -818,3 +823,71 @@ body {
 #pg-npc .npc-panel { border: none; margin: 0; }
 .meditate-taiji { font-size: 32px; margin-bottom: 6px; display: inline-block; animation: taijiSpin 6s linear infinite; }
 @keyframes taijiSpin { to { transform: rotate(360deg); } }
+
+/* 遊戲內提示（取代 alert 彈窗） */
+#game-toast-box { position: absolute; top: 150px; left: 14px; right: 14px; z-index: 300; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+.game-toast {
+  pointer-events: auto; cursor: pointer; white-space: pre-line; line-height: 1.55;
+  background: rgba(16, 20, 29, 0.96); border: 1px solid #3d4a60; border-left: 4px solid var(--cyan);
+  border-radius: 6px; padding: 9px 12px; font-size: 12.5px; color: #e4eaf0;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6); animation: toastIn 0.22s ease-out;
+}
+.game-toast.ok { border-left-color: var(--gold); }
+.game-toast.warn { border-left-color: var(--red); color: #ffd6d1; }
+.game-toast.out { opacity: 0; transform: translateY(-6px); transition: all 0.2s; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+/* ==================== 戰鬥畫面固定版面（各元件高度固定，出招 / 選招 / 動畫時不跳動） ==================== */
+.battle-stage > * { flex-shrink: 0; }
+.battle-stage .battle-header h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.battle-stage .arena { margin: 0; }
+.battle-stage .single-atb-box { margin: 0; }
+.battle-cmd-box {
+  height: 152px; margin: 0; overflow: hidden; justify-content: flex-start;
+  animation: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.cmd-btn-grid, .cmd-sub-menu { grid-auto-rows: 32px; align-content: start; }
+.cmd-action-btn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.battle-cmd-box.waiting { border-color: #2c3e50; box-shadow: none; }
+.battle-cmd-box.waiting .cmd-action-btn { opacity: 0.35; pointer-events: none; }
+.battle-cmd-box.waiting .cmd-row-top b { color: #8ca0b3 !important; }
+.combat-banner {
+  background: #171d27; padding: 0 10px; border-radius: 4px; font-size: 11.5px; border: 1px solid #333f52;
+  height: 30px; line-height: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* 地點面板開啟時：主畫面不整體捲動，基礎欄固定、面板內部捲動 */
+#menu-view.place-open { overflow: hidden; }
+#menu-view.place-open > * { flex-shrink: 0; }
+#menu-view.place-open #sec-place { display: flex !important; flex-direction: column; flex: 0 1 auto; min-height: 0; }
+#menu-view.place-open .place-page.active { display: flex; flex-direction: column; min-height: 0; }
+#menu-view.place-open .place-head { flex-shrink: 0; }
+#menu-view.place-open .place-body,
+#menu-view.place-open #pg-npc .npc-panel { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
+
+/* 敵人戰鬥台詞氣泡 */
+.enemy-speech {
+  position: absolute; right: 112px; top: 44px; max-width: 170px; z-index: 40; pointer-events: none;
+  background: rgba(20, 12, 14, 0.92); border: 1px solid #e74c3c; color: #ffd6d1; border-radius: 8px;
+  padding: 5px 9px; font-size: 11.5px; line-height: 1.45; opacity: 0; transform: translateY(4px); transition: opacity 0.2s, transform 0.2s;
+}
+.enemy-speech::after { content: ""; position: absolute; right: -7px; top: 9px; border: 6px solid transparent; border-right: 0; border-left-color: #e74c3c; }
+.enemy-speech.show { opacity: 1; transform: none; }
+
+/* 隱藏所有捲軸（仍可用滑鼠滾輪 / 觸控滑動捲動） */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+/* 設定頁 */
+.set-group { background: #131822; border: 1px solid #2b374a; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; }
+.set-title { font-size: 12.5px; font-weight: bold; color: var(--gold); margin-bottom: 6px; }
+.set-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: #cad3df; min-height: 32px; }
+.set-row + .set-row { border-top: 1px dashed #263041; }
+.set-btn { padding: 3px 10px !important; font-size: 11.5px !important; border-color: var(--cyan) !important; color: var(--cyan) !important; flex-shrink: 0; }
+.set-copy { font-size: 11px; color: #8ca0b3; line-height: 1.7; }
+.set-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; cursor: pointer; }
+.set-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.set-switch i { position: absolute; inset: 0; background: #2a3342; border-radius: 11px; transition: background 0.2s; }
+.set-switch i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #cad3df; transition: transform 0.2s; }
+.set-switch input:checked + i { background: #2e86c1; }
+.set-switch input:checked + i::after { transform: translateX(18px); background: #fff; }

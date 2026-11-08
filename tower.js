@@ -112,7 +112,8 @@ function getTowerBossConfig(floor) {
   const atk = Math.floor(18 + Math.pow(floor, 1.1) * 1.05);
   const def = Math.floor(8 + Math.pow(floor, 1.05) * 0.65);
   const speed = Math.floor(32 + Math.min(60, floor * 1.0));
-  const godRate = Math.min(100, 0.2 * floor);
+  // 超過 100 層：每 100 層必出神品，其餘延續 95 層的機率
+  const godRate = (floor % 100 === 0) ? 100 : 5;
   return {
     floor,
     name: `第 ${floor} 層首領・混沌天尊`,
@@ -124,7 +125,7 @@ function getTowerBossConfig(floor) {
     combat: 15,
     skill: { name: "降龍十八掌・亢龍有悔", baseMult: 2.8, rarity: "神品" },
     internalName: "純陽太極功",
-    chest: { godRate, supremeRate: Math.min(100 - godRate, 2.0 * floor), upperRate: 75, bookRate: 50 },
+    chest: { godRate, supremeRate: godRate >= 100 ? 0 : 19, upperRate: 60, bookRate: 50 },
     drops: []
   };
 }
@@ -363,10 +364,16 @@ function updateTowerUI() {
       : `距離首領戰尚餘: <b style="color:var(--gold);">${remain}</b> 層`;
   }
   if (previewText) {
-    let tierText = "【良品/上品】";
-    if (nextBoss >= 40) tierText = "【神品/絕品】";
-    else if (nextBoss >= 20) tierText = "【上品/絕品】";
-    previewText.innerText = `第 ${nextBoss} 層寶箱預覽: ${tierText} 秘笈殘卷、專屬神兵、雪參丸`;
+    const c = getTowerBossConfig(nextBoss).chest || {};
+    const god = Number(c.godRate) || 0, sup = Number(c.supremeRate) || 0;
+    const parts = [];
+    if (god >= 100) parts.push("必出【神品】");
+    else {
+      if (god > 0) parts.push(`神品 ${god}%`);
+      if (sup > 0) parts.push(`絕品 ${sup}%`);
+      parts.push("其餘為上品 / 良品");
+    }
+    previewText.innerText = `第 ${nextBoss} 層寶箱：${parts.join("、")}`;
   }
 
   // 按鈕動態切換
@@ -395,7 +402,7 @@ function showNextBossLootDetail() {
     const name = ref ? (d.kind === 'book' ? `《${ref.name}秘笈》` : ref.name) : d.ref;
     return `• ${name} x${d.count || 1}（${d.rate}%）`;
   }).join('\n');
-  alert(`🎁【${cfg.name}・寶箱掉落池】\n` +
+  gameNotify(`🎁【${cfg.name}・寶箱掉落池】\n` +
         `------------------------------------\n` +
         `寶箱品階：神品 ${god}%、絕品 ${sup}%，其餘為上品/良品\n` +
         `開出秘笈機率：${Number(chest.bookRate ?? 50)}%（否則為同品階裝備/靈藥）\n` +
@@ -562,7 +569,7 @@ function autoDropBossLootToBag(floor) {
     if (sk) gotName = grantLootToBag('book', sk.id || sk.name, 1);
   }
   if (!gotName) {
-    const it = pickRandom((typeof GLOBAL_ITEMS !== 'undefined') ? GLOBAL_ITEMS.filter(i => i.rarity === targetRarity) : [])
+    const it = pickRandom((typeof GLOBAL_ITEMS !== 'undefined') ? GLOBAL_ITEMS.filter(i => i.rarity === targetRarity && !i.noChest && i.type !== 'material') : [])
       || findItemByRef("item_snow_ginseng");
     if (it) gotName = grantLootToBag('item', it.id || it.name, 1);
   }
