@@ -142,8 +142,8 @@ const COMPANION_CONFIG = {
   },
   "assist": {
     "damageRatio": 0.4,
-    "speedRatio": 0.8,
-    "inTowerBoss": false,
+    "speedRatio": 1,
+    "inTowerBoss": true,
     "healPct": 8,
     "comboAtHpPct": 50,
     "guardChance": 25

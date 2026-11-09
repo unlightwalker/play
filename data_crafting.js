@@ -756,6 +756,22 @@ const CRAFT_RECIPES = [
     "rate": 20,
     "exp": 900,
     "desc": ""
+  },
+  {
+    "id": "rc_mw9gj9r987",
+    "name": "",
+    "skill": "alchemy",
+    "output": {
+      "ref": "item_cexp_1",
+      "count": 1
+    },
+    "materials": [],
+    "gold": 0,
+    "reqLevel": 1,
+    "reqTool": 1,
+    "rate": 80,
+    "exp": 10,
+    "desc": ""
   }
 ];
 

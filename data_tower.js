@@ -1921,10 +1921,10 @@ const TOWER_BOSSES = [
     "name": "第 100 層首領・桃花島主",
     "realm": "返璞歸真",
     "desc": "桃花島主，落英繽紛中傲視天下的奇才。其人博古通今，琴棋書畫無一不精，武學更是自成一派，超凡入聖。",
-    "maxHp": 5413,
-    "atk": 184,
-    "def": 89,
-    "speed": 92,
+    "maxHp": 6666,
+    "atk": 200,
+    "def": 100,
+    "speed": 400,
     "stats": {
       "arm": 128,
       "speed": 92,
@@ -1989,6 +1989,7 @@ window.TOWER_BOSSES = TOWER_BOSSES;
  *   bossRewardMult：首領若未在 TOWER_BOSSES 指定修為 / 銀兩，以「該層一般怪 × 倍數」計算
  *   background：離開通天塔時的背景歷練，每 intervalSec 秒結算一隻，收益為一般的 ratio 倍
  *   clickCooldownMs：手動狂擊的最短間隔（避免連點過快）
+ *   maxFloor：通天塔最高層，擊敗該層首領即登頂，不再有下一層
  *   attackSpeed：自動攻擊速度曲線 次/秒 = min +（max − min）×（1 − e^(−身法 / k)），身法越高增加越慢
  */
 const TOWER_REWARD_CONFIG = {
@@ -2023,6 +2024,7 @@ const TOWER_REWARD_CONFIG = {
     "min": 0.8,
     "max": 3.2,
     "k": 160
-  }
+  },
+  "maxFloor": 100
 };
 window.TOWER_REWARD_CONFIG = TOWER_REWARD_CONFIG;

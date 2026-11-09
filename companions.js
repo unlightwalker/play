@@ -113,7 +113,7 @@ const Companions = (() => {
   function cfg() {
     const d = { maxParty: 1, maxErrand: 2, maxSworn: 3, unlock: { errand: 30, sworn: 100 },
       affinity: { talk: 1, talkPerDay: 1, giftPerDay: 3, gift: { "凡品": 2, "良品": 4, "上品": 8, "絕品": 15, "神品": 25 }, favoriteMult: 3, battleWin: 1, battleWinPerDay: 5, errandDone: 2 },
-      assist: { damageRatio: 0.4, speedRatio: 0.8, inTowerBoss: false, healPct: 8, comboAtHpPct: 50, guardChance: 25, affinityAtkPer100: 50 },
+      assist: { damageRatio: 0.4, speedRatio: 1, inTowerBoss: true, healPct: 8, comboAtHpPct: 50, guardChance: 25, affinityAtkPer100: 50 },
       craftBonus: 5, potential: COMPANION_POTENTIAL_DEFAULT,
       level: { max: 60, expBase: 40, expPow: 1.5, statPerLv: 0.04, expShare: 0.5, expShareTarget: "party" },
       training: { floor: 50, roomMult: 1, hours: [1, 4, 8] },
@@ -223,10 +223,10 @@ const Companions = (() => {
   // ---- 俠客的六維：基礎六維 ×（1 +（等級 − 1）× 每級成長 × 潛力成長係數）＋ 佩戴中武學的素質加成 ----
   const STAT_KEYS = ["arm", "speed", "bone", "inner", "int", "luck"];
   const ROLE_BASE = {
-    fighter: { arm: 16, speed: 14, bone: 13, inner: 10, int: 10, luck: 10 }, assassin: { arm: 12, speed: 20, bone: 9, inner: 9, int: 11, luck: 13 },
-    healer: { arm: 8, speed: 12, bone: 11, inner: 16, int: 16, luck: 11 }, gatherer: { arm: 10, speed: 12, bone: 12, inner: 10, int: 13, luck: 14 },
-    miner: { arm: 17, speed: 9, bone: 17, inner: 9, int: 8, luck: 10 }, woodsman: { arm: 14, speed: 14, bone: 13, inner: 9, int: 9, luck: 11 },
-    craftsman: { arm: 15, speed: 9, bone: 15, inner: 11, int: 13, luck: 9 }, villain: { arm: 20, speed: 16, bone: 15, inner: 15, int: 12, luck: 8 }
+    fighter: { arm: 16, speed: 42, bone: 15, inner: 10, int: 18, luck: 15 }, assassin: { arm: 13, speed: 55, bone: 11, inner: 9, int: 20, luck: 18 },
+    healer: { arm: 9, speed: 38, bone: 13, inner: 16, int: 26, luck: 16 }, gatherer: { arm: 11, speed: 38, bone: 14, inner: 10, int: 20, luck: 20 },
+    miner: { arm: 18, speed: 30, bone: 19, inner: 9, int: 14, luck: 14 }, woodsman: { arm: 15, speed: 42, bone: 15, inner: 9, int: 15, luck: 16 },
+    craftsman: { arm: 16, speed: 30, bone: 17, inner: 11, int: 20, luck: 13 }, villain: { arm: 21, speed: 46, bone: 17, inner: 15, int: 18, luck: 12 }
   };
   function baseStats(c) { return Object.assign({}, ROLE_BASE[c.role] || ROLE_BASE.fighter, c.stats6 || {}); }
   function equippedSkills(s) { return ['ext', 'internal', 'qinggong'].map(k => findSkill(s.slots[k])).filter(Boolean); }
@@ -271,10 +271,20 @@ const Companions = (() => {
     const id = partyIds()[0];
     if (!id) return null;
     const c = def(id), s = st(id), x = stats(id);
-    return { id, name: fullName(c), short: c.name, figure: c.figure, sworn: !!s.sworn, affinity: s.affinity,
+    const wType = x.weaponType;
+    const wFactor = (typeof WEAPON_SPEED_FACTOR !== 'undefined' && WEAPON_SPEED_FACTOR[wType]) || 1;
+    return { id, name: fullName(c), short: c.name, figure: c.figure, sworn: !!s.sworn, affinity: s.affinity, wFactor,
       atk: x.atk, speed: x.speed, guard: x.guard, skillName: x.skill ? x.skill.name : "", skillMult: x.skill ? (Number(x.skill.baseMult) || 1.2) : 1,
       vfx: (x.skill && x.skill.vfxChain && x.skill.vfxChain.mid && x.skill.vfxChain.mid !== '無動畫') ? x.skill.vfxChain.mid : (c.vfx || ""),
-      healPct: Number(c.healPct) || 0, combo: c.combo && c.combo.name ? c.combo : null, def: c };
+      healPct: healPctOf(c, s), combo: c.combo && c.combo.name ? c.combo : null, def: c };
+  }
+  // 療傷能力：俠客本身設定，或佩戴具療傷效果的心法（自然回春 / 九陽）
+  const HEAL_EFFECTS = ["nature_regen", "divine_jiuyang"];
+  function healPctOf(c, s) {
+    const own = Number(c.healPct) || 0;
+    const inner = findSkill(s.slots.internal);
+    const fromSkill = inner && inner.specialEffect && HEAL_EFFECTS.includes(inner.specialEffect.type) ? (Number(cfg().assist.healPct) || 8) : 0;
+    return Math.max(own, fromSkill);
   }
   function battleLine(bc, kind) { if (Math.random() < 0.35) say(bc.def, kind); }
   function afterBattle(outcome, combatType, enemy) {
@@ -544,7 +554,7 @@ const Companions = (() => {
         ${books.length ? books.map(({ it, i }) => `<div class="bag-item-card"><div><b class="color-${it.rarity}">${esc(it.name)}</b></div>${s.skills.includes(it.skillData.name) ? '<span style="font-size:11px; color:#2ecc71;">已學會</span>' : `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="Companions.studyBook('${id}', ${i})">交給${esc(c.name)}研讀</button>`}</div>`).join('') : '<div class="comp-empty">行囊中沒有秘笈。</div>'}</div>`;
     } else if (sub === 'train') {
       const per = trainExpPerHour();
-      subHtml = `<div class="comp-sub"><div class="comp-sub-title">🧘 閉關修練：每小時經驗 ${per}（通天塔第 ${cfg().training.floor} 層歷練收益 × 練功室 ×${cfg().training.roomMult}）；與派遣共用 ${cfg().maxErrand} 個名額</div>
+      subHtml = `<div class="comp-sub"><div class="comp-sub-title comp-help-row"><span>🧘 每小時經驗為：${per}</span><button class="comp-help" onclick="gameNotify('🏠 提升家宅中練功房等級，可提高修練效率。')">?</button></div>
         <div style="display:flex; gap:6px;">${(cfg().training.hours || [1, 4, 8]).map(h => `<button class="wuxia-btn" style="flex:1; font-size:12px;" onclick="Companions.startTrain('${id}', ${h})">${h} 小時<br><small style="color:#8ca0b3;">+${per * h}</small></button>`).join('')}</div></div>`;
     } else if (sub === 'pill') {
       const pills = player.inventory.map((it, i) => ({ it, i })).filter(v => Number(v.it.companionExp) > 0);
@@ -555,7 +565,7 @@ const Companions = (() => {
     const ready = busy && Date.now() >= s.errand.until;
     return `
       <div class="comp-detail">
-        <div class="comp-portrait">${companionFigureSvg(c.figure, { width: 92, height: 120 })}${s.sworn ? '<span class="comp-sworn">結義</span>' : ''}<span class="comp-pot color-${pot.rarity}">${esc(pot.name)}</span></div>
+        <div class="comp-portrait">${companionFigureSvg(c.figure, { width: 118, height: 154 })}${s.sworn ? '<span class="comp-sworn">結義</span>' : ''}</div>
         <div class="comp-info">
           <div class="comp-name">${esc(fullName(c))} <small>${esc(roleL)}${c.realm ? `・${esc(c.realm)}` : ''}</small></div>
           <div class="comp-line">潛力 <b class="color-${pot.rarity}">${esc(pot.name)}</b><small style="color:#8a99ad;">（成長 ×${pot.growth}）</small>　${s.lv >= maxLv ? `<b>${s.lv} 級（已滿）</b>` : `<b>${s.lv}</b> 級 ${bar(s.exp, expNeed(s.lv), 'exp')}`}</div>

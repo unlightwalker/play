@@ -941,7 +941,7 @@ input, textarea, select { font-size: max(16px, 1em); } /* iOS 輸入框字小於
 .comp-summary { font-size: 11.5px; color: #8a99ad; margin-bottom: 8px; }
 .comp-empty { text-align: center; color: #777; font-size: 12px; padding: 12px; line-height: 1.8; }
 .comp-detail { display: flex; gap: 10px; background: #141a24; border: 1px solid #3c2f4e; border-radius: 6px; padding: 8px 10px; }
-.comp-portrait { position: relative; flex-shrink: 0; width: 92px; display: flex; align-items: flex-end; justify-content: center; background: radial-gradient(circle at 50% 70%, #261d33, transparent 70%); border-radius: 6px; }
+.comp-portrait { position: relative; flex-shrink: 0; width: 118px; display: flex; align-items: flex-end; justify-content: center; background: radial-gradient(circle at 50% 70%, #261d33, transparent 70%); border-radius: 6px; }
 .comp-sworn { position: absolute; top: 2px; left: 2px; font-size: 10px; color: #0b0d11; background: var(--gold); border-radius: 3px; padding: 0 5px; font-weight: bold; }
 .comp-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .comp-name { font-size: 14px; font-weight: bold; color: #e8dcf5; }
@@ -1009,3 +1009,18 @@ input, textarea, select { font-size: max(16px, 1em); } /* iOS 輸入框字小於
 .enclog-hint { font-size: 12px; color: #b98ee0; margin-top: 4px; line-height: 1.6; }
 .enclog-side { display: flex; flex-wrap: wrap; gap: 5px; }
 .enclog-side span { font-size: 11.5px; background: #141a24; border: 1px solid #283344; border-radius: 10px; padding: 2px 9px; color: #aab6c6; }
+
+.comp-help-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.comp-help { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; border: 1px solid #b98ee0; background: transparent; color: #b98ee0; font-size: 12px; font-weight: bold; cursor: pointer; line-height: 18px; padding: 0; }
+
+/* 內視各分頁統一風格 */
+#pg-profile .pf-title { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12.5px; font-weight: bold; color: var(--gold); border-left: 3px solid var(--gold); padding: 2px 0 2px 7px; margin: 12px 0 7px; background: linear-gradient(90deg, rgba(241,196,15,0.08), transparent 70%); }
+#pg-profile .pf-pane > .pf-title:first-child { margin-top: 4px; }
+#pg-profile .pf-title small { font-size: 11px; color: #8ca0b3; font-weight: normal; }
+#pg-profile .pf-desc { font-size: 12px; color: #8ca0b3; line-height: 1.7; margin: 0 0 10px; }
+#pg-profile .pf-card, #pg-profile .bag-slot-box, #pg-profile .stats-grid { background: #131822; border: 1px solid #2d3748; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+#pg-profile .bag-slot-box { display: flex; flex-direction: column; gap: 6px; }
+#pg-profile .bag-equip-card { background: #0f141c; border-color: #2d3748; }
+#pg-profile .kungfu-filter-bar { margin-top: 8px; }
+#pg-profile #learned-kungfu-list { max-height: none !important; overflow: visible !important; }
+#pg-profile .avatar-gallery { margin-bottom: 4px; }

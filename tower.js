@@ -144,6 +144,11 @@ function towerAttacksPerSec(speed) {
   return (Number(a.min) || 0.8) + ((Number(a.max) || 3.2) - (Number(a.min) || 0.8)) * (1 - Math.exp(-s / (Number(a.k) || 160)));
 }
 window.towerAttacksPerSec = towerAttacksPerSec;
+// 最高樓層：擊敗該層首領即「登頂」，之後不再有下一層
+function towerMaxFloor() { return Math.max(5, Number(towerCfg().maxFloor) || 100); }
+// 登頂後只能在最高層的下一層以下歷練
+function towerFloorCap() { return player.towerCleared ? towerMaxFloor() - 1 : towerMaxFloor(); }
+window.towerMaxFloor = towerMaxFloor;
 window.towerKillReward = towerKillReward;
 window.towerMobHp = towerMobHp;
 
@@ -234,7 +239,7 @@ function getTowerAverageSkillAttackPower() {
 function openTowerModal() {
   isTowerModalOpen = true;
   isChallengingBoss = false;
-  towerCurrentFloor = player.towerFloor || 1;
+  towerCurrentFloor = Math.min(player.towerFloor || 1, towerFloorCap());
 
   if (player.towerBgEarned && (player.towerBgEarned.kills > 0 || player.towerBgEarned.exp > 0)) {
     const bg = player.towerBgEarned;
@@ -269,8 +274,12 @@ function returnToTowerAfterBoss(isVictory = false) {
   isChallengingBoss = false;
   showStageView('tower');
 
-  towerCurrentFloor = player.towerFloor || 1;
+  towerCurrentFloor = Math.min(player.towerFloor || 1, towerFloorCap());
   initTowerFloor(towerCurrentFloor);
+  if (isVictory && player.towerCleared && typeof gameNotify === 'function' && !player.towerClearNotified) {
+    player.towerClearNotified = true;
+    gameNotify(`🏆 恭喜少俠登頂通天塔第 ${towerMaxFloor()} 層！此後可在下層繼續歷練。`, 'ok');
+  }
 
   if (!isVictory) {
     const autoBox = document.getElementById('tower-auto-advance');
@@ -437,7 +446,9 @@ function updateTowerUI() {
   const bossCdEl = document.getElementById('tower-boss-countdown');
   const previewText = document.getElementById('tower-boss-preview-text');
 
-  if (bossCdEl) {
+  if (bossCdEl && player.towerCleared && floor >= towerMaxFloor() - 1) {
+    bossCdEl.innerHTML = `<b style="color:var(--gold);">🏆 已登頂通天塔第 ${towerMaxFloor()} 層</b>`;
+  } else if (bossCdEl) {
     bossCdEl.innerHTML = remain === 0 
       ? `<b style="color:#ff4757;">⚠️ 第 ${floor} 層首領坐鎮！準備好後點擊「挑戰頭目」</b>` 
       : `距離首領戰尚餘: <b style="color:var(--gold);">${remain}</b> 層`;
@@ -606,7 +617,7 @@ function dealTowerDamage(dmg, isCrit, isClick) {
     }
 
     if (floor >= player.towerFloor) {
-      player.towerFloor = floor + 1;
+      player.towerFloor = Math.min(floor + 1, towerMaxFloor());
     }
 
     updateProfileUI();
@@ -614,7 +625,7 @@ function dealTowerDamage(dmg, isCrit, isClick) {
     // 勾選「自動挑戰下一層」則前進（遇首領層停下等待挑戰），否則留在本層反覆歷練
     const autoBox = document.getElementById('tower-auto-advance');
     const canAdvance = autoBox ? autoBox.checked : true;
-    setTimeout(() => initTowerFloor(canAdvance ? floor + 1 : floor), 220);
+    setTimeout(() => initTowerFloor(canAdvance ? Math.min(floor + 1, towerFloorCap()) : floor), 220);
   }
 }
 

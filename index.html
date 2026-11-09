@@ -73,8 +73,8 @@
         </div>
 
         <div class="btn-grid" style="margin-bottom: 8px;">
-          <button class="wuxia-btn" onclick="openSectHallModal()">師門</button>
           <button class="wuxia-btn" onclick="Companions.open()">俠客</button>
+          <button class="wuxia-btn" onclick="openSectHallModal()">師門</button>
           <button class="wuxia-btn" onclick="openModal('modal-events')">活動</button>
           <button class="wuxia-btn" onclick="openModal('modal-shop')">商城</button>
         </div>
@@ -103,9 +103,9 @@
           </div>
           <div class="place-body">
     <div class="pf-pane" data-pane="stats">
-      <div style="font-size:12px; font-weight:bold; color:#cad3df; margin-bottom:4px;">【改換俠士容貌 (武俠風格手繪)】</div>
+      <div class="pf-title">🎭 容貌</div>
       <div class="avatar-gallery" id="avatar-gallery-box"></div>
-      <div style="font-size:12px; font-weight:bold; color:var(--cyan); margin:10px 0 6px;">【先天六維素質 (點擊查看詳情)】</div>
+      <div class="pf-title">📊 六維素質 <small>點擊查看來源</small></div>
       <div class="stats-grid">
         <div class="stat-card-clickable" onclick="showStatDetail('arm')">
           <div>臂力：<span class="stat-highlight" id="st-arm">--</span></div>
@@ -132,14 +132,11 @@
           <div class="stat-src-line" id="st-luck-source">計算中...</div>
         </div>
       </div>
-      <div style="font-size:12px; color:var(--gold); font-weight:bold; margin:12px 0 4px;">🛠️ 製作技藝</div>
+      <div class="pf-title">🛠️ 生活技藝</div>
       <div id="hero-craft-display"></div>
     </div>
     <div class="pf-pane" data-pane="kungfu">
-        <div class="category-title" style="color:#5dade2; display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
-          <span>🥋 武學參悟與配戴</span>
-          <span style="font-size:11px; color:#cbd5e1; font-weight:normal;">可用修為: <b id="kf-cur-exp" style="color:var(--gold);">0</b></span>
-        </div>
+        <div class="pf-title">🥋 武學配戴 <small>可用修為：<b id="kf-cur-exp" style="color:var(--gold);">0</b></small></div>
 
         <div class="slot-grid">
           <div class="kungfu-slot-card" id="slot-card-internal">
@@ -175,6 +172,7 @@
       
     </div>
     <div class="pf-pane" data-pane="gear">
+      <div class="pf-title">🗡️ 目前佩戴</div>
   <div class="bag-slot-box">
               <div class="bag-equip-card">
                 <div><small style="color:var(--gold);">[佩戴兵刃]</small><br><b id="bag-cur-weapon-name" style="font-size:12.5px; color:#fff;">--</b></div>
@@ -185,23 +183,21 @@
                 <button class="wuxia-btn" style="padding:2px 8px; font-size:11px;" onclick="unequipGear('armor')">卸下</button>
               </div>
             </div>
-      <div style="font-size:12px; font-weight:bold; color:var(--gold); margin:10px 0 6px;">【行囊中的兵刃與防具】</div>
+      <div class="pf-title">🎒 行囊中的兵刃與防具</div>
       <div id="gear-equip-list"></div>
     </div>
-    <div class="pf-pane" data-pane="meditate" style="text-align:center;">
-      <p style="font-size:12px; color:#8ca0b3; margin:6px 0 10px; line-height:1.7;">引氣歸元，周天運轉。打坐時持續獲得修為，悟性越高越快，並可觸類旁通產生學點；每 30 秒也有機會觸發奇遇。</p>
-      <div style="background:#131822; padding:12px; border-radius:6px; border:1px solid #333f52; margin-bottom:10px;">
+    <div class="pf-pane" data-pane="meditate">
+      <div class="pf-title">🧘 打坐修煉</div>
+      <p class="pf-desc">引氣歸元，周天運轉。打坐時持續獲得修為，悟性越高越快，並可觸類旁通產生學點；每 30 秒也有機會觸發奇遇。</p>
+      <div class="pf-card" style="text-align:center;">
         <div class="meditate-taiji">☯️</div>
         <div style="font-size:13px; color:#fff;">運轉心法：<b id="pf-meditate-mental" style="color:var(--cyan);">自然吐納</b></div>
       </div>
       <button class="wuxia-btn" style="width:100%; border-color:#2ecc71; color:#2ecc71; padding:9px; font-weight:bold;" onclick="openMeditateModal()">🧘 開始打坐</button>
     </div>
     <div class="pf-pane" data-pane="talent">
-      <div style="font-size:12px; font-weight:bold; color:var(--gold); margin:12px 0 6px; display:flex; justify-content:space-between; align-items:center;">
-        <span>【宿命天命・當前覺醒天賦】</span>
-        <span id="hero-talent-count" style="font-size:11px; color:#aaa;">(0 個)</span>
-      </div>
-      <div id="hero-talents-display" style="display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto; margin-bottom:10px;"></div>
+      <div class="pf-title">🌟 覺醒天賦 <small id="hero-talent-count">(0 個)</small></div>
+      <div id="hero-talents-display" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
       <div style="margin-top:14px; padding-top:10px; border-top:1px solid #333d4b; text-align:center;">
         <button class="wuxia-btn" id="btn-reincarnate-trigger" style="width:100%; border-color:#e74c3c; color:#ff7675; font-weight:bold; padding:10px;" onclick="openReincarnationModal()">
           🔮 破虛輪迴・轉世重修 (當前：第 <span id="reincarnate-count-btn">1</span> 世)
