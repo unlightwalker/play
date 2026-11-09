@@ -474,7 +474,27 @@ const GLOBAL_ITEMS = [
     expAdd: 250,
     cost: 200,
     desc: "天山萬年雪峰靈參提煉，永久氣血+250，身法+15，修為+250！"
-  }
+  },
+
+  // ==================== 【製作材料・新丹藥】 ====================
+  {"id": "mat_iron", "name": "精鐵", "type": "material", "rarity": "凡品", "cost": 8, "desc": "尋常鐵礦冶煉而成的鐵錠，鍛造的基本材料。"},
+  {"id": "mat_wood", "name": "鐵木", "type": "material", "rarity": "凡品", "cost": 6, "desc": "質地堅硬的木料，可製棍棒與兵刃握柄。"},
+  {"id": "mat_hide", "name": "獸皮", "type": "material", "rarity": "凡品", "cost": 6, "desc": "鞣製過的獸皮，可縫製護具與手套。"},
+  {"id": "mat_steel", "name": "百煉鋼", "type": "material", "rarity": "良品", "cost": 40, "desc": "精鐵經百次鍛打而成，韌而不脆。"},
+  {"id": "mat_cold_iron", "name": "寒鐵", "type": "material", "rarity": "上品", "cost": 120, "desc": "出自極寒之地的礦石，觸手冰涼，鍛成兵刃鋒利異常。", "encounter": {"chance": 2, "on": "travel", "towns": [], "text": "山澗石縫中瞥見一塊泛著寒氣的礦石"}},
+  {"id": "mat_silk", "name": "天蠶絲", "type": "material", "rarity": "上品", "cost": 150, "desc": "天蠶所吐之絲，刀劍難斷，可織寶甲。", "encounter": {"chance": 1, "on": "travel", "towns": [], "text": "林間桑樹上結著幾個晶瑩的蠶繭"}},
+  {"id": "mat_dark_iron", "name": "玄鐵", "type": "material", "rarity": "絕品", "cost": 300, "desc": "沉重無比的黑色奇鐵，傳說中玄鐵重劍便是以此鑄成。", "encounter": {"chance": 0.8, "on": "travel", "towns": [], "text": "深谷中踢到一塊沉重異常的黑石"}},
+  {"id": "mat_meteor", "name": "天外隕鐵", "type": "material", "rarity": "神品", "cost": 800, "desc": "自天外墜落的隕星之鐵，可鑄神兵。", "encounter": {"chance": 0.2, "on": "travel", "towns": [], "text": "夜空劃過一道流星，墜落處竟留下一塊灼熱的隕鐵"}},
+  {"id": "herb_licorice", "name": "甘草", "type": "material", "rarity": "凡品", "cost": 4, "desc": "調和百藥的常見藥材。"},
+  {"id": "herb_snakegall", "name": "蛇膽", "type": "material", "rarity": "良品", "cost": 25, "desc": "清熱明目，入藥可助身法輕靈。"},
+  {"id": "herb_ginseng", "name": "老山參", "type": "material", "rarity": "良品", "cost": 30, "desc": "深山採得的老參，大補元氣。"},
+  {"id": "herb_lingzhi", "name": "赤靈芝", "type": "material", "rarity": "上品", "cost": 110, "desc": "色如赤霞的靈芝，延年益壽。", "encounter": {"chance": 2, "on": "both", "towns": [], "text": "古樹根部長著一株赤霞般的靈芝"}},
+  {"id": "herb_zhuguo", "name": "朱果", "type": "material", "rarity": "上品", "cost": 130, "desc": "百年一熟的朱紅靈果，蘊含純陽之氣。", "encounter": {"chance": 1, "on": "travel", "towns": [], "text": "懸崖邊一株小樹上掛著朱紅的果子"}},
+  {"id": "herb_snowlotus", "name": "天山雪蓮", "type": "material", "rarity": "絕品", "cost": 280, "desc": "生於天山絕頂的雪蓮，百年一開。", "encounter": {"chance": 0.8, "on": "meditate", "towns": [], "text": "靜坐中寒風送來一縷異香，睜眼竟見一朵雪蓮"}},
+  {"id": "herb_heshouwu", "name": "千年何首烏", "type": "material", "rarity": "神品", "cost": 700, "desc": "已具人形的千年何首烏，服之可脫胎換骨。", "encounter": {"chance": 0.2, "on": "meditate", "towns": [], "text": "打坐處的泥土微微隆起，竟是一株人形何首烏"}},
+  {"id": "item_snake_pill", "name": "蛇膽明目丸", "type": "pill", "rarity": "良品", "speedAdd": 8, "cost": 60, "desc": "以蛇膽煉成，服下耳聰目明，永久身法 +8。"},
+  {"id": "item_peiyuan_pill", "name": "培元固本丹", "type": "pill", "rarity": "上品", "hpAdd": 80, "expAdd": 200, "cost": 150, "desc": "以赤靈芝為君藥，永久氣血上限 +80，修為 +200。"},
+  {"id": "item_jiuzhuan_pill", "name": "九轉還魂丹", "type": "pill", "rarity": "神品", "hpAdd": 400, "speedAdd": 20, "expAdd": 600, "cost": 1200, "desc": "九轉而成的無上靈丹，永久氣血 +400、身法 +20、修為 +600。"}
 ];
 
 // 掛載至 window 全域

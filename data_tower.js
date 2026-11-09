@@ -28,10 +28,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 175,
-    "gold": 80,
+    "exp": 18,
+    "gold": 8,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "黑風斷魂刀",
       "baseMult": 1.4,
@@ -41,7 +41,7 @@ const TOWER_BOSSES = [
     "chest": {
       "godRate": 0,
       "supremeRate": 0,
-      "upperRate": 25.0,
+      "upperRate": 25,
       "bookRate": 50
     },
     "drops": [],
@@ -67,7 +67,460 @@ const TOWER_BOSSES = [
       "lose": [
         "你……你比官兵還狠……上面的人，可沒我這麼好說話……"
       ]
-    }
+    },
+    "sect": "",
+    "grid": [
+      2,
+      4
+    ],
+    "exits": {
+      "west": "鎮江府",
+      "east": "東瀛"
+    },
+    "scenes": [
+      {
+        "id": "smithy_錢塘關",
+        "name": "軍械所",
+        "type": "smithy",
+        "desc": "鍛打狼筅、長槍、鏜鈀等戚家軍制式長兵與精甲。",
+        "goods": [
+          {
+            "item": "item_steel_sword",
+            "price": 60
+          },
+          {
+            "item": "item_cold_moon_saber",
+            "price": 65
+          },
+          {
+            "item": "item_copper_staff",
+            "price": 65
+          },
+          {
+            "item": "item_iron_gauntlet",
+            "price": 55
+          },
+          {
+            "item": "item_armor_chain",
+            "price": 85
+          },
+          {
+            "item": "mat_iron",
+            "price": 10
+          },
+          {
+            "item": "mat_wood",
+            "price": 8
+          },
+          {
+            "item": "mat_hide",
+            "price": 8
+          },
+          {
+            "item": "mat_steel",
+            "price": 48
+          }
+        ]
+      },
+      {
+        "id": "pharmacy_錢塘關",
+        "name": "屯田藥局",
+        "type": "pharmacy",
+        "desc": "備有金創要藥與行軍散，供官兵與過往俠士療傷健體。",
+        "goods": [
+          {
+            "item": "item_small_powder",
+            "price": 10
+          },
+          {
+            "item": "item_big_pill",
+            "price": 25
+          },
+          {
+            "item": "item_meridian_pill",
+            "price": 45
+          },
+          {
+            "item": "item_exp_pill",
+            "price": 35
+          },
+          {
+            "item": "herb_licorice",
+            "price": 5
+          },
+          {
+            "item": "herb_ginseng",
+            "price": 36
+          },
+          {
+            "item": "herb_snakegall",
+            "price": 30
+          }
+        ]
+      },
+      {
+        "id": "kwoon_錢塘關",
+        "name": "演武廳",
+        "type": "kwoon",
+        "desc": "戚家軍演練陣法、切磋武藝之所。"
+      },
+      {
+        "id": "inn_錢塘關",
+        "name": "安民客棧",
+        "type": "inn",
+        "desc": "供將士歇息調養、聽聞海防軍情之處。"
+      },
+      {
+        "id": "fight_錢塘關",
+        "name": "海防古道",
+        "type": "field_combat",
+        "desc": "通往東瀛海岸的荒涼古道，常有上岸滋事的倭寇與浪人。"
+      }
+    ],
+    "npcs": [
+      {
+        "id": "錢塘關_npc1",
+        "name": "戚家軍老兵",
+        "desc": "身經百戰的老卒，身上滿是刀疤。",
+        "scene": "",
+        "dialogues": [
+          "跟著大帥（戚繼光）南征北討，嶮惡陣仗見得多了。",
+          "東瀛倭寇最擅長使刀偷襲，遇上了千萬別跟他單打獨鬥。",
+          "咱們戚家軍講究的是嚴整軍紀與鴛鴦陣配合。",
+          "聽說最近東岸那頭又不穩當，大帥正調兵遣將呢。",
+          "老夫這條命早就交給朝廷與百姓了。",
+          "少俠若要出海迎敵，得先掂量掂量自己的身手。"
+        ],
+        "attackable": false,
+        "reactWin": [
+          "好身手！有乃父之風！",
+          "痛快！這才是我大明好男兒！",
+          "陣仗打得漂亮，老夫佩服。",
+          "這武藝，上陣殺敵絕對是一把好手。",
+          "虎父無犬子，好樣的！"
+        ],
+        "reactLose": [
+          "兵法有云知己知彼，勝敗乃常事。",
+          "回去多練幾手再跟倭寇拼命。",
+          "留得青山在，不怕沒柴燒。",
+          "戰陣無情，少俠切莫逞強。",
+          "好生休養，日後再雪恥。"
+        ]
+      },
+      {
+        "id": "錢塘關_npc2",
+        "name": "屯田軍官",
+        "desc": "負責錢塘關軍械與糧草調度的中級武官。",
+        "scene": "",
+        "dialogues": [
+          "兵馬未動，糧草先行，這錢塘關的防務半點馬虎不得。",
+          "大帥治軍極嚴，違令者斬，從不講情面。",
+          "城內的軍械所剛打造了一批新狼筅，你要看看嗎？",
+          "東南沿海的平定，全靠全軍將士用命。",
+          "沒事別在軍營附近晃悠，當心被當成奸細抓起來。"
+        ],
+        "attackable": false,
+        "reactWin": [
+          "好身手！有乃父之風！",
+          "痛快！這才是我大明好男兒！",
+          "陣仗打得漂亮，老夫佩服。",
+          "這武藝，上陣殺敵絕對是一把好手。",
+          "虎父無犬子，好樣的！"
+        ],
+        "reactLose": [
+          "兵法有云知己知彼，勝敗乃常事。",
+          "回去多練幾手再跟倭寇拼命。",
+          "留得青山在，不怕沒柴燒。",
+          "戰陣無情，少俠切莫逞強。",
+          "好生休養，日後再雪恥。"
+        ]
+      },
+      {
+        "id": "錢塘關_npc3",
+        "name": "沿海漁民",
+        "desc": "靠海吃海的尋常百姓，對倭寇恨之入骨。",
+        "scene": "",
+        "dialogues": [
+          "多虧了戚大帥派兵駐守，我們才能安穩打漁。",
+          "前些日子海面上漂來不少浮木，聽說是海寇的船碎了。",
+          "少俠若去海防古道，可得小心那幫殺人不眨眼的倭賊。",
+          "我家的船剛補好，等風浪小些就要出海。",
+          "唉，倭亂一日不平，百姓一日難安啊。"
+        ],
+        "attackable": false,
+        "reactWin": [
+          "好身手！有乃父之風！",
+          "痛快！這才是我大明好男兒！",
+          "陣仗打得漂亮，老夫佩服。",
+          "這武藝，上陣殺敵絕對是一把好手。",
+          "虎父無犬子，好樣的！"
+        ],
+        "reactLose": [
+          "兵法有云知己知彼，勝敗乃常事。",
+          "回去多練幾手再跟倭寇拼命。",
+          "留得青山在，不怕沒柴燒。",
+          "戰陣無情，少俠切莫逞強。",
+          "好生休養，日後再雪恥。"
+        ]
+      },
+      {
+        "id": "錢塘關_npc4",
+        "name": "軍械匠師",
+        "desc": "專為戚家軍打造狼筅與長刀的能工巧匠。",
+        "scene": "smithy_錢塘關",
+        "dialogues": [
+          "戚大帥對兵器要求極高，長短搭配，方能克敵制勝。",
+          "這柄長刀融入了百鍊精鋼，專破倭寇的武士刀。",
+          "狼筅上滿是倒鉤鐵刺，最適合叢林與海灘混戰。",
+          "鐵錘落下一千次，才能出得了這一口好刃。",
+          "軍務緊急，莫要在此閒聊，耽誤了打造進度。"
+        ],
+        "attackable": false,
+        "reactWin": [
+          "好身手！有乃父之風！",
+          "痛快！這才是我大明好男兒！",
+          "陣仗打得漂亮，老夫佩服。",
+          "這武藝，上陣殺敵絕對是一把好手。",
+          "虎父無犬子，好樣的！"
+        ],
+        "reactLose": [
+          "兵法有云知己知彼，勝敗乃常事。",
+          "回去多練幾手再跟倭寇拼命。",
+          "留得青山在，不怕沒柴燒。",
+          "戰陣無情，少俠切莫逞強。",
+          "好生休養，日後再雪恥。"
+        ]
+      },
+      {
+        "id": "錢塘關_npc5",
+        "name": "軍醫",
+        "desc": "隨軍行醫的大夫，精通金創跌打。",
+        "scene": "pharmacy_錢塘關",
+        "dialogues": [
+          "將士們保家衛國，老夫這身醫術自然是用在刀刃上。",
+          "行軍散與金創藥每隊皆需配備，臨陣負傷才可保命。",
+          "刀劍無眼，少俠若要上陣，身上多備幾包創藥不吃虧。",
+          "這味防風草是從山那頭採來的，最治風寒濕痺。",
+          "傷筋動骨一百天，敷了老夫的藥，三日便能下床。"
+        ],
+        "attackable": false,
+        "reactWin": [
+          "好身手！有乃父之風！",
+          "痛快！這才是我大明好男兒！",
+          "陣仗打得漂亮，老夫佩服。",
+          "這武藝，上陣殺敵絕對是一把好手。",
+          "虎父無犬子，好樣的！"
+        ],
+        "reactLose": [
+          "兵法有云知己知彼，勝敗乃常事。",
+          "回去多練幾手再跟倭寇拼命。",
+          "留得青山在，不怕沒柴燒。",
+          "戰陣無情，少俠切莫逞強。",
+          "好生休養，日後再雪恥。"
+        ]
+      },
+      {
+        "id": "錢塘關_npc6",
+        "name": "戚繼光",
+        "desc": "字元敬，號南塘，明代抗倭名將、傑出的軍事家，威震東南。",
+        "scene": "kwoon_錢塘關",
+        "dialogues": [
+          "封侯非我意，但願海波平。這東南沿海一日不清，吾等一日不敢卸甲。",
+          "聞道少俠心懷俠義，可願入我麾下，共抗外侮？",
+          "敵軍雖兇，若用「鴛鴦陣」法，長短相救，敵雖千騎亦奈何不得。",
+          "兵者詭道，然治軍以誠，方能令行禁止。",
+          "閣下若能通過本帥的考驗，這部《紀效新書》便贈予你又何妨。"
+        ],
+        "attackable": true,
+        "realm": "登峰造極",
+        "maxHp": 2500,
+        "atk": 180,
+        "def": 120,
+        "speed": 140,
+        "stats": {
+          "arm": 90,
+          "speed": 85,
+          "bone": 95,
+          "inner": 88,
+          "int": 92,
+          "luck": 80
+        },
+        "exp": 800,
+        "gold": 200,
+        "learn": 150,
+        "combat": 30,
+        "skill": null,
+        "internalName": "",
+        "battleLines": {
+          "start": [
+            "讓本帥瞧瞧閣下的真本事！",
+            "兵不厭詐，小心了！"
+          ],
+          "hurt": [
+            "好一記妙招！",
+            "痛快，不愧是江湖豪傑！"
+          ],
+          "lowHp": [
+            "陣形雖變，軍魂不散！"
+          ],
+          "skill": [
+            "此乃血戰心法——陣圖開合！"
+          ],
+          "win": [
+            "陣法之道，博大精深，閣下還需苦練。"
+          ],
+          "lose": [
+            "英雄出少年，大明有你，實乃之福！"
+          ]
+        },
+        "drops": [
+          {
+            "kind": "item",
+            "ref": "item_steel_sword",
+            "rate": 100,
+            "count": 1
+          }
+        ]
+      },
+      {
+        "id": "錢塘關_foe1",
+        "name": "東瀛浪人",
+        "desc": "流竄沿海的東瀛武士，兇狠殘暴。",
+        "scene": "fight_錢塘關",
+        "dialogues": [
+          "八格牙路！交出財寶！",
+          "我的太刀已經很久沒飲血了。",
+          "明國的軍隊？哼，不堪一擊！",
+          "不想死的，統統跪下！",
+          "哈哈哈哈，殺光你們！"
+        ],
+        "battleLines": {
+          "start": [
+            "死吧！明國人！",
+            "居合斬，出鞘！"
+          ],
+          "hurt": [
+            "八路……好痛！",
+            "你竟然能擋住我的刀？"
+          ],
+          "lowHp": [
+            "撤退！快撤！"
+          ],
+          "skill": [
+            "一刀流・燕返！"
+          ],
+          "win": [
+            "弱者，沒有活著的權利。"
+          ],
+          "lose": [
+            "八格……我恨啊！"
+          ]
+        },
+        "attackable": true,
+        "realm": "駕輕就熟",
+        "maxHp": 520,
+        "atk": 42,
+        "def": 20,
+        "speed": 58,
+        "stats": {
+          "arm": 28,
+          "speed": 58,
+          "bone": 28,
+          "inner": 20,
+          "int": 22,
+          "luck": 15
+        },
+        "exp": 95,
+        "gold": 32,
+        "learn": 0,
+        "combat": 6,
+        "skill": null,
+        "internalName": "",
+        "drops": [
+          {
+            "kind": "item",
+            "ref": "item_small_powder",
+            "rate": 20,
+            "count": 1
+          },
+          {
+            "kind": "item",
+            "ref": "mat_steel",
+            "rate": 10,
+            "count": 1
+          }
+        ]
+      },
+      {
+        "id": "錢塘關_foe2",
+        "name": "倭寇頭目",
+        "desc": "盤據海防古道的倭寇頭領，武藝陰狠毒辣。",
+        "scene": "fight_錢塘關",
+        "dialogues": [
+          "八嘎！竟敢阻攔我們的大業！",
+          "小的們，把這不知死活的中原人剁成肉泥！",
+          "我的雙刀流，可是死在無數高手血泊中的！",
+          "想要通關？從我的屍體上踏過去！",
+          "殺一個夠本，殺兩個賺了！"
+        ],
+        "battleLines": {
+          "start": [
+            "今天就是你的忌日！",
+            "受死吧！"
+          ],
+          "hurt": [
+            "納尼？！好強的力道！",
+            "可惡……別小看我！"
+          ],
+          "lowHp": [
+            "八格牙路……我跟你拼了！"
+          ],
+          "skill": [
+            "奧義・十字斬！"
+          ],
+          "win": [
+            "不堪一擊的東亞病夫！"
+          ],
+          "lose": [
+            "我不甘心……大帥饒命……"
+          ]
+        },
+        "attackable": true,
+        "realm": "駕輕就熟",
+        "maxHp": 680,
+        "atk": 52,
+        "def": 26,
+        "speed": 62,
+        "stats": {
+          "arm": 36,
+          "speed": 62,
+          "bone": 38,
+          "inner": 26,
+          "int": 24,
+          "luck": 18
+        },
+        "exp": 120,
+        "gold": 45,
+        "learn": 0,
+        "combat": 12,
+        "skill": null,
+        "internalName": "",
+        "drops": [
+          {
+            "kind": "item",
+            "ref": "item_cold_moon_saber",
+            "rate": 15,
+            "count": 1
+          },
+          {
+            "kind": "item",
+            "ref": "item_big_pill",
+            "rate": 25,
+            "count": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "floor": 10,
@@ -86,10 +539,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 250,
-    "gold": 120,
+    "exp": 25,
+    "gold": 12,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "伏魔金剛掌",
       "baseMult": 1.4,
@@ -99,7 +552,7 @@ const TOWER_BOSSES = [
     "chest": {
       "godRate": 0,
       "supremeRate": 0,
-      "upperRate": 30.0,
+      "upperRate": 30,
       "bookRate": 50
     },
     "drops": [],
@@ -144,10 +597,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 325,
-    "gold": 160,
+    "exp": 32,
+    "gold": 16,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "腐骨百毒針",
       "baseMult": 1.4,
@@ -157,7 +610,7 @@ const TOWER_BOSSES = [
     "chest": {
       "godRate": 0,
       "supremeRate": 0,
-      "upperRate": 35.0,
+      "upperRate": 35,
       "bookRate": 50
     },
     "drops": [],
@@ -202,10 +655,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 400,
-    "gold": 200,
+    "exp": 40,
+    "gold": 20,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "血刀劈山訣",
       "baseMult": 1.7,
@@ -214,8 +667,8 @@ const TOWER_BOSSES = [
     "internalName": "血河魔功",
     "chest": {
       "godRate": 0,
-      "supremeRate": 2.0,
-      "upperRate": 35.0,
+      "supremeRate": 2,
+      "upperRate": 35,
       "bookRate": 50
     },
     "drops": [],
@@ -260,10 +713,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 475,
-    "gold": 240,
+    "exp": 48,
+    "gold": 24,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "漫天飛花劫",
       "baseMult": 1.7,
@@ -272,7 +725,7 @@ const TOWER_BOSSES = [
     "internalName": "天魅迷心訣",
     "chest": {
       "godRate": 0,
-      "supremeRate": 3.0,
+      "supremeRate": 3,
       "upperRate": 37.5,
       "bookRate": 50
     },
@@ -318,10 +771,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 550,
-    "gold": 280,
+    "exp": 55,
+    "gold": 28,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "斷腸快劍",
       "baseMult": 1.7,
@@ -330,8 +783,8 @@ const TOWER_BOSSES = [
     "internalName": "冷月心經",
     "chest": {
       "godRate": 0,
-      "supremeRate": 4.0,
-      "upperRate": 40.0,
+      "supremeRate": 4,
+      "upperRate": 40,
       "bookRate": 50
     },
     "drops": [],
@@ -376,10 +829,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 625,
-    "gold": 320,
+    "exp": 63,
+    "gold": 32,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "赤練蛇影鏢",
       "baseMult": 1.7,
@@ -388,7 +841,7 @@ const TOWER_BOSSES = [
     "internalName": "五毒神功",
     "chest": {
       "godRate": 0,
-      "supremeRate": 5.0,
+      "supremeRate": 5,
       "upperRate": 42.5,
       "bookRate": 50
     },
@@ -434,10 +887,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 700,
-    "gold": 360,
+    "exp": 70,
+    "gold": 36,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "鬼影無影拳",
       "baseMult": 2.2,
@@ -445,9 +898,9 @@ const TOWER_BOSSES = [
     },
     "internalName": "移形換影功",
     "chest": {
-      "godRate": 1.0,
-      "supremeRate": 5.0,
-      "upperRate": 45.0,
+      "godRate": 1,
+      "supremeRate": 5,
+      "upperRate": 45,
       "bookRate": 50
     },
     "drops": [],
@@ -492,10 +945,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 775,
-    "gold": 400,
+    "exp": 78,
+    "gold": 40,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "狼牙八斬刀",
       "baseMult": 2.2,
@@ -550,10 +1003,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 850,
-    "gold": 440,
+    "exp": 85,
+    "gold": 44,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "赤血滔天浪",
       "baseMult": 2.2,
@@ -563,7 +1016,7 @@ const TOWER_BOSSES = [
     "chest": {
       "godRate": 1.7,
       "supremeRate": 7.5,
-      "upperRate": 48.0,
+      "upperRate": 48,
       "bookRate": 50
     },
     "drops": [],
@@ -608,10 +1061,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 925,
-    "gold": 480,
+    "exp": 93,
+    "gold": 48,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "幽冥鬼焰腿",
       "baseMult": 2.8,
@@ -619,7 +1072,7 @@ const TOWER_BOSSES = [
     },
     "internalName": "九幽陰風訣",
     "chest": {
-      "godRate": 2.0,
+      "godRate": 2,
       "supremeRate": 8.8,
       "upperRate": 49.5,
       "bookRate": 50
@@ -666,10 +1119,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 1000,
-    "gold": 520,
+    "exp": 100,
+    "gold": 52,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "天魔三仙劍",
       "baseMult": 2.8,
@@ -678,8 +1131,8 @@ const TOWER_BOSSES = [
     "internalName": "天魔解體大法",
     "chest": {
       "godRate": 2.4,
-      "supremeRate": 10.0,
-      "upperRate": 51.0,
+      "supremeRate": 10,
+      "upperRate": 51,
       "bookRate": 50
     },
     "drops": [],
@@ -724,10 +1177,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 1075,
-    "gold": 560,
+    "exp": 108,
+    "gold": 56,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "北冥降龍掌",
       "baseMult": 2.8,
@@ -782,10 +1235,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 1150,
-    "gold": 600,
+    "exp": 115,
+    "gold": 60,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "無影奪魂指",
       "baseMult": 2.8,
@@ -795,7 +1248,7 @@ const TOWER_BOSSES = [
     "chest": {
       "godRate": 3.1,
       "supremeRate": 12.5,
-      "upperRate": 54.0,
+      "upperRate": 54,
       "bookRate": 50
     },
     "drops": [],
@@ -840,10 +1293,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 1225,
-    "gold": 640,
+    "exp": 123,
+    "gold": 64,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "羅剎焚心焰",
       "baseMult": 2.8,
@@ -898,10 +1351,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 1300,
-    "gold": 680,
+    "exp": 130,
+    "gold": 68,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "逆轉太極掌",
       "baseMult": 2.8,
@@ -910,8 +1363,8 @@ const TOWER_BOSSES = [
     "internalName": "太陰玄冰功",
     "chest": {
       "godRate": 3.8,
-      "supremeRate": 15.0,
-      "upperRate": 57.0,
+      "supremeRate": 15,
+      "upperRate": 57,
       "bookRate": 50
     },
     "drops": [],
@@ -956,10 +1409,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 1375,
-    "gold": 720,
+    "exp": 138,
+    "gold": 72,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "鬼丸居合斬",
       "baseMult": 2.8,
@@ -1014,10 +1467,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 1450,
-    "gold": 760,
+    "exp": 145,
+    "gold": 76,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "萬蠱穿心針",
       "baseMult": 2.8,
@@ -1072,10 +1525,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 1525,
-    "gold": 800,
+    "exp": 153,
+    "gold": 80,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "大悲無相魔佛掌",
       "baseMult": 2.8,
@@ -1130,10 +1583,10 @@ const TOWER_BOSSES = [
       "int": 30,
       "luck": 25
     },
-    "exp": 1600,
-    "gold": 840,
+    "exp": 160,
+    "gold": 84,
     "learn": 0,
-    "combat": 15,
+    "combat": 1,
     "skill": {
       "name": "混沌九龍滅世",
       "baseMult": 2.8,

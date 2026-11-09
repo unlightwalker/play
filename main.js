@@ -98,6 +98,9 @@ function sanitizePlayerData() {
   });
 
   if (!Array.isArray(player.claimedMails)) player.claimedMails = [];
+  if (window.Crafting) Crafting.ensureData();
+  if (window.Gathering) Gathering.ensureData();
+  if (window.Encounters) Encounters.ensureData();
   // 門派更名相容：舊存檔中的門派名稱 / 門派地點自動對應到新名稱（editor.html 會記錄 formerNames）
   if (typeof SECT_DATABASE !== 'undefined') {
     const renamedTo = oldName => Object.keys(SECT_DATABASE).find(k => (SECT_DATABASE[k].formerNames || []).includes(oldName));
@@ -515,7 +518,11 @@ function openMeditateModal() {
 
     meditateTickCounter++;
     // 每打坐 30 秒判定一次奇遇
-    if (meditateTickCounter % 30 === 0 && typeof rollEncounters === 'function') rollEncounters('meditate');
+    if (meditateTickCounter % 30 === 0) {
+      // 劇情奇遇優先；未觸發時才判定物品奇遇
+      const story = window.Encounters && Encounters.trigger('meditate');
+      if (!story && typeof rollEncounters === 'function') rollEncounters('meditate');
+    }
     const learnInterval = Math.max(2, Math.floor(7 - player.stats.int * 0.1));
     if (meditateTickCounter % learnInterval === 0) {
       let learnGain = 1;
@@ -722,7 +729,9 @@ const PLACE_PAGES = {
   'modal-meditate': 'pg-meditate',
   'modal-hero-profile': 'pg-profile',
   'settings': 'pg-settings',
-  'npc': 'pg-npc'
+  'npc': 'pg-npc',
+  'modal-craft': 'pg-craft',
+  'modal-encounter': 'pg-encounter'
 };
 let currentPlacePage = null;
 

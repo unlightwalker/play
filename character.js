@@ -70,6 +70,8 @@ function openHeroProfileModal() {
     }
   });
 
+  const cBox = document.getElementById('hero-craft-display');
+  if (cBox && window.Crafting) cBox.innerHTML = Crafting.summaryHtml();
   const tBox = document.getElementById('hero-talents-display');
   const tCount = document.getElementById('hero-talent-count');
   const talents = (Array.isArray(player.talents)) ? player.talents : [];

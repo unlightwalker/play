@@ -532,6 +532,7 @@ function stopBattleAndExit() {
   } else if (typeof refreshChatForCurrentLocation === 'function') {
     refreshChatForCurrentLocation();
   }
+  if (window.Encounters) Encounters.afterBattle(lastBattleOutcome, currentEnemy, currentCombatType);
   lastBattleOutcome = null;
 }
 

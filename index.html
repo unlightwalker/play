@@ -124,6 +124,8 @@
           <div class="stat-src-line" id="st-luck-source">計算中...</div>
         </div>
       </div>
+      <div style="font-size:12px; color:var(--gold); font-weight:bold; margin:12px 0 4px;">🛠️ 製作技藝</div>
+      <div id="hero-craft-display"></div>
       <div style="font-size:12px; font-weight:bold; color:var(--gold); margin:12px 0 6px; display:flex; justify-content:space-between; align-items:center;">
         <span>【宿命天命・當前覺醒天賦】</span>
         <span id="hero-talent-count" style="font-size:11px; color:#aaa;">(0 個)</span>
@@ -202,6 +204,16 @@
             <p class="place-desc" id="scene-modal-desc"></p>
             <div id="scene-modal-content"></div>
           </div>
+        </div>
+
+        <div class="place-page" id="pg-craft">
+          <div class="place-head"><span id="craft-title" style="color:var(--gold);">🛠️ 製作</span><button class="wuxia-btn place-back" onclick="closePlacePanel()">↩ 返回地圖</button></div>
+          <div class="place-body"><div id="craft-content"></div></div>
+        </div>
+
+        <div class="place-page" id="pg-encounter">
+          <div class="place-head"><span id="encounter-title" style="color:var(--gold);">✨ 奇遇</span></div>
+          <div class="place-body"><div id="encounter-content"></div></div>
         </div>
 
         <div class="place-page" id="pg-npc">
@@ -595,12 +607,17 @@
 <script src="data_map.js"></script>
 <script src="data_tower.js"></script>
 <script src="data_talents.js"></script>
+<script src="data_crafting.js"></script>
+<script src="data_encounters.js"></script>
 <script src="combat_rules.js"></script>
 <script src="combat_vfx.js"></script>
 <script src="combat.js"></script>
 <script src="sect.js"></script>
 <script src="character.js"></script>
 <script src="town.js"></script>
+<script src="crafting.js"></script>
+<script src="gathering.js"></script>
+<script src="encounters.js"></script>
 <script src="tower.js"></script>
 <script src="story.js"></script>
 <script src="mail.js"></script>

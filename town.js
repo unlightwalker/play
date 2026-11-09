@@ -12,7 +12,7 @@ function getSceneIcon(type) {
   if (type === 'smithy') return '🔨';
   if (type === 'kwoon') return '🥋';
   if (type === 'sect') return '🏯';
-  if (type === 'inn') return '🍶';
+  if (type === 'inn') return '🏥';
   if (type === 'pharmacy') return '💊';
   if (type === 'field_combat') return '⚔️';
   if (type === 'gate') return '⛰️';
@@ -254,7 +254,8 @@ function travelToTown(destKey) {
   renderJianghuScenesOnMenu();
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
   refreshChatForCurrentLocation();
-  if (typeof rollEncounters === 'function') rollEncounters('travel');
+  const story = window.Encounters && Encounters.trigger('enter', { loc: destKey });
+  if (!story && typeof rollEncounters === 'function') rollEncounters('travel');
 }
 
 function renderJianghuScenesOnMenu() {
@@ -293,10 +294,11 @@ function renderJianghuScenesOnMenu() {
 
 let currentSceneRef = null;
 function refreshCurrentScene() {
-  if (currentSceneRef && typeof currentPlacePage !== 'undefined' && currentPlacePage === 'pg-scene') openSceneModal(currentSceneRef);
+  if (currentSceneRef && typeof currentPlacePage !== 'undefined' && currentPlacePage === 'pg-scene') openSceneModal(currentSceneRef, true);
 }
 
-function openSceneModal(sc) {
+function openSceneModal(sc, skipEncounter) {
+  if (!skipEncounter && sc && sc.type !== 'gate' && window.Encounters && Encounters.trigger('scene', { scene: sc.id, sceneType: sc.type })) return;
   currentSceneRef = sc;
   const titleEl = document.getElementById('scene-modal-title');
   const descEl = document.getElementById('scene-modal-desc');
@@ -399,15 +401,15 @@ function openSceneModal(sc) {
   } else if (sc.type === 'inn') {
     content.innerHTML = `
       <div class="bag-item-card">
-        <div><b>上房安歇一宿</b><br><small style="color:#aaa;">氣血與內力瞬間完全回滿</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--green); border-color:var(--green);" onclick="restAtInn(5)">5兩 歇息</button>
+        <div><b>療傷調息</b><br><small style="color:#aaa;">大夫施針推拿，氣血與內力完全回滿</small></div>
+        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--green); border-color:var(--green);" onclick="restAtInn(5)">5兩 療傷</button>
       </div>
       <div class="bag-item-card">
-        <div><b>品茗聽說書</b><br><small style="color:#aaa;">聽前代名宿軼事，增長見聞</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--cyan); border-color:var(--cyan);" onclick="listenStoryteller(10)">10兩 品茗</button>
+        <div><b>把脈問診</b><br><small style="color:#aaa;">老大夫診脈之餘談起江湖軼事，增長見聞</small></div>
+        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--cyan); border-color:var(--cyan);" onclick="listenStoryteller(10)">10兩 問診</button>
       </div>
       <div class="bag-item-card">
-        <div><b>百寶閣收購櫃台</b><br><small style="color:#aaa;">高價收購各色神兵雜物</small></div>
+        <div><b>後堂收購櫃台</b><br><small style="color:#aaa;">收購藥材、兵刃與各色雜物</small></div>
         <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--gold); border-color:var(--gold);" onclick="openPawnshopModal()">典當行囊</button>
       </div>
     `;
@@ -426,7 +428,8 @@ function restAtInn(cost) {
 
   if (typeof updateProfileUI === 'function') updateProfileUI();
   if (typeof autoSave === 'function') autoSave();
-  pushChatMessage('system', '【客棧調養】', '上房安歇一宿，酒暖被軟。氣血與內力皆已恢復圓滿！', '#2ecc71');
+  pushChatMessage('system', '【醫館療傷】', '大夫施針推拿、敷藥調息，氣血與內力皆已恢復圓滿！', '#2ecc71');
+  if (window.Encounters) Encounters.trigger('rest');
 }
 
 function listenStoryteller(cost) {
@@ -437,7 +440,7 @@ function listenStoryteller(cost) {
 
   if (typeof updateProfileUI === 'function') updateProfileUI();
   if (typeof autoSave === 'function') autoSave();
-  pushChatMessage('system', '【品茗聽書】', '一盞清茗，半晌評書！聽聞前代宗師掌故，學點 +30！', '#f1c40f');
+  pushChatMessage('system', '【把脈問診】', '老大夫一邊診脈，一邊說起前代宗師的掌故，學點 +30！', '#f1c40f');
 }
 
 const ITEM_PAWN_VALUES = { "凡品": 8, "良品": 30, "上品": 90, "絕品": 180, "神品": 350 };
@@ -546,6 +549,19 @@ function renderNpcCardHtml(npc) {
   const stat = npc.attackable
     ? `<span style="color:#f1c40f; font-size:11px; margin-left:4px;">【${npc.realm || '江湖人'}】</span><br><small style="color:#aaa;">氣血 ${npc.maxHp} | 外攻 ${npc.atk} | 身法 ${npc.speed}</small>`
     : `<br><small style="color:#aaa;">${npc.desc || '江湖中人'}</small>`;
+  if (window.Gathering && Gathering.isNode(npc)) {
+    const st = Gathering.state(player.curLoc, npc);
+    return `
+    <div class="bag-item-card">
+      <div><b style="color:#fff;">${Gathering.iconOf(npc)} ${npc.name}</b> <span class="color-${npc.rarity || '凡品'}" style="font-size:11px;">【${npc.rarity || '凡品'}】</span><br><small style="color:#aaa;">${st.left > 0 ? `剩餘 ${st.left} / ${Gathering.capOf(npc)}` : '資源已枯竭，等待刷新'}</small></div>
+      <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--green); border-color:var(--green);" onclick="openNpcPanel('${npc.id}')">前往${(typeof GATHER_SKILLS !== 'undefined' && (GATHER_SKILLS.find(s => s.key === npc.gatherSkill) || {}).verb) || '採集'}</button>
+    </div>`;
+  }
+  const craftBtn = npc.service === 'craft'
+    ? (window.Crafting && !Crafting.canUse(npc)
+      ? `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:#777; border-color:#444;" onclick="openCraftStation('${npc.id}')">🔒 限${Crafting.ownerSect(npc)}弟子</button>`
+      : `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--gold); border-color:var(--gold);" onclick="openCraftStation('${npc.id}')">${npc.craftSkill === 'alchemy' ? '⚗️ 煉藥' : '🔨 鍛造'}</button>`)
+    : '';
   const fightBtn = npc.attackable
     ? `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:#e74c3c; border-color:#e74c3c;" onclick="startDuelWithNpc('${npc.id}')">討伐切磋</button>`
     : '';
@@ -554,6 +570,7 @@ function renderNpcCardHtml(npc) {
       <div><b style="color:#fff;">👤 ${npc.name}</b>${stat}</div>
       <div style="display:flex; gap:4px;">
         <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--cyan); border-color:var(--cyan);" onclick="talkToNpc('${npc.id}')">交談</button>
+        ${craftBtn}
         ${fightBtn}
       </div>
     </div>`;
@@ -573,7 +590,7 @@ function renderStreetNpcs(town) {
   street.forEach(npc => {
     const btn = document.createElement('button');
     btn.className = 'wuxia-btn';
-    btn.innerHTML = `${npc.attackable ? '⚔️' : '👤'} ${npc.name}`;
+    btn.innerHTML = `${npc.attackable ? '⚔️' : (window.Gathering && Gathering.isNode(npc) ? Gathering.iconOf(npc) : '👤')} ${npc.name}`;
     btn.onclick = () => openNpcPanel(npc.id);
     box.appendChild(btn);
   });
@@ -604,17 +621,20 @@ function openNpcPanel(npcId) {
     : '';
   panel.className = `npc-panel ${npc.attackable ? 'foe' : ''}`;
   panel.innerHTML = `
-    <div class="npc-portrait">${npcPortraitSvg(npc)}<span class="npc-tag">${npc.attackable ? '可討伐' : '江湖人'}</span></div>
+    <div class="npc-portrait">${npcPortraitSvg(npc)}<span class="npc-tag">${npc.attackable ? '可討伐' : npc.service === 'gather' ? `${npc.rarity || '凡品'}資源` : (npc.service === 'craft' ? `${window.Crafting ? Crafting.toolName(npc.toolLevel || 1) : ''}工具` : '江湖人')}</span></div>
     <div class="npc-body">
       <div class="npc-name">${npc.name}${npc.attackable ? `<small>【${npc.realm || '江湖人'}】</small>` : ''}</div>
       ${npc.desc ? `<div class="npc-desc">${npc.desc}</div>` : ''}
       ${stats}
       <div class="npc-bubble" id="npc-bubble"><span>${lines[0]}</span></div>
-      <div class="npc-actions">
+      ${window.Gathering && Gathering.isNode(npc) ? Gathering.panelHtml(npc) : `<div class="npc-actions">
         <button class="wuxia-btn" style="color:var(--cyan); border-color:var(--cyan);" onclick="talkToNpc('${npc.id}')">💬 交談</button>
+        ${npc.service === 'craft' ? (window.Crafting && !Crafting.canUse(npc)
+          ? `<button class="wuxia-btn" style="color:#777; border-color:#444;" onclick="openCraftStation('${npc.id}')">🔒 限${Crafting.ownerSect(npc)}弟子</button>`
+          : `<button class="wuxia-btn" style="color:var(--gold); border-color:var(--gold);" onclick="openCraftStation('${npc.id}')">${npc.craftSkill === 'alchemy' ? '⚗️ 開爐煉藥' : '🔨 開始鍛造'}</button>`) : ''}
         ${npc.service === 'sect_hall' ? `<button class="wuxia-btn" style="color:var(--green); border-color:var(--green);" onclick="openNpcService('${npc.id}')">🏯 門派事務</button>` : ''}
         ${npc.attackable ? `<button class="wuxia-btn" style="color:#e74c3c; border-color:#e74c3c;" onclick="startDuelWithNpc('${npc.id}')">⚔️ 討伐切磋</button>` : ''}
-      </div>
+      </div>`}
     </div>`;
   panel.dataset.lineIdx = '0';
 }
@@ -627,6 +647,7 @@ function closeNpcPanel() {
 function talkToNpc(npcId) {
   const npc = findTownNpc(npcId);
   if (!npc) return;
+  if (window.Encounters && Encounters.trigger('talk', { npc: npcId })) return;
   const lines = (Array.isArray(npc.dialogues) && npc.dialogues.length > 0) ? npc.dialogues : ['……'];
   const panel = document.getElementById('npc-panel');
   const bubble = document.getElementById('npc-bubble');
