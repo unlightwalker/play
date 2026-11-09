@@ -28,7 +28,93 @@
  * ========================================================
  */
 
-const GLOBAL_COMPANIONS = [];
+const GLOBAL_COMPANIONS = [
+  {
+    "name": "蘇青霓",
+    "potential": "上品",
+    "gear": {
+      "weapon": "",
+      "armor": "item_cloth_armor"
+    },
+    "skills": [
+      "吐納坐忘訣",
+      "草上飛"
+    ],
+    "activeSkill": "",
+    "title": "杏林妙手",
+    "role": "healer",
+    "realm": "略有小成",
+    "desc": "身着素白罗衫，背負藥箱，雖是江湖中人卻無半分煞氣。一手「回春妙手」能起死回生，江湖人稱「素手仙姬」。",
+    "hint": "聞說此人常在藥王谷或江南集市一帶懸壺濟世，若能贈以稀世藥材或可打動芳心。",
+    "figure": {
+      "body": "#c2c2c2",
+      "skin": "#ffffff",
+      "hair": "long",
+      "hairColor": "#4b4444",
+      "accent": "#16a085",
+      "weapon": "sickle",
+      "accessory": "gourd",
+      "pose": "stand"
+    },
+    "atk": 22,
+    "speed": 50,
+    "vfx": "",
+    "healPct": 8,
+    "errand": "gather",
+    "craftSkill": "alchemy",
+    "favorites": [
+      "herb_snowlotus",
+      "herb_lingzhi"
+    ],
+    "swornBonus": {
+      "stat": "inner",
+      "value": 5
+    },
+    "combo": {
+      "name": "妙手回春",
+      "mult": 2,
+      "vfx": "萬佛金光"
+    },
+    "lines": {
+      "greet": [
+        "醫者仁心，閣下身上似有暗傷，可需青霓替你把脈？"
+      ],
+      "talk": [
+        "醫者父母心。",
+        "少喝些酒，對經脈不好。",
+        "望聞問切，一樣都不能少。",
+        "這世上最難醫的，是人心。",
+        "你最近睡得好嗎？"
+      ],
+      "gift": [
+        "無功不受祿，這禮物太貴重了，青霓不能平白收下。"
+      ],
+      "giftFav": [
+        "呀！此物正是我尋覓多時的靈藥，多謝少俠厚意！"
+      ],
+      "assist": [
+        "別動，我替你止血！",
+        "撐住！"
+      ],
+      "win": [
+        "勝負乃常事，不過點到為止，少俠快讓我瞧瞧傷勢。"
+      ],
+      "lose": [
+        "快退下，我來處理傷口。"
+      ],
+      "errandBack": [
+        "採藥之行頗有收穫，山林間的靈氣果然滋養萬物。"
+      ],
+      "sworn": [
+        "自今日起，你我生死相交，願同心協力，行俠仗義於江湖之中！"
+      ]
+    },
+    "id": "comp_mw9feqsk10",
+    "startAffinity": 10,
+    "stats6": {},
+    "hidden": true
+  }
+];
 
 const COMPANION_CONFIG = {
   "maxParty": 1,
@@ -133,7 +219,7 @@ const COMPANION_CONFIG = {
     {
       "rarity": "凡品",
       "name": "凡骨",
-      "growth": 1.0
+      "growth": 1
     },
     {
       "rarity": "良品",

@@ -375,6 +375,37 @@ const GLOBAL_ENCOUNTERS = [
         "choices": []
       }
     ]
+  },
+  {
+    "id": "enc_mw9fp03y98",
+    "name": "蘇青霓入隊",
+    "enabled": true,
+    "note": "測試用",
+    "trigger": {
+      "type": "talk",
+      "chance": 5,
+      "locs": [],
+      "npc": "牛家村_npc9"
+    },
+    "once": true,
+    "cooldown": 0,
+    "conditions": [],
+    "start": "s1",
+    "steps": [
+      {
+        "id": "s1",
+        "speaker": "蘇青霓",
+        "text": "測試用：蘇青霓入隊",
+        "results": [
+          {
+            "type": "companion",
+            "text": "",
+            "ref": "comp_mw9feqsk10"
+          }
+        ],
+        "choices": []
+      }
+    ]
   }
 ];
 
