@@ -432,7 +432,12 @@ const WORLD_MAP = {
           "懸壺濟世本是分內之事，少俠若在江湖中受了暗傷，不妨來找我。",
           "聽聞江湖風波又起，也不知有多少無辜之人要受苦……唉。"
         ],
-        "attackable": false
+        "attackable": false,
+        "talkEncounter": {
+          "on": true,
+          "id": "enc_mw9fp03y98",
+          "chance": 100
+        }
       }
     ]
   },
