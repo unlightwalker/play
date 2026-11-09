@@ -98,6 +98,8 @@ function sanitizePlayerData() {
   });
 
   if (!Array.isArray(player.claimedMails)) player.claimedMails = [];
+  if (!player.pillBuffs || typeof player.pillBuffs !== 'object') player.pillBuffs = {};
+  if (!player.pillUses || typeof player.pillUses !== 'object') player.pillUses = {};
   if (window.Crafting) Crafting.ensureData();
   if (window.Gathering) Gathering.ensureData();
   if (window.Encounters) Encounters.ensureData();
@@ -356,7 +358,17 @@ function recalcPlayerStats() {
   const boneHp = player.stats.bone * 6;
   const boneDef = Math.floor(player.stats.bone * 0.5);
 
-  let rawMaxHp = player.baseMaxHp + gearHp + kfHp + boneHp + talentHpAdd;
+  // 回血類丹藥：限時提高氣血上限
+  let pillBuffHp = 0;
+  if (player.pillBuffs && typeof player.pillBuffs === 'object') {
+    const now = Date.now();
+    Object.keys(player.pillBuffs).forEach(k => {
+      const bf = player.pillBuffs[k];
+      if (!bf || bf.until <= now) delete player.pillBuffs[k];
+      else pillBuffHp += Number(bf.hp) || 0;
+    });
+  }
+  let rawMaxHp = player.baseMaxHp + gearHp + kfHp + boneHp + talentHpAdd + pillBuffHp;
   if (talentHpPct !== 0) {
     rawMaxHp = Math.floor(rawMaxHp * (1 + talentHpPct));
   }
@@ -552,6 +564,19 @@ function closeMeditateModal() {
   stopMeditation();
   closeModal('modal-meditate');
 }
+
+// 丹藥藥效到期：每 5 秒檢查一次，到期後重新計算氣血上限
+setInterval(() => {
+  const bf = player.pillBuffs;
+  if (!bf) return;
+  const now = Date.now();
+  const expired = Object.keys(bf).filter(k => bf[k] && bf[k].until <= now);
+  if (!expired.length) return;
+  const names = expired.map(k => bf[k].name);
+  expired.forEach(k => delete bf[k]);
+  recalcPlayerStats();
+  if (typeof pushChatMessage === 'function') pushChatMessage('system', '【藥效消退】', `${names.join('、')}的藥力漸漸散去，氣血上限恢復原狀。`, '#95a5a6');
+}, 5000);
 
 var saveCountdown = 6.0;
 

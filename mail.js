@@ -25,7 +25,7 @@ const DEFAULT_OFFICIAL_MAILS = [
           type: "pill",
           rarity: "良品",
           healHp: 300,
-          desc: "少林秘製聖藥，立刻恢復 300 點氣血。",
+          desc: "少林秘製聖藥，服下後 15 分鐘內氣血上限 +300（並補足相應氣血）。",
           count: 2
         }
       ]

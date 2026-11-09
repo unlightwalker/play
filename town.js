@@ -8,6 +8,17 @@
  * ========================================================
  */
 
+// 手機窄螢幕：按鈕文字放不下時逐步縮小字級（最小 10px），避免名稱被截成「…」
+function fitButtonText(container) {
+  if (!container) return;
+  requestAnimationFrame(() => container.querySelectorAll('button').forEach(btn => {
+    btn.style.fontSize = '';
+    let size = parseFloat(getComputedStyle(btn).fontSize) || 13;
+    while (btn.scrollWidth > btn.clientWidth + 1 && size > 10) { size -= 0.5; btn.style.fontSize = size + 'px'; }
+  }));
+}
+window.addEventListener('resize', () => { fitButtonText(document.getElementById('jh-scenes-grid')); fitButtonText(document.getElementById('jh-npc-grid')); });
+
 function getSceneIcon(type) {
   if (type === 'smithy') return '🔨';
   if (type === 'kwoon') return '🥋';
@@ -16,6 +27,7 @@ function getSceneIcon(type) {
   if (type === 'pharmacy') return '💊';
   if (type === 'field_combat') return '⚔️';
   if (type === 'gate') return '⛰️';
+  if (type === 'training') return '🧘';
   return '🏮';
 }
 
@@ -287,6 +299,8 @@ function renderJianghuScenesOnMenu() {
     }
 
     renderStreetNpcs(cur);
+    fitButtonText(grid);
+    fitButtonText(document.getElementById('jh-npc-grid'));
   } catch (err) {
     console.error(err);
   }
@@ -334,15 +348,26 @@ function openSceneModal(sc, skipEncounter) {
       if (!it) return;
       const price = Number(g.price) || it.cost || 10;
       const typeLabel = it.type === 'weapon' ? (typeof getWeaponType === 'function' ? getWeaponType(it) : '兵器') : (it.type === 'armor' ? '防具' : (it.type === 'material' ? '材料' : '丹藥'));
+      const lim = window.ShopStock ? ShopStock.limitOf(it) : 0;
+      const left = lim ? ShopStock.left(it) : Infinity;
+      const stockLine = lim ? `<br><small style="color:${left > 0 ? '#f1c40f' : '#e74c3c'};">${left > 0 ? `今日尚餘 ${left} / ${lim}` : `今日已售罄`}（各地商號共通・${ShopStock.resetText()}）</small>` : '';
       html += `
         <div class="bag-item-card">
-          <div><b class="color-${it.rarity}">${it.name} (${typeLabel})</b><br><small style="color:#aaa;">${it.desc || ''}</small></div>
-          <button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="buyGoodsToBag('${it.id}', ${price})">${price}兩</button>
+          <div><b class="color-${it.rarity}">${it.name} (${typeLabel})</b><br><small style="color:#aaa;">${it.desc || ''}</small>${stockLine}</div>
+          ${left > 0
+            ? `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px;" onclick="buyGoodsToBag('${it.id}', ${price})">${price}兩</button>`
+            : `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:#777; border-color:#444;" disabled>售罄</button>`}
         </div>`;
     });
     if (goods.length === 0) html += `<div style="text-align:center; color:#777; font-size:12px; padding:12px;">今日貨架空空，請改日再來。</div>`;
     html += sceneNpcs.map(renderNpcCardHtml).join('');
     content.innerHTML = html;
+    openModal('modal-scene');
+    return;
+  }
+
+  if (sc.type === 'training') {
+    content.innerHTML = trainingCardHtml('sect', sc.sectName) + sceneNpcs.map(renderNpcCardHtml).join('');
     openModal('modal-scene');
     return;
   }
@@ -357,17 +382,25 @@ function openSceneModal(sc, skipEncounter) {
     const curTown = player.curLoc || "牛家村";
     const allSkills = (typeof GLOBAL_SKILLS !== 'undefined') ? GLOBAL_SKILLS : [];
     
-    // 優先匹配包含當前城鎮名稱的技能，若為牛家村則包含「鄉野演武」或預設武館技
-    let availableSkills = allSkills.filter(sk => {
+    // 出處寫明是某門派的武學（例如「鑄劍山莊傳功大殿」）只能在該門派學習，武館一律不教
+    const sectNames = Object.keys((typeof SECT_DATABASE !== 'undefined') ? SECT_DATABASE : {});
+    const fromSect = sk => sectNames.some(sn => (sk.source || "").includes(sn));
+    const kwoonPool = allSkills.filter(sk => !fromSect(sk));
+
+    // 優先匹配出處包含當前城鎮名稱的武學，若為牛家村則包含「鄉野演武」
+    let availableSkills = kwoonPool.filter(sk => {
       const src = sk.source || "";
       if (src.includes(curTown)) return true;
       if (curTown === "牛家村" && (src.includes("鄉野") || src.includes("牛家村"))) return true;
       return false;
     });
 
-    // 保底：若當前城鎮無專屬武學，展示預設江湖基礎武學
+    // 保底：若當前城鎮無專屬武學，展示武館通用的江湖基礎武學（出處寫明「武館」者優先）
     if (availableSkills.length === 0) {
-      availableSkills = allSkills.filter(sk => sk.rarity === "凡品" || sk.rarity === "良品").slice(0, 4);
+      const basic = kwoonPool.filter(sk => sk.rarity === "凡品" || sk.rarity === "良品");
+      const inAnySect = sk => sectNames.some(sn => (SECT_DATABASE[sn].skills || []).some(x => x.name === sk.name));
+      // 出處寫「武館」者優先；其次是不屬於任何門派的基礎武學
+      availableSkills = [...basic.filter(sk => (sk.source || "").includes("武館")), ...basic.filter(sk => !(sk.source || "").includes("武館") && !inAnySect(sk))].slice(0, 4);
     }
 
     let kwoonHtml = `<div style="font-size:12px; color:#cad3df; margin-bottom:8px;"><b>【武館教頭研習】</b> 習得武學初始為【一重 0% 初學者】：</div>`;
@@ -397,17 +430,14 @@ function openSceneModal(sc, skipEncounter) {
       `;
     });
 
-    content.innerHTML = kwoonHtml + sceneNpcs.map(renderNpcCardHtml).join('');
+    content.innerHTML = trainingCardHtml('kwoon') + kwoonHtml + sceneNpcs.map(renderNpcCardHtml).join('');
   } else if (sc.type === 'inn') {
     content.innerHTML = `
       <div class="bag-item-card">
         <div><b>療傷調息</b><br><small style="color:#aaa;">大夫施針推拿，氣血與內力完全回滿</small></div>
         <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--green); border-color:var(--green);" onclick="restAtInn(5)">5兩 療傷</button>
       </div>
-      <div class="bag-item-card">
-        <div><b>把脈問診</b><br><small style="color:#aaa;">老大夫診脈之餘談起江湖軼事，增長見聞</small></div>
-        <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--cyan); border-color:var(--cyan);" onclick="listenStoryteller(10)">10兩 問診</button>
-      </div>
+      ${trainingCardHtml('clinic')}
       <div class="bag-item-card">
         <div><b>後堂收購櫃台</b><br><small style="color:#aaa;">收購藥材、兵刃與各色雜物</small></div>
         <button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--gold); border-color:var(--gold);" onclick="openPawnshopModal()">典當行囊</button>
@@ -432,16 +462,60 @@ function restAtInn(cost) {
   if (window.Encounters) Encounters.trigger('rest');
 }
 
-function listenStoryteller(cost) {
-  cost = Number(cost) || 10;
-  if (player.gold < cost) { gameNotify("碎銀不足！"); return; }
-  player.gold -= cost;
-  player.learn += 30;
-
+// ==================== 每日練功（醫館問診 / 武館練功 / 門派練功），次數各類共通 ====================
+const DAILY_TRAINING_DEFAULT = {
+  clinic: { name: "把脈問診", cost: 100, learn: 1000, limit: 3 },
+  kwoon: { name: "練功", cost: 100, learn: 1000, limit: 3 },
+  sect: { name: "門派練功", cost: 0, learn: 2000, limit: 1 }
+};
+const DAILY_TRAINING_TEXT = {
+  clinic: { place: "醫館", msg: "老大夫一邊診脈，一邊指點你經脈運行的關竅" },
+  kwoon: { place: "武館", msg: "教頭陪你拆了上百招，一招一式反覆錘煉" },
+  sect: { place: "門派", msg: "你在練武場閉門苦練，將本門武學從頭到尾演練了一遍" }
+};
+function trainingCfg(kind) {
+  const c = (typeof DAILY_TRAINING_CONFIG !== 'undefined' && DAILY_TRAINING_CONFIG) || {};
+  return Object.assign({}, DAILY_TRAINING_DEFAULT[kind], c[kind] || {});
+}
+function trainingData() {
+  const cycle = window.ShopStock ? ShopStock.cycleStart() : new Date().setHours(0, 0, 0, 0);
+  if (!player.dailyTraining || player.dailyTraining.cycle !== cycle) player.dailyTraining = { cycle, used: {} };
+  return player.dailyTraining;
+}
+function trainingLeft(kind) { return Math.max(0, (Number(trainingCfg(kind).limit) || 0) - (trainingData().used[kind] || 0)); }
+function trainingCardHtml(kind, sectName) {
+  const c = trainingCfg(kind), left = trainingLeft(kind), t = DAILY_TRAINING_TEXT[kind];
+  const reset = window.ShopStock ? ShopStock.resetText().replace('補貨', '重置') : '';
+  const locked = kind === 'sect' && player.sect !== sectName;
+  const btn = locked
+    ? `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:#777; border-color:#444;" disabled>🔒 限${sectName}弟子</button>`
+    : left <= 0
+      ? `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:#777; border-color:#444;" disabled>今日已練</button>`
+      : `<button class="wuxia-btn" style="padding:4px 10px; font-size:12px; color:var(--cyan); border-color:var(--cyan);" onclick="doDailyTraining('${kind}', '${sectName || ''}')">${c.cost > 0 ? `${c.cost}兩 ` : '免費 '}${c.name}</button>`;
+  return `
+    <div class="bag-item-card">
+      <div><b>${c.name}</b><br><small style="color:#aaa;">${t.msg}，學點 +${c.learn}</small><br>
+        <small style="color:${left > 0 ? '#f1c40f' : '#e74c3c'};">今日剩餘 ${left} / ${c.limit} 次（${kind === 'sect' ? '每日一次' : `各地${t.place}共通`}・${reset}）</small></div>
+      ${btn}
+    </div>`;
+}
+function doDailyTraining(kind, sectName) {
+  const c = trainingCfg(kind), t = DAILY_TRAINING_TEXT[kind];
+  if (kind === 'sect' && player.sect !== sectName) { gameNotify(`只有${sectName}弟子才能在此練功。`); return; }
+  if (trainingLeft(kind) <= 0) { gameNotify(`今日的${c.name}次數已用完，${window.ShopStock ? ShopStock.resetText().replace('補貨', '再來') : '明日再來'}。`); refreshCurrentScene(); return; }
+  if (player.gold < c.cost) { gameNotify("銀兩不足！"); return; }
+  player.gold -= Number(c.cost) || 0;
+  player.learn += Number(c.learn) || 0;
+  const d = trainingData();
+  d.used[kind] = (d.used[kind] || 0) + 1;
   if (typeof updateProfileUI === 'function') updateProfileUI();
   if (typeof autoSave === 'function') autoSave();
-  pushChatMessage('system', '【把脈問診】', '老大夫一邊診脈，一邊說起前代宗師的掌故，學點 +30！', '#f1c40f');
+  pushChatMessage('system', `【${c.name}】`, `${t.msg}，學點 +${c.learn}！（今日剩餘 ${trainingLeft(kind)} 次）`, '#f1c40f');
+  refreshCurrentScene();
 }
+window.doDailyTraining = doDailyTraining;
+// 舊版按鈕相容：醫館問診改走每日練功
+function listenStoryteller() { doDailyTraining('clinic'); }
 
 const ITEM_PAWN_VALUES = { "凡品": 8, "良品": 30, "上品": 90, "絕品": 180, "神品": 350 };
 function getItemPawnPrice(item) {

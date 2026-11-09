@@ -5195,7 +5195,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_zuling",
-        "name": "前往祖靈神殿・部落入口",
+        "name": "祖靈神殿",
         "type": "gate",
         "desc": "踏上山道，前往祖靈神殿。",
         "target": "祖靈神殿・部落入口"
@@ -5597,7 +5597,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_ittoryu",
-        "name": "前往明智一刀流道場・道場鳥居",
+        "name": "明智一刀流道場",
         "type": "gate",
         "desc": "踏上山道，前往明智一刀流道場。",
         "target": "明智一刀流道場・道場鳥居"
@@ -6793,7 +6793,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_nanquan",
-        "name": "前往南拳門・武館大門",
+        "name": "南拳門",
         "type": "gate",
         "desc": "踏上山道，前往南拳門。",
         "target": "南拳門・武館大門"
@@ -8386,7 +8386,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_wudang",
-        "name": "前往武當派・迎客松",
+        "name": "武當派",
         "type": "gate",
         "desc": "踏上山道，前往武當派。",
         "target": "武當派・迎客松"
@@ -8788,7 +8788,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_tangmen",
-        "name": "前往唐門・唐家堡大門",
+        "name": "唐門",
         "type": "gate",
         "desc": "踏上山道，前往唐門。",
         "target": "唐門・唐家堡大門"
@@ -9590,7 +9590,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_shaolin_entry",
-        "name": "前往少林寺・少林山門",
+        "name": "少林寺",
         "type": "gate",
         "desc": "踏上山道，前往少林寺。",
         "target": "少林寺・少林山門"
@@ -9993,7 +9993,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_shaolin",
-        "name": "前往少林寺・少林山門",
+        "name": "少林寺",
         "type": "gate",
         "desc": "踏上山道，前往少林寺。",
         "target": "少林寺・少林山門"
@@ -10794,7 +10794,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_jindao",
-        "name": "前往金刀門・金刀王府大門",
+        "name": "金刀門",
         "type": "gate",
         "desc": "踏上山道，前往金刀門。",
         "target": "金刀門・金刀王府大門"
@@ -11196,7 +11196,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_huashan",
-        "name": "前往華山派・玉女峰山門",
+        "name": "華山派",
         "type": "gate",
         "desc": "踏上山道，前往華山派。",
         "target": "華山派・玉女峰山門"
@@ -11994,7 +11994,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_beitui",
-        "name": "前往北腿宗・常山門樓",
+        "name": "北腿宗",
         "type": "gate",
         "desc": "踏上山道，前往北腿宗。",
         "target": "北腿宗・常山門樓"
@@ -12846,7 +12846,15 @@ const WORLD_MAP = {
       "west": "武當派・千錘鐵坊",
       "east": "武當派・藥王廬"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_武當派",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "武當派",
+        "desc": "武當派弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "武當派_disciple1",
@@ -13090,7 +13098,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_武當派_hall",
-        "name": "武當派傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "武當派",
         "desc": "拜入武當派、請教武學、晉升門階、領取例銀。"
@@ -13215,7 +13223,15 @@ const WORLD_MAP = {
       "west": "少林寺・鑄劍坊",
       "east": "少林寺・百草堂"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_少林寺",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "少林寺",
+        "desc": "少林寺弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "少林寺_disciple1",
@@ -13459,7 +13475,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_少林寺_hall",
-        "name": "少林寺傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "少林寺",
         "desc": "拜入少林寺、請教武學、晉升門階、領取例銀。"
@@ -13584,7 +13600,15 @@ const WORLD_MAP = {
       "west": "華山派・鍛劍谷",
       "east": "華山派・九轉丹室"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_華山派",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "華山派",
+        "desc": "華山派弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "華山派_disciple1",
@@ -13828,7 +13852,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_華山派_hall",
-        "name": "華山派傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "華山派",
         "desc": "拜入華山派、請教武學、晉升門階、領取例銀。"
@@ -13953,7 +13977,15 @@ const WORLD_MAP = {
       "west": "唐門・地火熔爐",
       "east": "唐門・煉藥房"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_唐門",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "唐門",
+        "desc": "唐門弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "唐門_disciple1",
@@ -14197,7 +14229,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_唐門_hall",
-        "name": "唐門傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "唐門",
         "desc": "拜入唐門、請教武學、晉升門階、領取例銀。"
@@ -14322,7 +14354,15 @@ const WORLD_MAP = {
       "west": "金刀門・神兵閣",
       "east": "金刀門・青囊閣"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_金刀門",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "金刀門",
+        "desc": "金刀門弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "金刀門_disciple1",
@@ -14566,7 +14606,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_金刀門_hall",
-        "name": "金刀門傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "金刀門",
         "desc": "拜入金刀門、請教武學、晉升門階、領取例銀。"
@@ -14691,7 +14731,15 @@ const WORLD_MAP = {
       "west": "南拳門・赤焰鍛房",
       "east": "南拳門・丹鼎閣"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_南拳門",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "南拳門",
+        "desc": "南拳門弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "南拳門_disciple1",
@@ -14935,7 +14983,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_南拳門_hall",
-        "name": "南拳門傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "南拳門",
         "desc": "拜入南拳門、請教武學、晉升門階、領取例銀。"
@@ -15060,7 +15108,15 @@ const WORLD_MAP = {
       "west": "北腿宗・熔金洞",
       "east": "北腿宗・煉丹洞"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_北腿宗",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "北腿宗",
+        "desc": "北腿宗弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "北腿宗_disciple1",
@@ -15304,7 +15360,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_北腿宗_hall",
-        "name": "北腿宗傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "北腿宗",
         "desc": "拜入北腿宗、請教武學、晉升門階、領取例銀。"
@@ -15429,7 +15485,15 @@ const WORLD_MAP = {
       "west": "明智一刀流道場・淬鋒堂",
       "east": "明智一刀流道場・煉丹房"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_明智一刀流道場",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "明智一刀流道場",
+        "desc": "明智一刀流道場弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "一刀流_disciple1",
@@ -15673,7 +15737,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_一刀流_hall",
-        "name": "明智一刀流道場傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "明智一刀流道場",
         "desc": "拜入明智一刀流道場、請教武學、晉升門階、領取例銀。"
@@ -15798,7 +15862,15 @@ const WORLD_MAP = {
       "west": "祖靈神殿・百煉爐房",
       "east": "祖靈神殿・懸壺居"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_祖靈神殿",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "祖靈神殿",
+        "desc": "祖靈神殿弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "祖靈神殿_disciple1",
@@ -16042,7 +16114,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "sect_祖靈神殿_hall",
-        "name": "祖靈神殿傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "祖靈神殿",
         "desc": "拜入祖靈神殿、請教武學、晉升門階、領取例銀。"
@@ -19284,7 +19356,7 @@ const WORLD_MAP = {
       },
       {
         "id": "gate_鑄劍山莊",
-        "name": "前往鑄劍山莊・洗心劍門",
+        "name": "鑄劍山莊",
         "type": "gate",
         "target": "鑄劍山莊・洗心劍門",
         "desc": "踏上山道，前往鑄劍山莊。"
@@ -19718,7 +19790,15 @@ const WORLD_MAP = {
       "north": "鑄劍山莊・天工寶殿",
       "west": "鑄劍山莊・天工聚火爐"
     },
-    "scenes": [],
+    "scenes": [
+      {
+        "id": "train_鑄劍山莊",
+        "name": "閉門練功",
+        "type": "training",
+        "sectName": "鑄劍山莊",
+        "desc": "鑄劍山莊弟子每日在此打熬筋骨、演練本門武學。"
+      }
+    ],
     "npcs": [
       {
         "id": "鑄劍山莊_yard_d1",
@@ -19995,7 +20075,7 @@ const WORLD_MAP = {
     "scenes": [
       {
         "id": "鑄劍山莊_teach_hall",
-        "name": "鑄劍山莊傳功大殿",
+        "name": "傳功大殿",
         "type": "sect",
         "sectName": "鑄劍山莊",
         "desc": "拜入鑄劍山莊、請教本門劍法與心法、晉升門階、領取每月例銀。"
@@ -21450,7 +21530,114 @@ const SECT_DATABASE = {
       },
       "drops": []
     },
-    "skills": []
+    "skills": [
+      {
+        "name": "鐵尺十三式",
+        "reqRank": "外門弟子",
+        "costLearn": 400,
+        "reqStats": {
+          "speed": 20
+        }
+      },
+      {
+        "name": "八荒撼鐵拳",
+        "reqRank": "外門弟子",
+        "costLearn": 400,
+        "reqStats": {
+          "speed": 20,
+          "arm": 15
+        }
+      },
+      {
+        "name": "洪爐大冶訣",
+        "reqRank": "外門弟子",
+        "costLearn": 400,
+        "reqStats": {
+          "inner": 20
+        }
+      },
+      {
+        "name": "流光開鋒劍",
+        "reqRank": "外門弟子",
+        "costLearn": 900,
+        "reqStats": {
+          "speed": 45,
+          "arm": 20
+        }
+      },
+      {
+        "name": "頑鐵藏鋒掌",
+        "reqRank": "內門弟子",
+        "costLearn": 900,
+        "reqStats": {
+          "arm": 35,
+          "bone": 30
+        }
+      },
+      {
+        "name": "百煉成鋼心經",
+        "reqRank": "外門弟子",
+        "costLearn": 600,
+        "reqStats": {
+          "inner": 35,
+          "bone": 30
+        }
+      },
+      {
+        "name": "烈焰驚濤劍",
+        "reqRank": "外門弟子",
+        "costLearn": 1800,
+        "reqStats": {
+          "speed": 45,
+          "arm": 20
+        }
+      },
+      {
+        "name": "純陽熔金功",
+        "reqRank": "真傳弟子",
+        "costLearn": 1800,
+        "reqStats": {
+          "inner": 55,
+          "bone": 48
+        }
+      },
+      {
+        "name": "止水淬鋒劍",
+        "reqRank": "長老",
+        "costLearn": 3200,
+        "reqStats": {
+          "speed": 65,
+          "arm": 40
+        }
+      },
+      {
+        "name": "寒潭淬刃功",
+        "reqRank": "長老",
+        "costLearn": 3600,
+        "reqStats": {
+          "inner": 75,
+          "bone": 65
+        }
+      },
+      {
+        "name": "萬刃歸宗劍",
+        "reqRank": "長老",
+        "costLearn": 5000,
+        "reqStats": {
+          "inner": 60,
+          "bone": 50
+        }
+      },
+      {
+        "name": "乾坤造化神功",
+        "reqRank": "出師大成",
+        "costLearn": 7200,
+        "reqStats": {
+          "inner": 90,
+          "bone": 80
+        }
+      }
+    ]
   }
 };
 

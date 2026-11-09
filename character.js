@@ -583,7 +583,16 @@ function renderBagUI() {
     if (item.type === 'weapon' || item.type === 'armor') {
       actionBtn = `<button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:var(--cyan);" onclick="equipGearFromBag(${idx})">裝備</button>`;
     } else if (item.type === 'pill') {
-      actionBtn = `<button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:#2ecc71;" onclick="usePillFromBag(${idx})">服下</button>`;
+      const tpl = findItemByRef(item.templateId) || findItemByRef(item.name) || item;
+      const key = tpl.id || item.templateId || item.name;
+      const lim = pillUseLimit(tpl);
+      const used = (player.pillUses || {})[key] || 0;
+      const buff = (player.pillBuffs || {})[key];
+      const note = lim ? `<div style="font-size:10px; color:${used >= lim ? '#e74c3c' : '#8ca0b3'};">已服 ${used} / ${lim} 次</div>`
+        : (buff && buff.until > Date.now() ? `<div style="font-size:10px; color:#2ecc71;">藥效中，尚餘 ${Math.ceil((buff.until - Date.now()) / 60000)} 分鐘</div>` : '');
+      actionBtn = (lim && used >= lim)
+        ? `<div style="text-align:right;"><button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:#777; border-color:#444;" disabled>已達上限</button>${note}</div>`
+        : `<div style="text-align:right;"><button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:#2ecc71;" onclick="usePillFromBag(${idx})">服下</button>${note}</div>`;
     } else if (item.type === 'book') {
       actionBtn = `<button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:var(--gold);" onclick="studyKungfuBook(${idx})">研習(${item.costLearn || 40}學點)</button>`;
     } else if (item.type === 'material') {
@@ -649,18 +658,47 @@ function unequipGear(slotType) {
   gameNotify(slotType === 'weapon' ? "🗡️ 已收兵刃入鞘，身歸自然，切換為【空手 (拳)】！" : "🛡️ 已卸下護甲！");
 }
 
+// 永久提升類丹藥的服用上限（每種丹藥獨立計算）；未設定 useLimit 時依品階
+const PILL_LIMIT_BY_RARITY = { "凡品": 20, "良品": 10, "上品": 5, "絕品": 3, "神品": 1 };
+function isPermanentPill(it) { return !!(it && it.type === 'pill' && !it.healHp && (it.hpAdd || it.speedAdd || it.expAdd)); }
+function pillUseLimit(it) {
+  if (!isPermanentPill(it)) return 0;
+  if (Number(it.useLimit) > 0) return Number(it.useLimit);
+  return PILL_LIMIT_BY_RARITY[it.rarity] || 5;
+}
+window.pillUseLimit = pillUseLimit;
+
 function usePillFromBag(itemIdx) {
   const item = player.inventory[itemIdx];
   if (!item || item.type !== 'pill') return;
 
   const isTaotie = (player.talents && player.talents.some(t => t.pillMult));
   const mult = isTaotie ? 2.0 : 1.0;
+  // 以物品庫的最新設定為準（行囊中的是取得當下的副本）
+  const tpl = findItemByRef(item.templateId) || findItemByRef(item.name) || {};
+  const pick = k => tpl[k] !== undefined ? tpl[k] : item[k];
+  const pillKey = tpl.id || item.templateId || item.name;
 
-  if (item.healHp) {
-    const healVal = Math.floor(item.healHp * mult);
-    player.hp = Math.min(player.maxHp, player.hp + healVal);
-    gameNotify(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，氣血恢復 ${healVal} 點！`);
-  } else if (item.hpAdd || item.speedAdd || item.expAdd) {
+  if (pick('healHp')) {
+    // 回血類丹藥：一段時間內提高氣血上限，並補足相應氣血；同一種丹藥重複服用只會刷新時間
+    const val = Math.floor(Number(pick('healHp')) * mult);
+    const minutes = Number(pick('buffMinutes')) || 15;
+    if (!player.pillBuffs || typeof player.pillBuffs !== 'object') player.pillBuffs = {};
+    const had = player.pillBuffs[pillKey];
+    player.pillBuffs[pillKey] = { name: item.name, hp: val, until: Date.now() + minutes * 60000 };
+    recalcPlayerStats();
+    player.hp = Math.min(player.maxHp, player.hp + (had ? Math.max(0, val - had.hp) : val));
+    gameNotify(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，${minutes} 分鐘內氣血上限 +${val}${had ? '（藥效時間已刷新）' : ''}！`);
+  } else if (pick('hpAdd') || pick('speedAdd') || pick('expAdd')) {
+    const limit = pillUseLimit(tpl.id ? tpl : item);
+    if (!player.pillUses || typeof player.pillUses !== 'object') player.pillUses = {};
+    const used = player.pillUses[pillKey] || 0;
+    if (limit && used >= limit) {
+      gameNotify(`【${item.name}】已服用 ${used} 次，達到上限（${limit} 次），再吃也沒有效果了。`);
+      return;
+    }
+    player.pillUses[pillKey] = used + 1;
+    item.hpAdd = pick('hpAdd'); item.speedAdd = pick('speedAdd'); item.expAdd = pick('expAdd');
     const hpGain = Math.floor((item.hpAdd || 0) * mult);
     const spdGain = Math.floor((item.speedAdd || 0) * mult);
     const expGain = Math.floor((item.expAdd || 0) * mult);
@@ -669,7 +707,7 @@ function usePillFromBag(itemIdx) {
     player.statsEncounter.speed = (player.statsEncounter.speed || 0) + spdGain;
     if (expGain) player.exp += expGain;
 
-    gameNotify(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，奇遇造化湧現：氣血上限 +${hpGain}，身法 +${spdGain}${expGain ? '，修為 +' + expGain : ''}！`);
+    gameNotify(`💊 服下【${item.name}】${isTaotie ? '（饕餮吞天效果翻倍）' : ''}，奇遇造化湧現：氣血上限 +${hpGain}，身法 +${spdGain}${expGain ? '，修為 +' + expGain : ''}！（已服 ${used + 1}${limit ? ' / ' + limit : ''} 次）`);
   }
 
   if (item.count && item.count > 1) {
@@ -781,8 +819,14 @@ function buyGoodsToBag(ref, price) {
   price = Number(price) || 0;
   const tpl = findItemByRef(ref);
   if (!tpl) { gameNotify("掌櫃翻遍貨架也找不到這件貨品！"); return; }
+  if (window.ShopStock && ShopStock.left(tpl) <= 0) {
+    gameNotify(`【${tpl.name}】今日已售罄，各地商號都缺貨了，${ShopStock.resetText()}。`);
+    if (typeof refreshCurrentScene === 'function') refreshCurrentScene();
+    return;
+  }
   if (player.gold < price) { gameNotify("銀兩不足！"); return; }
   player.gold -= price;
+  if (window.ShopStock) ShopStock.consume(tpl, 1);
   grantLootToBag('item', tpl.id || tpl.name, 1);
   recalcPlayerStats();
   if (typeof refreshCurrentScene === 'function') refreshCurrentScene();
@@ -1030,7 +1074,7 @@ function confirmReincarnationWithTalents() {
   };
 
   player.inventory = [
-    { id: "i_pill_init", name: "小金創散", type: "pill", rarity: "凡品", healHp: 120, desc: "調和氣血", count: 2 },
+    { id: "i_pill_init", templateId: "item_small_powder", name: "小金創散", type: "pill", rarity: "凡品", healHp: 120, buffMinutes: 15, desc: "服下後 15 分鐘內，氣血上限 +120（並補足相應氣血）。", count: 2 },
     ...keptGears
   ];
 

@@ -432,24 +432,27 @@ const GLOBAL_ITEMS = [
     name: "小金創散",
     type: "pill",
     rarity: "凡品",
+    buffMinutes: 15,
     healHp: 120,
     cost: 10,
-    desc: "江湖遊俠隨身外敷良藥，立刻恢復 120 點氣血。"
+    desc: "服下後 15 分鐘內，氣血上限 +120（並補足相應氣血）。"
   },
   {
     id: "item_big_pill",
     name: "少林大還丹",
     type: "pill",
     rarity: "良品",
+    buffMinutes: 15,
     healHp: 300,
     cost: 25,
-    desc: "少林秘製聖藥，立刻恢復 300 點氣血。"
+    desc: "服下後 15 分鐘內，氣血上限 +300（並補足相應氣血）。"
   },
   {
     id: "item_meridian_pill",
     name: "通脈易筋丸",
     type: "pill",
     rarity: "良品",
+    useLimit: 10,
     hpAdd: 60,
     speedAdd: 5,
     cost: 45,
@@ -460,6 +463,7 @@ const GLOBAL_ITEMS = [
     name: "益氣淬靈丹",
     type: "pill",
     rarity: "良品",
+    useLimit: 10,
     expAdd: 80,
     cost: 35,
     desc: "吸納天地清氣而成之靈丹，服用立刻獲得 80 點修為。"
@@ -469,6 +473,7 @@ const GLOBAL_ITEMS = [
     name: "千年雪參丸",
     type: "pill",
     rarity: "絕品",
+    useLimit: 3,
     hpAdd: 250,
     speedAdd: 15,
     expAdd: 250,
@@ -492,9 +497,9 @@ const GLOBAL_ITEMS = [
   {"id": "herb_zhuguo", "name": "朱果", "type": "material", "rarity": "上品", "cost": 130, "desc": "百年一熟的朱紅靈果，蘊含純陽之氣。", "encounter": {"chance": 1, "on": "travel", "towns": [], "text": "懸崖邊一株小樹上掛著朱紅的果子"}},
   {"id": "herb_snowlotus", "name": "天山雪蓮", "type": "material", "rarity": "絕品", "cost": 280, "desc": "生於天山絕頂的雪蓮，百年一開。", "encounter": {"chance": 0.8, "on": "meditate", "towns": [], "text": "靜坐中寒風送來一縷異香，睜眼竟見一朵雪蓮"}},
   {"id": "herb_heshouwu", "name": "千年何首烏", "type": "material", "rarity": "神品", "cost": 700, "desc": "已具人形的千年何首烏，服之可脫胎換骨。", "encounter": {"chance": 0.2, "on": "meditate", "towns": [], "text": "打坐處的泥土微微隆起，竟是一株人形何首烏"}},
-  {"id": "item_snake_pill", "name": "蛇膽明目丸", "type": "pill", "rarity": "良品", "speedAdd": 8, "cost": 60, "desc": "以蛇膽煉成，服下耳聰目明，永久身法 +8。"},
-  {"id": "item_peiyuan_pill", "name": "培元固本丹", "type": "pill", "rarity": "上品", "hpAdd": 80, "expAdd": 200, "cost": 150, "desc": "以赤靈芝為君藥，永久氣血上限 +80，修為 +200。"},
-  {"id": "item_jiuzhuan_pill", "name": "九轉還魂丹", "type": "pill", "rarity": "神品", "hpAdd": 400, "speedAdd": 20, "expAdd": 600, "cost": 1200, "desc": "九轉而成的無上靈丹，永久氣血 +400、身法 +20、修為 +600。"}
+  {"id": "item_snake_pill", "name": "蛇膽明目丸", "type": "pill", "rarity": "良品", "useLimit": 10, "speedAdd": 8, "cost": 60, "desc": "以蛇膽煉成，服下耳聰目明，永久身法 +8。"},
+  {"id": "item_peiyuan_pill", "name": "培元固本丹", "type": "pill", "rarity": "上品", "useLimit": 5, "hpAdd": 80, "expAdd": 200, "cost": 150, "desc": "以赤靈芝為君藥，永久氣血上限 +80，修為 +200。"},
+  {"id": "item_jiuzhuan_pill", "name": "九轉還魂丹", "type": "pill", "rarity": "神品", "useLimit": 1, "hpAdd": 400, "speedAdd": 20, "expAdd": 600, "cost": 1200, "desc": "九轉而成的無上靈丹，永久氣血 +400、身法 +20、修為 +600。"}
 ];
 
 // 掛載至 window 全域

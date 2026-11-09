@@ -4,9 +4,13 @@
  * 本檔為純資料檔，可由《萬象天機後台》editor.html 直接讀寫。
  *
  * TOWER_BOSSES：每 5 層一位首領（未列出的首領層由 tower.js 依公式自動生成）
- *   chest  : 首領寶箱品階機率 godRate(神品%) / supremeRate(絕品%) /
- *            upperRate(其餘機率中為上品的%) / bookRate(開出秘笈而非裝備的%)
- *   drops  : 額外指定掉落 [{ kind: "item"|"book", ref: 物品id|武學id, rate: 掉落率%, count }]
+ *   chest  : 首領寶箱 { entries: [...] }，擊敗首領時依各項機率（rate %，總和 100）開出其中一項：
+ *            { kind: "pool", rarity: 品階 }       隨機一件該品階的裝備 / 靈藥（不含材料與 noChest 物品）
+ *            { kind: "item", ref: 物品id, count }  指定物品
+ *            { kind: "book", ref: 武學id }         指定武學秘笈
+ *            { kind: "gold", min, max }            銀兩（min ~ max 隨機）
+ *   drops  : 首領掉落 [{ kind: "item"|"book", ref: 物品id|武學id, rate: 掉落率%, count }]
+ *            通天塔的武學秘笈只會從這裡掉落，需要掉落武學時請在此加入 kind: "book"
  * ========================================================
  */
 
@@ -39,10 +43,24 @@ const TOWER_BOSSES = [
     },
     "internalName": "粗淺吐納法",
     "chest": {
-      "godRate": 0,
-      "supremeRate": 0,
-      "upperRate": 25,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 22.5
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 67.5
+        },
+        {
+          "kind": "gold",
+          "min": 40,
+          "max": 100,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -550,10 +568,24 @@ const TOWER_BOSSES = [
     },
     "internalName": "金剛鐵布衫",
     "chest": {
-      "godRate": 0,
-      "supremeRate": 0,
-      "upperRate": 30,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 27
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 63
+        },
+        {
+          "kind": "gold",
+          "min": 80,
+          "max": 200,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -608,10 +640,24 @@ const TOWER_BOSSES = [
     },
     "internalName": "萬毒枯榮心經",
     "chest": {
-      "godRate": 0,
-      "supremeRate": 0,
-      "upperRate": 35,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 31.5
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 58.5
+        },
+        {
+          "kind": "gold",
+          "min": 120,
+          "max": 300,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -666,10 +712,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "血河魔功",
     "chest": {
-      "godRate": 0,
-      "supremeRate": 2,
-      "upperRate": 35,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 1.8
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 30.87
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 57.33
+        },
+        {
+          "kind": "gold",
+          "min": 160,
+          "max": 400,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -724,10 +789,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "天魅迷心訣",
     "chest": {
-      "godRate": 0,
-      "supremeRate": 3,
-      "upperRate": 37.5,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 2.7
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 32.74
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 54.56
+        },
+        {
+          "kind": "gold",
+          "min": 200,
+          "max": 500,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -782,10 +866,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "冷月心經",
     "chest": {
-      "godRate": 0,
-      "supremeRate": 4,
-      "upperRate": 40,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 3.6
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 34.56
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 51.84
+        },
+        {
+          "kind": "gold",
+          "min": 240,
+          "max": 600,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -840,10 +943,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "五毒神功",
     "chest": {
-      "godRate": 0,
-      "supremeRate": 5,
-      "upperRate": 42.5,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 4.5
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 36.34
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 49.16
+        },
+        {
+          "kind": "gold",
+          "min": 280,
+          "max": 700,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -898,10 +1020,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "移形換影功",
     "chest": {
-      "godRate": 1,
-      "supremeRate": 5,
-      "upperRate": 45,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 4.5
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 38.07
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 46.53
+        },
+        {
+          "kind": "gold",
+          "min": 320,
+          "max": 800,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -956,10 +1097,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "狂血戰意",
     "chest": {
-      "godRate": 1.4,
-      "supremeRate": 6.2,
-      "upperRate": 46.5,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 5.58
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 38.67
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 44.49
+        },
+        {
+          "kind": "gold",
+          "min": 360,
+          "max": 900,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1014,10 +1174,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "血魔大法",
     "chest": {
-      "godRate": 1.7,
-      "supremeRate": 7.5,
-      "upperRate": 48,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 6.75
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 39.23
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 42.49
+        },
+        {
+          "kind": "gold",
+          "min": 400,
+          "max": 1000,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1072,10 +1251,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "九幽陰風訣",
     "chest": {
-      "godRate": 2,
-      "supremeRate": 8.8,
-      "upperRate": 49.5,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 7.92
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 39.74
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 40.54
+        },
+        {
+          "kind": "gold",
+          "min": 440,
+          "max": 1100,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1130,10 +1328,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "天魔解體大法",
     "chest": {
-      "godRate": 2.4,
-      "supremeRate": 10,
-      "upperRate": 51,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 9
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 40.21
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 38.63
+        },
+        {
+          "kind": "gold",
+          "min": 480,
+          "max": 1200,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1188,10 +1405,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "北冥真氣",
     "chest": {
-      "godRate": 2.8,
-      "supremeRate": 11.2,
-      "upperRate": 52.5,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 10.08
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 40.63
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 36.77
+        },
+        {
+          "kind": "gold",
+          "min": 520,
+          "max": 1300,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1246,10 +1482,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "凌虛御風功",
     "chest": {
-      "godRate": 3.1,
-      "supremeRate": 12.5,
-      "upperRate": 54,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 11.25
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 41.02
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 34.94
+        },
+        {
+          "kind": "gold",
+          "min": 560,
+          "max": 1400,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1304,10 +1559,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "紅蓮業火功",
     "chest": {
-      "godRate": 3.5,
-      "supremeRate": 13.8,
-      "upperRate": 55.5,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 12.42
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 41.31
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 33.12
+        },
+        {
+          "kind": "gold",
+          "min": 600,
+          "max": 1500,
+          "rate": 50
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1362,10 +1636,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "太陰玄冰功",
     "chest": {
-      "godRate": 3.8,
-      "supremeRate": 15,
-      "upperRate": 57,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 13.5
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 41.66
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 31.42
+        },
+        {
+          "kind": "gold",
+          "min": 640,
+          "max": 1600,
+          "rate": 50
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1420,10 +1713,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "無念無想",
     "chest": {
-      "godRate": 4.2,
-      "supremeRate": 16.2,
-      "upperRate": 58.5,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 14.58
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 41.91
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 29.73
+        },
+        {
+          "kind": "gold",
+          "min": 680,
+          "max": 1700,
+          "rate": 50
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1478,10 +1790,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "蠱神金身",
     "chest": {
-      "godRate": 4.5,
-      "supremeRate": 17.5,
-      "upperRate": 60,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 15.75
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 42.12
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 28.08
+        },
+        {
+          "kind": "gold",
+          "min": 720,
+          "max": 1800,
+          "rate": 50
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1536,10 +1867,29 @@ const TOWER_BOSSES = [
     },
     "internalName": "無相般若功",
     "chest": {
-      "godRate": 4.9,
-      "supremeRate": 18.8,
-      "upperRate": 60,
-      "bookRate": 50
+      "entries": [
+        {
+          "kind": "pool",
+          "rarity": "絕品",
+          "rate": 16.92
+        },
+        {
+          "kind": "pool",
+          "rarity": "上品",
+          "rate": 41.2
+        },
+        {
+          "kind": "pool",
+          "rarity": "良品",
+          "rate": 27.47
+        },
+        {
+          "kind": "gold",
+          "min": 760,
+          "max": 1900,
+          "rate": 40
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
@@ -1568,9 +1918,9 @@ const TOWER_BOSSES = [
   },
   {
     "floor": 100,
-    "name": "第 100 層首領・「混沌天尊」玄冥子",
+    "name": "第 100 層首領・桃花島主",
     "realm": "返璞歸真",
-    "desc": "通天塔之主，傳說中參透天地混沌之力的老怪物。九條混沌真龍隨掌而出，天地為之變色。",
+    "desc": "桃花島主，落英繽紛中傲視天下的奇才。其人博古通今，琴棋書畫無一不精，武學更是自成一派，超凡入聖。",
     "maxHp": 5413,
     "atk": 184,
     "def": 89,
@@ -1588,42 +1938,85 @@ const TOWER_BOSSES = [
     "learn": 0,
     "combat": 1,
     "skill": {
-      "name": "混沌九龍滅世",
+      "name": "彈指神通",
       "baseMult": 2.8,
       "rarity": "神品"
     },
-    "internalName": "混沌天元訣",
+    "internalName": "碧海潮生功",
     "chest": {
-      "godRate": 100,
-      "supremeRate": 0,
-      "upperRate": 0,
-      "bookRate": 50
+      "entries": [
+        {
+          "rate": 100,
+          "kind": "book",
+          "ref": "kf_tanzhi"
+        }
+      ]
     },
     "drops": [],
     "battleLines": {
       "start": [
-        "凡人，你終於走到這裡了。",
-        "百層之上，無人能活著見我。你，會是第一個嗎？"
+        "桃花影落飛神劍，碧海潮生按玉簫。閣下擅闖桃花島，莫非自恃武功高強？",
+        "世人皆道我行事離經叛道，今日倒要看看閣下有何能耐！"
       ],
       "hurt": [
-        "……有趣。",
-        "竟能撼動本尊分毫。"
+        "好小子，這一招倒有幾分氣象。",
+        "哼，老夫倒是輕敵了。"
       ],
       "lowHp": [
-        "混沌之力……為何……不聽使喚……"
+        "碧海潮生，氣涌心頭……好個後生輩！"
       ],
       "skill": [
-        "九龍出，天地滅——混沌滅世！",
-        "萬物歸墟，混沌初開！"
+        "彈指間，灰飛煙滅！吃我一記彈指神通！",
+        "落英繽紛，神劍出鞘——給我破！"
       ],
       "win": [
-        "渺小。"
+        "形如枯槁，心如止水。閣下還多練幾年再來吧。"
       ],
       "lose": [
-        "……你，已觸及天道之門。這座塔……交給你了。"
+        "哈哈哈哈！後生可畏，天下竟有如此劍法……老夫輸得心服口服。"
       ]
     }
   }
 ];
 
 window.TOWER_BOSSES = TOWER_BOSSES;
+
+/**
+ * TOWER_REWARD_CONFIG：通天塔一般樓層的成長曲線（可在 editor.html「通天塔首領」分頁調整）
+ *   怪物氣血 = mobHp.base + mobHp.mul × 樓層^mobHp.pow
+ *   每隻修為 = exp.base + exp.mul × 樓層^exp.pow；銀兩同理（gold）
+ *   學點：每隻有 learn.chanceBase + learn.chancePerFloor × 樓層 %（上限 chanceMax）機率獲得 1 + floor(樓層 / floorsPerExtra) 點
+ *   bossRewardMult：首領若未在 TOWER_BOSSES 指定修為 / 銀兩，以「該層一般怪 × 倍數」計算
+ *   background：離開通天塔時的背景歷練，每 intervalSec 秒結算一隻，收益為一般的 ratio 倍
+ *   clickCooldownMs：手動狂擊的最短間隔（避免連點過快）
+ */
+const TOWER_REWARD_CONFIG = {
+  "mobHp": {
+    "base": 80,
+    "mul": 14,
+    "pow": 1.6
+  },
+  "exp": {
+    "base": 8,
+    "mul": 2.2,
+    "pow": 0.85
+  },
+  "gold": {
+    "base": 3,
+    "mul": 0.9,
+    "pow": 0.8
+  },
+  "learn": {
+    "chanceBase": 20,
+    "chancePerFloor": 0.4,
+    "chanceMax": 60,
+    "floorsPerExtra": 25
+  },
+  "bossRewardMult": 12,
+  "background": {
+    "intervalSec": 10,
+    "ratio": 0.5
+  },
+  "clickCooldownMs": 120
+};
+window.TOWER_REWARD_CONFIG = TOWER_REWARD_CONFIG;

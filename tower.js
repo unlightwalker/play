@@ -102,6 +102,30 @@ const TOWER_HUMANOIDS = [
   }
 ];
 
+// ==================== 成長曲線（讀取 data_tower.js 的 TOWER_REWARD_CONFIG） ====================
+function towerCfg() {
+  const d = { mobHp: { base: 80, mul: 14, pow: 1.6 }, exp: { base: 8, mul: 2.2, pow: 0.85 }, gold: { base: 3, mul: 0.9, pow: 0.8 },
+    learn: { chanceBase: 20, chancePerFloor: 0.4, chanceMax: 60, floorsPerExtra: 25 }, bossRewardMult: 12,
+    background: { intervalSec: 10, ratio: 0.5 }, clickCooldownMs: 120 };
+  const c = (typeof TOWER_REWARD_CONFIG !== 'undefined' && TOWER_REWARD_CONFIG) || {};
+  return { ...d, ...c, mobHp: { ...d.mobHp, ...(c.mobHp || {}) }, exp: { ...d.exp, ...(c.exp || {}) }, gold: { ...d.gold, ...(c.gold || {}) },
+    learn: { ...d.learn, ...(c.learn || {}) }, background: { ...d.background, ...(c.background || {}) } };
+}
+const towerCurve = (f, k) => Math.floor((Number(k.base) || 0) + (Number(k.mul) || 0) * Math.pow(Math.max(1, f), Number(k.pow) || 1));
+function towerMobHp(floor) { return Math.max(30, towerCurve(floor, towerCfg().mobHp)); }
+function towerLearnChance(floor) { const l = towerCfg().learn; return Math.min(Number(l.chanceMax) || 60, (Number(l.chanceBase) || 0) + (Number(l.chancePerFloor) || 0) * floor); }
+function towerLearnAmount(floor) { return 1 + Math.floor(floor / Math.max(1, Number(towerCfg().learn.floorsPerExtra) || 25)); }
+// 一隻一般怪的收益；ratio 用於背景歷練；學點依機率給予
+function towerKillReward(floor, ratio = 1) {
+  const c = towerCfg();
+  const exp = Math.max(1, Math.floor(towerCurve(floor, c.exp) * ratio));
+  const gold = Math.max(0, Math.floor(towerCurve(floor, c.gold) * ratio));
+  const learn = Math.random() * 100 < towerLearnChance(floor) * ratio ? towerLearnAmount(floor) : 0;
+  return { exp, gold, learn };
+}
+window.towerKillReward = towerKillReward;
+window.towerMobHp = towerMobHp;
+
 // 取得首領設定：優先讀取 data_tower.js，未設定的樓層依公式生成
 function getTowerBossConfig(floor) {
   const list = (typeof TOWER_BOSSES !== 'undefined' && Array.isArray(TOWER_BOSSES)) ? TOWER_BOSSES : [];
@@ -120,15 +144,41 @@ function getTowerBossConfig(floor) {
     realm: "返璞歸真",
     maxHp, atk, def, speed,
     stats: { arm: Math.floor(atk * 0.7), speed, bone: Math.floor(def * 1.5), inner: Math.floor(atk * 0.6), int: 30, luck: 25 },
-    exp: Math.floor(100 + floor * 15),
-    gold: Math.floor(40 + floor * 8),
+    exp: towerCurve(floor, towerCfg().exp) * (Number(towerCfg().bossRewardMult) || 12),
+    gold: towerCurve(floor, towerCfg().gold) * (Number(towerCfg().bossRewardMult) || 12),
     combat: 15,
     skill: { name: "降龍十八掌・亢龍有悔", baseMult: 2.8, rarity: "神品" },
     internalName: "純陽太極功",
-    chest: { godRate, supremeRate: godRate >= 100 ? 0 : 19, upperRate: 60, bookRate: 50 },
+    chest: godRate >= 100 ? { entries: [{ kind: "pool", rarity: "神品", rate: 100 }] } : { entries: [
+      { kind: "pool", rarity: "神品", rate: 4.5 }, { kind: "pool", rarity: "絕品", rate: 17 }, { kind: "pool", rarity: "上品", rate: 41.5 },
+      { kind: "pool", rarity: "良品", rate: 27 }, { kind: "gold", min: floor * 8, max: floor * 20, rate: 10 }] },
     drops: []
   };
 }
+
+// 寶箱內容：新格式 { entries: [...] }；舊格式（godRate / supremeRate / upperRate）自動換算
+function towerChestEntries(cfg) {
+  const c = (cfg && cfg.chest) || {};
+  if (Array.isArray(c.entries)) return c.entries;
+  const god = Number(c.godRate) || 0, sup = Math.min(100 - god, Number(c.supremeRate) || 0), rest = Math.max(0, 100 - god - sup), up = Number(c.upperRate ?? 50);
+  return [["神品", god], ["絕品", sup], ["上品", rest * up / 100], ["良品", rest * (100 - up) / 100]].filter(x => x[1] > 0).map(([rarity, rate]) => ({ kind: "pool", rarity, rate }));
+}
+function towerChestPool(rarity) {
+  return (typeof GLOBAL_ITEMS !== 'undefined') ? GLOBAL_ITEMS.filter(i => i.rarity === rarity && !i.noChest && i.type !== 'material') : [];
+}
+function towerEntryRarity(e) {
+  if (e.kind === 'pool') return e.rarity;
+  if (e.kind === 'item') { const it = findItemByRef(e.ref); return it ? it.rarity : ''; }
+  if (e.kind === 'book') { const sk = findSkillByRef(e.ref); return sk ? sk.rarity : ''; }
+  return '';
+}
+function towerEntryLabel(e) {
+  if (e.kind === 'pool') return `隨機${e.rarity}裝備／靈藥`;
+  if (e.kind === 'gold') return `銀兩 ${e.min ?? 0}~${e.max ?? e.min ?? 0} 兩`;
+  if (e.kind === 'book') { const sk = findSkillByRef(e.ref); return sk ? `《${sk.name}秘笈》` : e.ref; }
+  const it = findItemByRef(e.ref); return `${it ? it.name : e.ref}${Number(e.count) > 1 ? ` ×${e.count}` : ''}`;
+}
+window.towerChestEntries = towerChestEntries;
 
 function getTowerBossEnemy(floor) {
   return buildEnemyFromData(getTowerBossConfig(floor));
@@ -221,7 +271,7 @@ function startTowerAutoAttackEngine() {
 
 function initTowerFloor(floor) {
   const isBoss = (floor % 5 === 0);
-  let baseHp = Math.floor(80 + Math.pow(floor, 1.48) * 16);
+  let baseHp = towerMobHp(floor);
   const hp = isBoss ? Math.floor(baseHp * 2.5) : baseHp;
 
   const template = isBoss 
@@ -326,11 +376,13 @@ function updateTowerUI() {
   if (armDmgEl) armDmgEl.innerText = `${avgPower} 掌力`;
   if (spdRateEl) spdRateEl.innerText = `${freqPerSec} 次/秒 (${interval}ms)`;
 
-  // 時收收益
-  const killsPerHour = 450;
-  const hrExp = Math.floor((15 + floor * 4) * killsPerHour);
-  const hrGold = Math.floor((5 + floor * 2) * killsPerHour);
-  const hrLearn = Math.floor(Math.max(1, Math.floor(floor / 3)) * killsPerHour);
+  // 時收收益：依目前自動攻擊實際擊殺速度估算
+  const c = towerCfg();
+  const hitsPerKill = Math.max(1, Math.ceil(towerMobHp(floor) / Math.max(5, Math.floor(avgPower * 0.85))));
+  const killsPerHour = Math.floor(3600000 / (hitsPerKill * interval + 220));
+  const hrExp = Math.floor(towerCurve(floor, c.exp) * killsPerHour);
+  const hrGold = Math.floor(towerCurve(floor, c.gold) * killsPerHour);
+  const hrLearn = Math.floor(towerLearnChance(floor) / 100 * towerLearnAmount(floor) * killsPerHour);
 
   const expHrEl = document.getElementById('tower-hr-exp');
   const goldHrEl = document.getElementById('tower-hr-gold');
@@ -364,14 +416,18 @@ function updateTowerUI() {
       : `距離首領戰尚餘: <b style="color:var(--gold);">${remain}</b> 層`;
   }
   if (previewText) {
-    const c = getTowerBossConfig(nextBoss).chest || {};
-    const god = Number(c.godRate) || 0, sup = Number(c.supremeRate) || 0;
+    // 寶箱摘要：機率最高的神品 / 絕品項目與銀兩
+    const entries = towerChestEntries(getTowerBossConfig(nextBoss));
+    const total = entries.reduce((n, e) => n + (Number(e.rate) || 0), 0) || 1;
+    const pct = e => +(Number(e.rate) / total * 100).toFixed(1);
     const parts = [];
-    if (god >= 100) parts.push("必出【神品】");
+    const sum = r => entries.filter(e => e.kind !== 'gold' && towerEntryRarity(e) === r).reduce((n, e) => n + pct(e), 0);
+    if (sum("神品") >= 100) parts.push("必出【神品】");
     else {
-      if (god > 0) parts.push(`神品 ${god}%`);
-      if (sup > 0) parts.push(`絕品 ${sup}%`);
-      parts.push("其餘為上品 / 良品");
+      ["神品", "絕品"].forEach(r => { const v = sum(r); if (v > 0) parts.push(`${r} ${+v.toFixed(1)}%`); });
+      const gold = entries.filter(e => e.kind === 'gold').reduce((n, e) => n + pct(e), 0);
+      if (gold > 0) parts.push(`銀兩 ${+gold.toFixed(1)}%`);
+      parts.push("點擊看全部");
     }
     previewText.innerText = `第 ${nextBoss} 層寶箱：${parts.join("、")}`;
   }
@@ -394,25 +450,28 @@ function showNextBossLootDetail() {
   if (!towerMonster) return;
   const nextBoss = Math.ceil(towerMonster.floor / 5) * 5;
   const cfg = getTowerBossConfig(nextBoss);
-  const chest = cfg.chest || {};
-  const god = Number(chest.godRate) || 0;
-  const sup = Number(chest.supremeRate) || 0;
+  const entries = towerChestEntries(cfg);
+  const total = entries.reduce((n, e) => n + (Number(e.rate) || 0), 0) || 1;
+  const chestLines = entries.filter(e => Number(e.rate) > 0).map(e => `• ${towerEntryLabel(e)}（${(Number(e.rate) / total * 100).toFixed(1)}%）`).join('\n');
   const extra = (cfg.drops || []).map(d => {
     const ref = d.kind === 'book' ? findSkillByRef(d.ref) : findItemByRef(d.ref);
     const name = ref ? (d.kind === 'book' ? `《${ref.name}秘笈》` : ref.name) : d.ref;
     return `• ${name} x${d.count || 1}（${d.rate}%）`;
   }).join('\n');
-  gameNotify(`🎁【${cfg.name}・寶箱掉落池】\n` +
+  gameNotify(`🎁【${cfg.name}・掉落一覽】\n` +
         `------------------------------------\n` +
-        `寶箱品階：神品 ${god}%、絕品 ${sup}%，其餘為上品/良品\n` +
-        `開出秘笈機率：${Number(chest.bookRate ?? 50)}%（否則為同品階裝備/靈藥）\n` +
-        (extra ? `額外掉落：\n${extra}\n` : '') +
+        `寶箱（必定開出以下其中一項）：\n${chestLines}\n` +
+        (extra ? `首領掉落：\n${extra}\n` : '首領掉落：無\n') +
         `------------------------------------\n` +
         `擊敗該層首領時自動開啟繳獲並存入行囊！`);
 }
 
+let lastTowerClick = 0;
 function strikeTowerTarget() {
   if (!towerMonster || towerMonster.hp <= 0) return;
+  const now = performance.now();
+  if (now - lastTowerClick < (Number(towerCfg().clickCooldownMs) || 0)) return;
+  lastTowerClick = now;
 
   // 首領關卡：不會自動開戰，須點擊「挑戰頭目」
   if (towerMonster.isBoss) {
@@ -505,9 +564,7 @@ function dealTowerDamage(dmg, isCrit, isClick) {
 
   if (towerMonster.hp <= 0) {
     const floor = towerMonster.floor;
-    const earnExp = Math.floor(15 + floor * 4);
-    const earnGold = Math.floor(5 + floor * 2);
-    const earnLearn = Math.max(1, Math.floor(floor / 3));
+    const { exp: earnExp, gold: earnGold, learn: earnLearn } = towerKillReward(floor);
 
     player.exp += earnExp;
     player.gold += earnGold;
@@ -545,36 +602,35 @@ function spawnTowerFloatingDmg(dmg, isCrit) {
 
 function autoDropBossLootToBag(floor) {
   const cfg = getTowerBossConfig(floor);
-  const chest = cfg.chest || {};
-  let godRate = Number(chest.godRate) || 0;
-  if (godRate > 0 && player.talents && player.talents.some(t => t.id === "t_007")) {
-    godRate = Math.min(100, godRate * 2.0);
-  }
-  const supremeRate = Math.min(100 - godRate, Number(chest.supremeRate) || 0);
-  const upperRate = Number(chest.upperRate ?? 50);
-  const bookRate = Number(chest.bookRate ?? 50);
+  // 依各項機率（權重）開出一項；命格「氣運之子」使神品項目的機率加倍
+  const godDouble = player.talents && player.talents.some(t => t.id === "t_007" || t.chestGodDoubled);
+  const entries = towerChestEntries(cfg).filter(e => Number(e.rate) > 0)
+    .map(e => ({ e, w: Number(e.rate) * (godDouble && towerEntryRarity(e) === "神品" ? 2 : 1) }));
+  const total = entries.reduce((n, x) => n + x.w, 0);
+  let roll = Math.random() * total, pick = entries[entries.length - 1];
+  for (const x of entries) { if (roll < x.w) { pick = x; break; } roll -= x.w; }
 
-  const roll = Math.random() * 100;
-  let targetRarity;
-  if (roll < godRate) targetRarity = "神品";
-  else if (roll < godRate + supremeRate) targetRarity = "絕品";
-  else targetRarity = (Math.random() * 100 < upperRate) ? "上品" : "良品";
-
-  const color = targetRarity === "神品" ? "var(--gold)" : (targetRarity === "絕品" ? "var(--purple)" : "var(--cyan)");
-  const pickRandom = (arr) => arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : null;
-
-  let gotName = null;
-  if (Math.random() * 100 < bookRate) {
-    const sk = pickRandom((typeof GLOBAL_SKILLS !== 'undefined') ? GLOBAL_SKILLS.filter(s => s.rarity === targetRarity) : []);
-    if (sk) gotName = grantLootToBag('book', sk.id || sk.name, 1);
+  let gotName = null, rarity = "";
+  if (pick) {
+    const e = pick.e;
+    if (e.kind === 'gold') {
+      const lo = Math.max(0, Number(e.min) || 0), hi = Math.max(lo, Number(e.max) || lo);
+      const amt = Math.floor(lo + Math.random() * (hi - lo + 1));
+      player.gold += amt;
+      gotName = `銀兩 ${amt} 兩`;
+    } else if (e.kind === 'pool') {
+      const pool = towerChestPool(e.rarity);
+      const it = pool.length ? pool[Math.floor(Math.random() * pool.length)] : findItemByRef("item_snow_ginseng");
+      if (it) gotName = grantLootToBag('item', it.id || it.name, 1);
+      rarity = e.rarity;
+    } else {
+      gotName = grantLootToBag(e.kind === 'book' ? 'book' : 'item', e.ref, e.count);
+      rarity = towerEntryRarity(e);
+    }
   }
-  if (!gotName) {
-    const it = pickRandom((typeof GLOBAL_ITEMS !== 'undefined') ? GLOBAL_ITEMS.filter(i => i.rarity === targetRarity && !i.noChest && i.type !== 'material') : [])
-      || findItemByRef("item_snow_ginseng");
-    if (it) gotName = grantLootToBag('item', it.id || it.name, 1);
-  }
+  const color = rarity === "神品" ? "var(--gold)" : (rarity === "絕品" ? "var(--purple)" : "var(--cyan)");
   if (gotName && typeof appendCombatChat === 'function') {
-    appendCombatChat("【首領寶箱】", `擊敗第 ${floor} 層首領，繳獲【${targetRarity}】【${gotName}】已存入隨身「行囊」！`, color);
+    appendCombatChat("【首領寶箱】", `擊敗第 ${floor} 層首領，寶箱開出${rarity ? `【${rarity}】` : ''}【${gotName}】${pick && pick.e.kind === 'gold' ? '' : '，已存入隨身「行囊」'}！`, color);
   }
 
   rollDropTable(cfg.drops, cfg.name);
@@ -582,8 +638,13 @@ function autoDropBossLootToBag(floor) {
 }
 
 // 背景掛機
+// 背景歷練：不在通天塔時，每 background.intervalSec 秒以 ratio 倍收益結算一隻
+let towerBgLast = Date.now();
 setInterval(() => {
-  if (isTowerModalOpen || isChallengingBoss) return;
+  if (isTowerModalOpen || isChallengingBoss) { towerBgLast = Date.now(); return; }
+  const bg = towerCfg().background;
+  if (Date.now() - towerBgLast < (Number(bg.intervalSec) || 10) * 1000) return;
+  towerBgLast = Date.now();
 
   const curLimit = player.towerFloor || 1;
   let farmFloor = curLimit;
@@ -591,9 +652,7 @@ setInterval(() => {
     farmFloor = Math.max(1, farmFloor - 1);
   }
 
-  const earnExp = Math.floor(15 + farmFloor * 4);
-  const earnGold = Math.floor(5 + farmFloor * 2);
-  const earnLearn = Math.max(1, Math.floor(farmFloor / 3));
+  const { exp: earnExp, gold: earnGold, learn: earnLearn } = towerKillReward(farmFloor, Number(bg.ratio) || 0.5);
 
   player.exp += earnExp;
   player.gold += earnGold;
@@ -611,7 +670,7 @@ setInterval(() => {
   if (typeof updateProfileUI === 'function') {
     updateProfileUI();
   }
-}, 3600);
+}, 1000);
 
 window.openTowerModal = openTowerModal;
 window.closeTowerModal = closeTowerModal;

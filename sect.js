@@ -139,7 +139,10 @@ function checkStatsReq(userStats, reqStats) {
 
 function canLearnRank(userRank, reqRank) {
   const ranks = (typeof SECT_RANKS !== 'undefined') ? SECT_RANKS : ["外門弟子", "內門弟子", "真傳弟子", "長老", "出師大成"];
-  return ranks.indexOf(userRank) >= ranks.indexOf(reqRank);
+  const need = ranks.indexOf(reqRank);
+  if (!reqRank) return true;
+  // 不存在的門階一律視為最高門階，避免任何人都能學
+  return ranks.indexOf(userRank) >= (need >= 0 ? need : ranks.length - 1);
 }
 
 function getRankActionBtn(sName) {

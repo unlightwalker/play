@@ -930,3 +930,9 @@ body {
 .bag-item-card > :first-child { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .bag-item-card > :not(:first-child) { flex-shrink: 0; }
 .bag-item-card .wuxia-btn { flex-shrink: 0; overflow: visible; text-overflow: clip; }
+
+/* ==================== 手機觸控：禁止連點放大、禁止整頁左右滑動 ==================== */
+html, body { max-width: 100%; overflow-x: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body, button, .wuxia-btn, [onclick] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button, .wuxia-btn { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea, select { font-size: max(16px, 1em); } /* iOS 輸入框字小於 16px 會自動放大 */

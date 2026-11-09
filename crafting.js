@@ -256,4 +256,47 @@ const Crafting = (() => {
 })();
 
 window.Crafting = Crafting;
+
+// ==================== 商店材料每日限量（所有商店共通，每天 resetHour 點補貨） ====================
+const ShopStock = (() => {
+  const cfg = () => Object.assign({ resetHour: 12, types: ["material"], byRarity: { "凡品": 30, "良品": 10, "上品": 3, "絕品": 1, "神品": 1 } },
+    (typeof SHOP_STOCK_CONFIG !== 'undefined' && SHOP_STOCK_CONFIG) || {});
+  // 目前這一輪的起點（最近一次 resetHour 點）
+  function cycleStart(now = new Date()) {
+    const d = new Date(now);
+    d.setHours(Math.max(0, Math.min(23, Number(cfg().resetHour) || 0)), 0, 0, 0);
+    if (now < d) d.setDate(d.getDate() - 1);
+    return d.getTime();
+  }
+  function nextReset() { const d = new Date(cycleStart()); d.setDate(d.getDate() + 1); return d; }
+  function data() {
+    const start = cycleStart();
+    if (!player.shopStock || player.shopStock.cycle !== start) player.shopStock = { cycle: start, bought: {} };
+    return player.shopStock;
+  }
+  // 每日上限；0 / null = 不限量
+  function limitOf(item) {
+    if (!item) return 0;
+    if (item.dailyStock !== undefined && item.dailyStock !== null && item.dailyStock !== "") return Math.max(0, Number(item.dailyStock) || 0);
+    if (!(cfg().types || []).includes(item.type)) return 0;
+    return Math.max(0, Number((cfg().byRarity || {})[item.rarity]) || 0);
+  }
+  function left(item) {
+    const lim = limitOf(item);
+    if (!lim) return Infinity;
+    return Math.max(0, lim - (data().bought[item.id] || 0));
+  }
+  function consume(item, n = 1) {
+    if (!limitOf(item)) return;
+    const d = data();
+    d.bought[item.id] = (d.bought[item.id] || 0) + n;
+  }
+  function resetText() {
+    const d = nextReset(), now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    return `${sameDay ? '今日' : '明日'} ${String(d.getHours()).padStart(2, '0')}:00 補貨`;
+  }
+  return { limitOf, left, consume, resetText, nextReset, cycleStart };
+})();
+window.ShopStock = ShopStock;
 window.openCraftStation = npcId => Crafting.open(npcId);

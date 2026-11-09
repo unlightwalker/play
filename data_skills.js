@@ -1917,7 +1917,7 @@ const GLOBAL_SKILLS = [
       }
     ],
     "costLearn": 7200,
-    "reqRank": "傳人",
+    "reqRank": "出師大成",
     "source": "【鑄劍山莊・葬兵谷】傳說中歷代祖師傳承之秘境"
   }
 ];

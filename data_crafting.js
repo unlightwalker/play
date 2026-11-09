@@ -904,6 +904,54 @@ const GATHER_CONFIG = {
   "failExpRatio": 0.3
 };
 
+/**
+ * SHOP_STOCK_CONFIG：商店販售的製作材料每日限量（所有商店共用同一份庫存）
+ *   resetHour：每天幾點補貨（0~23，12 = 中午 12 點）
+ *   types：受限量的物品類型；byRarity：各品階每日可購買數量
+ *   個別物品可在 data_items.js 設定 dailyStock 覆蓋（0 = 不限量）
+ */
+const SHOP_STOCK_CONFIG = {
+  "resetHour": 12,
+  "types": [
+    "material"
+  ],
+  "byRarity": {
+    "凡品": 30,
+    "良品": 10,
+    "上品": 3,
+    "絕品": 1,
+    "神品": 1
+  }
+};
+
+/**
+ * DAILY_TRAINING_CONFIG：每日練功（與商店同一個補貨時間 SHOP_STOCK_CONFIG.resetHour 重置）
+ *   clinic：醫館「把脈問診」；kwoon：武館「練功」；sect：門派練武場「門派練功」（僅限本門弟子）
+ *   cost 銀兩、learn 獲得學點、limit 每日次數；次數為所有醫館 / 所有武館 / 所有門派共通
+ */
+const DAILY_TRAINING_CONFIG = {
+  "clinic": {
+    "name": "把脈問診",
+    "cost": 100,
+    "learn": 1000,
+    "limit": 3
+  },
+  "kwoon": {
+    "name": "練功",
+    "cost": 100,
+    "learn": 1000,
+    "limit": 3
+  },
+  "sect": {
+    "name": "門派練功",
+    "cost": 0,
+    "learn": 2000,
+    "limit": 1
+  }
+};
+
+window.DAILY_TRAINING_CONFIG = DAILY_TRAINING_CONFIG;
+window.SHOP_STOCK_CONFIG = SHOP_STOCK_CONFIG;
 window.CRAFT_SKILLS = CRAFT_SKILLS;
 window.GATHER_SKILLS = GATHER_SKILLS;
 window.GATHER_CONFIG = GATHER_CONFIG;
