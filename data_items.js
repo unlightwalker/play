@@ -499,7 +499,13 @@ const GLOBAL_ITEMS = [
   {"id": "herb_heshouwu", "name": "千年何首烏", "type": "material", "rarity": "神品", "cost": 700, "desc": "已具人形的千年何首烏，服之可脫胎換骨。", "encounter": {"chance": 0.2, "on": "meditate", "towns": [], "text": "打坐處的泥土微微隆起，竟是一株人形何首烏"}},
   {"id": "item_snake_pill", "name": "蛇膽明目丸", "type": "pill", "rarity": "良品", "useLimit": 10, "speedAdd": 8, "cost": 60, "desc": "以蛇膽煉成，服下耳聰目明，永久身法 +8。"},
   {"id": "item_peiyuan_pill", "name": "培元固本丹", "type": "pill", "rarity": "上品", "useLimit": 5, "hpAdd": 80, "expAdd": 200, "cost": 150, "desc": "以赤靈芝為君藥，永久氣血上限 +80，修為 +200。"},
-  {"id": "item_jiuzhuan_pill", "name": "九轉還魂丹", "type": "pill", "rarity": "神品", "useLimit": 1, "hpAdd": 400, "speedAdd": 20, "expAdd": 600, "cost": 1200, "desc": "九轉而成的無上靈丹，永久氣血 +400、身法 +20、修為 +600。"}
+  {"id": "item_jiuzhuan_pill", "name": "九轉還魂丹", "type": "pill", "rarity": "神品", "useLimit": 1, "hpAdd": 400, "speedAdd": 20, "expAdd": 600, "cost": 1200, "desc": "九轉而成的無上靈丹，永久氣血 +400、身法 +20、修為 +600。"},
+  // ==================== 【俠客經驗丹】 ====================
+  {"id": "item_cexp_1", "name": "強身散", "type": "pill", "rarity": "凡品", "companionExp": 500, "cost": 40, "noChest": true, "desc": "俠客服用的入門藥散，強健筋骨，俠客經驗 +500。"},
+  {"id": "item_cexp_2", "name": "壯骨丹", "type": "pill", "rarity": "良品", "companionExp": 2000, "cost": 150, "noChest": true, "desc": "以虎骨入藥煉成，俠客經驗 +2000。"},
+  {"id": "item_cexp_3", "name": "洗髓丹", "type": "pill", "rarity": "上品", "companionExp": 8000, "cost": 600, "noChest": true, "desc": "洗筋伐髓的靈丹，俠客經驗 +8000。"},
+  {"id": "item_cexp_4", "name": "龍虎金丹", "type": "pill", "rarity": "絕品", "companionExp": 30000, "cost": 2400, "noChest": true, "desc": "龍虎交匯、金丹大成，俠客經驗 +30000。"},
+  {"id": "item_cexp_5", "name": "太乙還童丹", "type": "pill", "rarity": "神品", "companionExp": 100000, "cost": 9000, "noChest": true, "desc": "傳說中返老還童的仙丹，俠客經驗 +100000。"}
 ];
 
 // 掛載至 window 全域

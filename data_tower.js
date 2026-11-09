@@ -1989,6 +1989,7 @@ window.TOWER_BOSSES = TOWER_BOSSES;
  *   bossRewardMult：首領若未在 TOWER_BOSSES 指定修為 / 銀兩，以「該層一般怪 × 倍數」計算
  *   background：離開通天塔時的背景歷練，每 intervalSec 秒結算一隻，收益為一般的 ratio 倍
  *   clickCooldownMs：手動狂擊的最短間隔（避免連點過快）
+ *   attackSpeed：自動攻擊速度曲線 次/秒 = min +（max − min）×（1 − e^(−身法 / k)），身法越高增加越慢
  */
 const TOWER_REWARD_CONFIG = {
   "mobHp": {
@@ -2017,6 +2018,11 @@ const TOWER_REWARD_CONFIG = {
     "intervalSec": 10,
     "ratio": 0.5
   },
-  "clickCooldownMs": 120
+  "clickCooldownMs": 120,
+  "attackSpeed": {
+    "min": 0.8,
+    "max": 3.2,
+    "k": 160
+  }
 };
 window.TOWER_REWARD_CONFIG = TOWER_REWARD_CONFIG;

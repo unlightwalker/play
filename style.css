@@ -936,3 +936,76 @@ html, body { max-width: 100%; overflow-x: hidden; overscroll-behavior: none; -we
 html, body, button, .wuxia-btn, [onclick] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 button, .wuxia-btn { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 input, textarea, select { font-size: max(16px, 1em); } /* iOS 輸入框字小於 16px 會自動放大 */
+
+/* ==================== 俠客（companions.js） ==================== */
+.comp-summary { font-size: 11.5px; color: #8a99ad; margin-bottom: 8px; }
+.comp-empty { text-align: center; color: #777; font-size: 12px; padding: 12px; line-height: 1.8; }
+.comp-detail { display: flex; gap: 10px; background: #141a24; border: 1px solid #3c2f4e; border-radius: 6px; padding: 8px 10px; }
+.comp-portrait { position: relative; flex-shrink: 0; width: 92px; display: flex; align-items: flex-end; justify-content: center; background: radial-gradient(circle at 50% 70%, #261d33, transparent 70%); border-radius: 6px; }
+.comp-sworn { position: absolute; top: 2px; left: 2px; font-size: 10px; color: #0b0d11; background: var(--gold); border-radius: 3px; padding: 0 5px; font-weight: bold; }
+.comp-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.comp-name { font-size: 14px; font-weight: bold; color: #e8dcf5; }
+.comp-name small { font-size: 11px; color: #9b8ab0; font-weight: normal; }
+.comp-desc { font-size: 11.5px; color: #8ca0b3; line-height: 1.5; }
+.comp-line { font-size: 11.5px; color: #cad3df; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.comp-aff { position: relative; flex: 1; min-width: 80px; height: 6px; background: #222c3a; border-radius: 3px; overflow: hidden; }
+.comp-aff span { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #8e44ad, #e84393); }
+.comp-aff i { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.35); }
+.comp-info .npc-bubble { margin-top: 3px; }
+.comp-info .npc-bubble em { font-style: normal; color: #e84393; font-size: 11px; margin-left: 6px; }
+.comp-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0; }
+.comp-actions .wuxia-btn { font-size: 12px; padding: 6px 4px; }
+.comp-actions .wuxia-btn.on { background: rgba(241,196,15,0.12); }
+.comp-sub { background: #10151d; border: 1px solid #283344; border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+.comp-sub-title { font-size: 12px; color: #b98ee0; font-weight: bold; margin-bottom: 6px; line-height: 1.5; }
+.comp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px; }
+.comp-card { display: flex; gap: 6px; align-items: center; background: #141822; border: 1px solid #354052; border-radius: 5px; padding: 4px 8px 4px 2px; cursor: pointer; font-size: 12px; color: #cad3df; min-width: 0; }
+.comp-card.sel { border-color: #b98ee0; background: #1b1626; }
+.comp-card small { color: #8ca0b3; font-size: 10.5px; }
+.comp-card .comp-st { color: #9b8ab0; }
+.comp-card > div { min-width: 0; overflow: hidden; }
+.comp-card.unmet { cursor: default; opacity: 0.75; }
+.comp-card svg { flex-shrink: 0; }
+/* 戰鬥中的助陣俠客 */
+.comp-rig { position: absolute; left: -4px; bottom: 16px; width: 72px; z-index: 4; text-align: center; opacity: 0.95; }
+.comp-rig .c-tag { font-size: 10px; color: #d7bde2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.atb-fill.c-fill { background: linear-gradient(90deg, #8e44ad, #d7bde2); }
+.comp-rig.c-lunge svg { animation: compLunge 0.35s ease-out; }
+@keyframes compLunge { 0% { transform: translateX(0); } 40% { transform: translateX(26px); } 100% { transform: translateX(0); } }
+
+.arena.has-comp .rig-player { left: 62px; }
+.comp-six { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 8px; font-size: 11px; color: #8ca0b3; background: #10151d; border-radius: 4px; padding: 4px 6px; }
+.comp-six b { color: #e8dcf5; margin-left: 4px; }
+.comp-select { width: 100%; background: #0d1117; color: #e4eaf0; border: 1px solid #354052; border-radius: 4px; padding: 4px 6px; font-size: 12.5px; margin-top: 2px; }
+
+/* ==================== 內視分頁 / 行囊分類 / 公告 ==================== */
+.pf-tabs, .bag-tabs { display: flex; gap: 4px; padding: 6px 8px 0; flex-wrap: wrap; }
+.bag-tabs { padding: 0 0 8px; }
+.pf-tabs button, .bag-tabs button { flex: 1; min-width: 0; background: #141a24; border: 1px solid #2d3748; color: #8ca0b3; border-radius: 4px; padding: 5px 2px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.pf-tabs button.on, .bag-tabs button.on { background: #1f2b3d; color: var(--gold); border-color: var(--gold); }
+.bag-tabs button small { margin-left: 3px; font-size: 10px; color: #6f7f94; }
+.pf-pane { display: none; }
+.pf-pane.on { display: block; }
+.pf-pane .slot-grid { margin-top: 4px; }
+.avatar-box { position: relative; }
+#avatar-mail-dot { position: absolute; top: 2px; right: 2px; }
+.notice-card { background: #141a24; border: 1px solid #283344; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; }
+.notice-card.pinned { border-color: var(--gold); }
+.notice-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: #e6dcc3; margin-bottom: 4px; }
+.notice-head small { color: #6f7f94; white-space: nowrap; }
+.notice-body { font-size: 12px; color: #aab6c6; line-height: 1.7; }
+.music-modes { display: flex; gap: 4px; }
+.music-modes button { background: #141a24; border: 1px solid #2d3748; color: #8ca0b3; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+.music-modes button.on { color: var(--gold); border-color: var(--gold); background: #1f2b3d; }
+.enclog-progress { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #e8dcf5; margin-bottom: 10px; }
+.enclog-progress span { font-size: 12px; color: #9b8ab0; }
+.enclog-progress .comp-aff { flex: 1; }
+.enclog-card { background: #141a24; border: 1px solid #283344; border-radius: 6px; padding: 7px 10px; margin-bottom: 6px; }
+.enclog-card.cur { border-color: #b98ee0; background: #1b1626; }
+.enclog-card.locked { opacity: 0.55; }
+.enclog-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; color: #e6dcc3; }
+.enclog-head small { color: #9b8ab0; margin-right: 6px; font-size: 11px; }
+.enclog-head .wuxia-btn { padding: 3px 10px; font-size: 11.5px; }
+.enclog-hint { font-size: 12px; color: #b98ee0; margin-top: 4px; line-height: 1.6; }
+.enclog-side { display: flex; flex-wrap: wrap; gap: 5px; }
+.enclog-side span { font-size: 11.5px; background: #141a24; border: 1px solid #283344; border-radius: 10px; padding: 2px 9px; color: #aab6c6; }

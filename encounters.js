@@ -19,7 +19,25 @@ const ENCOUNTER_TRIGGERS = [
   { key: "battle_lose", label: "戰鬥落敗", ctx: ["npc", "locs"] },
   { key: "craft", label: "製作成功", ctx: ["skill", "locs"] },
   { key: "rest", label: "醫館療傷", ctx: ["locs"] },
-  { key: "gather", label: "採集 / 挖礦 / 砍伐成功", ctx: ["skill", "locs"] }
+  { key: "gather", label: "採集 / 挖礦 / 砍伐成功", ctx: ["skill", "locs"] },
+  { key: "companion_talk", label: "與俠客交談", ctx: ["companion"] },
+  { key: "buy", label: "在商店購買物品", ctx: ["item", "locs"] },
+  { key: "use_item", label: "服用丹藥", ctx: ["item"] },
+  { key: "pawn", label: "典當物品", ctx: ["item", "locs"] },
+  { key: "learn_skill", label: "習得武學（武館 / 門派 / 秘笈）", ctx: ["kungfu"] },
+  { key: "kungfu_tier", label: "武學突破（重數提升）", ctx: ["kungfu", "tier"] },
+  { key: "realm_up", label: "境界提升", ctx: ["realm"] },
+  { key: "sect_join", label: "拜入門派", ctx: ["sect"] },
+  { key: "sect_promote", label: "門階晉升", ctx: ["sect"] },
+  { key: "flee", label: "走為上策脫身成功", ctx: ["locs"] },
+  { key: "tower_boss_win", label: "擊敗通天塔首領（離開塔後演出）", ctx: ["floor"] },
+  { key: "daily_login", label: "每日首次上線", ctx: [] },
+  { key: "companion_recruit", label: "結識俠客", ctx: ["companion"] },
+  { key: "companion_gift", label: "送禮給俠客", ctx: ["companion", "item"] },
+  { key: "companion_errand_back", label: "俠客派遣歸來", ctx: ["companion"] },
+  { key: "companion_levelup", label: "俠客升級", ctx: ["companion"] },
+  { key: "companion_learn", label: "俠客學會武學", ctx: ["companion", "kungfu"] },
+  { key: "companion_sworn", label: "與俠客結義", ctx: ["companion"] }
 ];
 const ENCOUNTER_CONDITIONS = [
   { key: "gold_gte", label: "銀兩 ≥", fields: ["value"] },
@@ -35,8 +53,34 @@ const ENCOUNTER_CONDITIONS = [
   { key: "craft_gte", label: "生活技能等級 ≥（製作 / 採集）", fields: ["key", "value"] },
   { key: "tower_gte", label: "通天塔層數 ≥", fields: ["value"] },
   { key: "reinc_gte", label: "轉世次數 ≥", fields: ["value"] },
-  { key: "done", label: "已完成其他奇遇", fields: ["ref"] }
+  { key: "done", label: "已完成其他奇遇", fields: ["ref"] },
+  { key: "has_companion", label: "已結識俠客", fields: ["ref"] },
+  { key: "no_companion", label: "尚未結識俠客", fields: ["ref"] },
+  { key: "companion_party", label: "俠客正在隨行", fields: ["ref"] },
+  { key: "companion_affinity_gte", label: "俠客好感 ≥", fields: ["ref", "value"] },
+  { key: "companion_sworn", label: "已與俠客結義", fields: ["ref"] },
+  { key: "not_today", label: "本日未觸發此奇遇", fields: [] },
+  { key: "random_pct", label: "額外機率 %", fields: ["value"] },
+  { key: "gold_lt", label: "銀兩 <", fields: ["value"] },
+  { key: "hp_pct_lt", label: "氣血 % <", fields: ["value"] },
+  { key: "hp_pct_gte", label: "氣血 % ≥", fields: ["value"] },
+  { key: "combat_gte", label: "實戰心得 ≥", fields: ["value"] },
+  { key: "realm_gte", label: "境界 ≥", fields: ["value"] },
+  { key: "sect_rank_gte", label: "門階 ≥", fields: ["value"] },
+  { key: "kungfu_tier_gte", label: "某武學重數 ≥", fields: ["ref", "value"] },
+  { key: "weapon_type", label: "手持兵刃類別為", fields: ["value"] },
+  { key: "loc_is", label: "目前位於地點", fields: ["value"] },
+  { key: "area_is", label: "目前位於小地圖 / 門派", fields: ["value"] },
+  { key: "time_between", label: "現實時間介於（時，可跨午夜）", fields: ["from", "to"] },
+  { key: "weekday_is", label: "今天是星期", fields: ["value"] },
+  { key: "encounter_times_gte", label: "某奇遇觸發次數 ≥", fields: ["ref", "value"] },
+  { key: "talent_has", label: "擁有天賦（名稱）", fields: ["value"] },
+  { key: "companion_count_gte", label: "俠客人數 ≥", fields: ["value"] },
+  { key: "companion_level_gte", label: "俠客等級 ≥", fields: ["ref", "value"] },
+  { key: "companion_knows", label: "俠客已會某武學", fields: ["ref", "skill"] }
 ];
+// 境界順序（與 main.js evaluatePlayerRealm 一致）
+const ENCOUNTER_REALMS = ["凡夫俗子", "初窺門徑", "略有小成", "駕輕就熟", "融會貫通", "爐火純青", "出神入化", "登峰造極", "返璞歸真", "震爍古今", "天人合一"];
 const ENCOUNTER_RESULTS = [
   { key: "message", label: "顯示訊息", fields: ["text"] },
   { key: "gold", label: "銀兩 ±", fields: ["value"] },
@@ -55,7 +99,15 @@ const ENCOUNTER_RESULTS = [
   { key: "flag", label: "設定旗標", fields: ["key"] },
   { key: "unflag", label: "清除旗標", fields: ["key"] },
   { key: "teleport", label: "傳送到地點", fields: ["value"] },
-  { key: "battle", label: "進入戰鬥（勝負分支）", fields: ["enemy", "winNext", "loseNext"] }
+  { key: "battle", label: "進入戰鬥（勝負分支）", fields: ["enemy", "winNext", "loseNext"] },
+  { key: "companion", label: "🤝 招募俠客", fields: ["ref"] },
+  { key: "companion_affinity", label: "俠客好感 ±", fields: ["ref", "value"] },
+  { key: "companion_skill", label: "俠客學會武學", fields: ["ref", "skill"] },
+  { key: "companion_gear", label: "俠客獲得裝備", fields: ["ref", "item"] },
+  { key: "companion_exp", label: "俠客經驗 +", fields: ["ref", "value"] },
+  { key: "companion_say", label: "俠客說一句話", fields: ["ref", "text"] },
+  { key: "companion_party", label: "俠客改為隨行出戰", fields: ["ref"] },
+  { key: "companion_leave", label: "俠客離隊（告別）", fields: ["ref"] }
 ];
 const ENCOUNTER_STAT_LABELS = { arm: "臂力", speed: "身法", bone: "根骨", inner: "內功", int: "悟性", luck: "福緣" };
 
@@ -77,7 +129,8 @@ const Encounters = (() => {
     return player.inventory.filter(i => i.templateId === ref || i.id === ref || i.name === ref).reduce((n, i) => n + (Number(i.count) || 1), 0);
   }
 
-  function checkCond(c) {
+  const dayStart = () => (window.ShopStock ? ShopStock.cycleStart() : new Date().setHours(0, 0, 0, 0));
+  function checkCond(c, enc) {
     if (!c || !c.type) return true;
     const v = Number(c.value) || 0;
     const st = player.stats || {};
@@ -96,10 +149,34 @@ const Encounters = (() => {
       case "tower_gte": return (Number(player.towerFloor) || 1) >= v;
       case "reinc_gte": return (Number(player.reincarnations) || 0) >= v;
       case "done": return (player.encounterLog[c.ref] || 0) > 0;
+      case "has_companion": return !!(window.Companions && Companions.has(c.ref));
+      case "no_companion": return !(window.Companions && Companions.has(c.ref));
+      case "companion_party": return !!(window.Companions && Companions.inParty(c.ref));
+      case "companion_affinity_gte": return !!(window.Companions && Companions.has(c.ref) && Companions.affinityOf(c.ref) >= v);
+      case "companion_sworn": return !!(window.Companions && Companions.isSworn(c.ref));
+      case "not_today": return !enc || (player.encounterLast[enc.id] || 0) < dayStart();
+      case "random_pct": return Math.random() * 100 < v;
+      case "gold_lt": return player.gold < v;
+      case "hp_pct_lt": return player.hp / Math.max(1, player.maxHp) * 100 < v;
+      case "hp_pct_gte": return player.hp / Math.max(1, player.maxHp) * 100 >= v;
+      case "combat_gte": return (Number(player.combat) || 0) >= v;
+      case "realm_gte": return typeof evaluatePlayerRealm === 'function' && ENCOUNTER_REALMS.indexOf(evaluatePlayerRealm()) >= ENCOUNTER_REALMS.indexOf(c.value);
+      case "sect_rank_gte": { const ranks = (typeof SECT_RANKS !== 'undefined') ? SECT_RANKS : []; return player.sect !== "無門無派" && ranks.indexOf(player.sectRank) >= Math.max(0, ranks.indexOf(c.value)); }
+      case "kungfu_tier_gte": { const k = (typeof myLearnedKungfu !== 'undefined') ? myLearnedKungfu.find(x => x.name === c.ref || x.id === c.ref) : null; return !!k && (Number(k.tier) || 1) >= v; }
+      case "weapon_type": return (typeof getWeaponType === 'function' ? getWeaponType(player.equippedGear && player.equippedGear.weapon) : '拳') === c.value;
+      case "loc_is": return player.curLoc === c.value;
+      case "area_is": { const l = (typeof WORLD_MAP !== 'undefined') ? WORLD_MAP[player.curLoc] : null; return !!l && l.area === c.value; }
+      case "time_between": { const h = new Date().getHours(), f = Number(c.from) || 0, t = Number(c.to) || 0; return f <= t ? (h >= f && h < t) : (h >= f || h < t); }
+      case "weekday_is": return new Date().getDay() === v;
+      case "encounter_times_gte": return (player.encounterLog[c.ref] || 0) >= v;
+      case "talent_has": return (player.talents || []).some(t => t.name === c.value || t.id === c.value);
+      case "companion_count_gte": return !!window.Companions && Companions.count() >= v;
+      case "companion_level_gte": return !!window.Companions && Companions.levelOf(c.ref) >= v;
+      case "companion_knows": return !!window.Companions && Companions.knows(c.ref, c.skill);
       default: return true;
     }
   }
-  const allMet = conds => (Array.isArray(conds) ? conds : []).every(checkCond);
+  const allMet = (conds, enc) => (Array.isArray(conds) ? conds : []).every(c => checkCond(c, enc));
 
   function matches(enc, type, ctx) {
     const t = enc.trigger || {};
@@ -108,10 +185,33 @@ const Encounters = (() => {
     if ((type === 'talk' || type === 'battle_win' || type === 'battle_lose') && t.npc && t.npc !== ctx.npc) return false;
     if (type === 'scene' && t.scene && t.scene !== ctx.scene && t.scene !== ctx.sceneType) return false;
     if ((type === 'craft' || type === 'gather') && t.skill && t.skill !== ctx.skill) return false;
+    // 通用情境：設定了就必須相符
+    for (const k of ["item", "kungfu", "sect", "companion", "realm"]) if (t[k] && ctx[k] !== undefined && t[k] !== ctx[k]) return false;
+    if (Number(t.tier) > 0 && Number(ctx.tier) < Number(t.tier)) return false;
+    if (Number(t.floor) > 0 && ctx.floor !== undefined && Number(ctx.floor) < Number(t.floor)) return false;
     if (enc.once && (player.encounterLog[enc.id] || 0) > 0) return false;
     if (Number(enc.cooldown) > 0 && Date.now() - (player.encounterLast[enc.id] || 0) < Number(enc.cooldown) * 60000) return false;
-    return allMet(enc.conditions);
+    return allMet(enc.conditions, enc);
   }
+  // 直接指定奇遇（人物「交談觸發奇遇」開關使用）：不看觸發方式，但仍檢查啟用、次數、冷卻與條件
+  function tryStart(id, chance = 100, ctx = {}) {
+    if (typeof player === 'undefined') return false;
+    if (cur && typeof currentPlacePage !== 'undefined' && currentPlacePage !== 'pg-encounter') cur = null;
+    if (cur || (typeof isInBattle === 'function' && isInBattle())) return false;
+    ensureData();
+    const enc = list().find(e => e.id === id);
+    if (!enc || enc.enabled === false) return false;
+    if (enc.once && (player.encounterLog[enc.id] || 0) > 0) return false;
+    if (Number(enc.cooldown) > 0 && Date.now() - (player.encounterLast[enc.id] || 0) < Number(enc.cooldown) * 60000) return false;
+    if (!allMet(enc.conditions, enc)) return false;
+    if (Math.random() * 100 >= Number(chance)) return false;
+    start(enc);
+    return true;
+  }
+  // 不適合當下演出的時機（例如通天塔中）先排隊，回到地圖時再判定
+  let queued = [];
+  function queue(type, ctx) { queued.push([type, ctx || {}]); }
+  function flush() { const q = queued; queued = []; for (const [type, ctx] of q) if (trigger(type, ctx)) break; }
 
   // 回傳 true 表示已觸發奇遇（呼叫端可略過原本的行為）
   function trigger(type, ctx = {}) {
@@ -129,12 +229,14 @@ const Encounters = (() => {
     return false;
   }
 
-  function start(enc, force) {
+  function start(enc, force, replay) {
     ensureData();
     if (!enc || !Array.isArray(enc.steps) || enc.steps.length === 0) return;
-    player.encounterLog[enc.id] = (player.encounterLog[enc.id] || 0) + 1;
-    player.encounterLast[enc.id] = Date.now();
-    cur = { enc, stepId: enc.start || enc.steps[0].id, log: [] };
+    if (!replay) {
+      player.encounterLog[enc.id] = (player.encounterLog[enc.id] || 0) + 1;
+      player.encounterLast[enc.id] = Date.now();
+    }
+    cur = { enc, stepId: enc.start || enc.steps[0].id, log: [], replay: !!replay };
     if (typeof pushChatMessage === 'function') pushChatMessage('system', '【奇遇】', `觸發奇遇「${enc.name}」！`, '#f1c40f');
     if (typeof openModal === 'function') openModal('modal-encounter');
     enterStep(cur.stepId);
@@ -154,8 +256,14 @@ const Encounters = (() => {
 
   // 套用結果；遇到戰鬥時回傳 true（劇情暫停，待戰後續演）
   function applyResults(results) {
+    const replayNoReward = cur && cur.replay && !settings().replayRewards;
     for (const r of (Array.isArray(results) ? results : [])) {
       if (!r || !r.type) continue;
+      // 重溫主線：只演出劇情，不再給獎勵；戰鬥直接當作勝利
+      if (replayNoReward && r.type !== 'message' && r.type !== 'companion_say') {
+        if (r.type === 'battle') { const w = r.winNext; cur.log.push(`（重溫：略過與【${(r.enemy || {}).name || '對手'}】的戰鬥）`); if (w && stepOf(w)) { setTimeout(() => enterStep(w), 0); return true; } }
+        continue;
+      }
       const v = Number(r.value) || 0;
       const sign = n => (n >= 0 ? `+${n}` : `${n}`);
       switch (r.type) {
@@ -192,6 +300,33 @@ const Encounters = (() => {
           }
           break;
         }
+        case "companion": {
+          const cd = window.Companions && Companions.def(r.ref);
+          if (cd && Companions.recruit(r.ref, true)) cur.log.push(`🤝【${cd.title ? cd.title + '・' : ''}${cd.name}】願與你同行！`);
+          else if (cd) cur.log.push(`${cd.name}已經與你同行了。`);
+          break;
+        }
+        case "companion_affinity": {
+          const cd = window.Companions && Companions.def(r.ref);
+          if (cd && Companions.has(r.ref)) { const g = Companions.addAffinity(r.ref, v); cur.log.push(`與${cd.name}的好感 ${g >= 0 ? '+' : ''}${g}`); }
+          break;
+        }
+        case "companion_skill": {
+          const cd = window.Companions && Companions.def(r.ref);
+          const sk = typeof findSkillByRef === 'function' ? findSkillByRef(r.skill) : null;
+          if (cd && sk && Companions.has(r.ref) && Companions.learnSkill(r.ref, r.skill, true)) cur.log.push(`${cd.name}學會了【${sk.name}】`);
+          break;
+        }
+        case "companion_gear": {
+          const cd = window.Companions && Companions.def(r.ref);
+          const nm = cd && Companions.has(r.ref) ? Companions.giveGearFromTemplate(r.ref, r.item) : null;
+          if (nm) cur.log.push(`${cd.name}換上了【${nm}】`);
+          break;
+        }
+        case "companion_exp": { const cd = window.Companions && Companions.def(r.ref); if (cd && Companions.has(r.ref)) { Companions.addExp(r.ref, v); cur.log.push(`${cd.name}經驗 +${v}`); } break; }
+        case "companion_say": { const cd = window.Companions && Companions.def(r.ref); if (cd) { Companions.say(r.ref, fill(r.text)); cur.log.push(`${cd.name}：「${fill(r.text)}」`); } break; }
+        case "companion_party": { const cd = window.Companions && Companions.def(r.ref); if (cd && Companions.has(r.ref) && Companions.setParty(r.ref)) cur.log.push(`${cd.name}與你並肩同行`); break; }
+        case "companion_leave": { const cd = window.Companions && Companions.def(r.ref); if (cd && Companions.leave(r.ref)) cur.log.push(`${cd.name}離開了隊伍`); break; }
         case "craft_exp": if (window.Crafting) { Crafting.gainExp(r.key, v); cur.log.push(`製作熟練度 +${v}`); } break;
         case "flag": player.encounterFlags[r.key] = true; break;
         case "unflag": delete player.encounterFlags[r.key]; break;
@@ -226,7 +361,7 @@ const Encounters = (() => {
     const title = document.getElementById('encounter-title');
     if (!box || !step) return;
     if (title) title.innerText = `✨ 奇遇・${cur.enc.name}`;
-    const choices = (Array.isArray(step.choices) ? step.choices : []).filter(c => allMet(c.conditions));
+    const choices = (Array.isArray(step.choices) ? step.choices : []).filter(c => allMet(c.conditions, cur.enc));
     let html = `<div class="enc-story">${step.speaker ? `<div class="enc-speaker">${esc(fill(step.speaker))}</div>` : ''}<p>${esc(fill(step.text)).replace(/\n/g, '<br>')}</p></div>`;
     if (cur.log.length) html += `<div class="enc-results">${cur.log.map(l => `<div>✦ ${esc(l)}</div>`).join('')}</div>`;
     html += `<div class="enc-choices">`;
@@ -248,7 +383,7 @@ const Encounters = (() => {
   function choose(i) {
     if (!cur) return;
     const step = stepOf(cur.stepId);
-    const c = (step.choices || []).filter(x => allMet(x.conditions))[i];
+    const c = (step.choices || []).filter(x => allMet(x.conditions, cur.enc))[i];
     if (!c) return;
     let pass = true;
     if (c.check && c.check.stat) pass = (Number((player.stats || {})[c.check.stat]) || 0) >= (Number(c.check.value) || 0);
@@ -304,16 +439,70 @@ const Encounters = (() => {
     return false;
   }
 
+  // ==================== 奇遇頁面：主線進度與重溫 ====================
+  function settings() {
+    return Object.assign({ mainlineTitle: "江湖主線", replayCooldownMin: 30, replayRewards: false, showLockedTitles: false, showSideLog: true },
+      (typeof ENCOUNTER_SETTINGS !== 'undefined' && ENCOUNTER_SETTINGS) || {});
+  }
+  const mainline = () => list().filter(e => e.mainline && e.enabled !== false).sort((a, b) => (Number(a.mainOrder) || 0) - (Number(b.mainOrder) || 0));
+  function replayLeft(id) {
+    const last = (player.encounterReplay || {})[id] || 0;
+    return Math.max(0, last + (Number(settings().replayCooldownMin) || 0) * 60000 - Date.now());
+  }
+  function openLog() {
+    ensureData();
+    if (!player.encounterReplay) player.encounterReplay = {};
+    const box = document.getElementById('enclog-content');
+    const set = settings();
+    const main = mainline();
+    const doneN = main.filter(e => (player.encounterLog[e.id] || 0) > 0).length;
+    const curIdx = main.findIndex(e => !(player.encounterLog[e.id] > 0));
+    let html = `<div class="enclog-progress"><b>${esc(set.mainlineTitle)}</b><span>${doneN} / ${main.length}</span><div class="comp-aff"><span style="width:${main.length ? doneN / main.length * 100 : 0}%"></span></div></div>`;
+    if (!main.length) html += `<div class="comp-empty" style="padding:20px;">主線尚未開放，敬請期待。</div>`;
+    main.forEach((e, i) => {
+      const done = (player.encounterLog[e.id] || 0) > 0;
+      const isCur = i === curIdx;
+      const locked = !done && !isCur;
+      const title = locked && !set.showLockedTitles ? '？？？' : esc(e.name);
+      const left = done ? replayLeft(e.id) : 0;
+      html += `<div class="enclog-card ${done ? 'done' : isCur ? 'cur' : 'locked'}">
+        <div class="enclog-head"><span>${done ? '✅' : isCur ? '▶' : '🔒'} ${e.chapter ? `<small>${esc(e.chapter)}</small>` : ''}${title}</span>
+          ${done ? (left > 0 ? `<button class="wuxia-btn" disabled style="color:#666; border-color:#3a4250;">${Math.ceil(left / 60000)} 分後可重溫</button>` : `<button class="wuxia-btn" onclick="Encounters.replay('${esc(e.id)}')">📖 重溫</button>`) : ''}</div>
+        ${isCur ? `<div class="enclog-hint">${esc(e.mainHint || '繼續行走江湖，機緣自會到來……')}</div>` : ''}
+      </div>`;
+    });
+    if (set.showSideLog) {
+      const side = list().filter(e => !e.mainline && (player.encounterLog[e.id] || 0) > 0);
+      html += `<div class="comp-sub-title" style="margin-top:12px;">📜 江湖見聞（已遇過的支線奇遇 ${side.length}）</div>`;
+      html += side.length ? `<div class="enclog-side">${side.map(e => `<span>${esc(e.name)}${player.encounterLog[e.id] > 1 ? ` ×${player.encounterLog[e.id]}` : ''}</span>`).join('')}</div>` : `<div class="comp-empty">尚未遇過任何支線奇遇。</div>`;
+    }
+    if (box) box.innerHTML = html;
+    if (typeof openModal === 'function') openModal('modal-encounter-log');
+  }
+  function replay(id) {
+    const enc = list().find(e => e.id === id);
+    if (!enc || !(player.encounterLog[id] > 0) || replayLeft(id) > 0) return;
+    if (!player.encounterReplay) player.encounterReplay = {};
+    player.encounterReplay[id] = Date.now();
+    cur = null;
+    start(enc, true, true);
+    if (cur && !settings().replayRewards) cur.log.push('（重溫中：只演出劇情，不會再次獲得獎勵）');
+    render();
+  }
+
   // 編輯器預覽 / 除錯：直接演出指定奇遇（不檢查條件）
   function play(id) {
     const enc = list().find(e => e.id === id);
     if (enc) { cur = null; start(enc, true); }
   }
 
-  return { trigger, choose, go, finish, afterBattle, play, ensureData, isActive: () => !!cur };
+  return { trigger, tryStart, queue, flush, openLog, replay, choose, go, finish, afterBattle, play, ensureData, isActive: () => !!cur };
 })();
 
 window.Encounters = Encounters;
 window.ENCOUNTER_TRIGGERS = ENCOUNTER_TRIGGERS;
 window.ENCOUNTER_CONDITIONS = ENCOUNTER_CONDITIONS;
 window.ENCOUNTER_RESULTS = ENCOUNTER_RESULTS;
+window.ENCOUNTER_REALMS = ENCOUNTER_REALMS;
+
+window.openEncounterLog = () => Encounters.openLog();

@@ -48,8 +48,10 @@ function openSectHallModal(sName) {
           <span style="font-size:12px; color:#aaa;">當前身份：<b style="color:var(--cyan);">${player.sectRank}</b></span>
           ${getRankActionBtn(sName)}
         </div>
-        <button class="wuxia-btn" style="width:100%; padding:7px; font-size:12px; border-color:var(--gold); color:var(--gold); font-weight:bold;" onclick="claimSectDaily()">
-          💰 領取宗門例銀俸祿 (+30兩銀、+50學點)
+        ${sectDailyClaimed()
+          ? `<button class="wuxia-btn" disabled style="width:100%; padding:7px; font-size:12px; border-color:#3a4250; color:#8a99ad;">✅ 今日俸祿已領取・${window.ShopStock ? ShopStock.resetText().replace('補貨', '刷新') : '明日刷新'}`
+          : `<button class="wuxia-btn" style="width:100%; padding:7px; font-size:12px; border-color:var(--gold); color:var(--gold); font-weight:bold;" onclick="claimSectDaily()">
+          💰 領取宗門例銀俸祿 (+30兩銀、+50學點)`}
         </button>
       </div>
     `;
@@ -92,13 +94,15 @@ function openSectHallModal(sName) {
 }
 
 // 領取宗門例銀與學點 (接線天賦)
+// 每日俸祿：與商店同一個重置時間（預設中午 12 點）
+function sectDailyClaimed() {
+  const start = window.ShopStock ? ShopStock.cycleStart() : new Date().setHours(0, 0, 0, 0);
+  return (player.lastSectClaimTime || 0) >= start;
+}
 function claimSectDaily() {
   const now = Date.now();
-  const lastClaim = player.lastSectClaimTime || 0;
-  const cooldown = 180000; // 3分鐘 CD
-  if (now - lastClaim < cooldown) {
-    const remainSec = Math.ceil((cooldown - (now - lastClaim)) / 1000);
-    gameNotify(`宗門俸祿每隔段時間發放，掌門交代請稍後再來領取！（尚餘約 ${remainSec} 秒）`);
+  if (sectDailyClaimed()) {
+    gameNotify(`今日的宗門俸祿已經領過了，${window.ShopStock ? ShopStock.resetText().replace('補貨', '再來') : '明日再來'}。`);
     return;
   }
 
@@ -124,6 +128,7 @@ function claimSectDaily() {
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
   if (typeof autoSave === 'function') autoSave();
   gameNotify(`💰 掌門賜下本期宗門例銀 ${addGold} 兩、學點 ${addLearn} 點！勉勵你刻苦用功！`);
+  if (player.sect && typeof openSectHallModal === 'function') openSectHallModal(player.sect);
 }
 
 function checkStatsReq(userStats, reqStats) {
@@ -169,6 +174,7 @@ function promoteRank(newRank, reqCombat, reqExp) {
   recalcPlayerStats();
   openSectHallModal(player.sect);
   gameNotify(`🎉 恭賀！你的宗門身份已正式晉升為【${newRank}】！`);
+  if (window.Encounters) setTimeout(() => Encounters.trigger('sect_promote', { sect: player.sect, rank: newRank }), 300);
 }
 
 function challengeMaster(sName) {
@@ -200,6 +206,7 @@ function learnFromElder(sName, skillName) {
 
   // 武學庫 (data_skills.js) 有同名武學時以武學庫設定為準，否則使用門派內的設定
   myLearnedKungfu.push(createLearnedKungfu(findSkillByRef(sk.name) || sk));
+  if (window.Encounters) setTimeout(() => Encounters.trigger('learn_skill', { kungfu: sk.name }), 300);
 
   recalcPlayerStats();
   openSectHallModal(sName);
@@ -228,6 +235,7 @@ function joinSect(sName) {
 
   recalcPlayerStats();
   openSectHallModal(sName);
+  if (window.Encounters) setTimeout(() => Encounters.trigger('sect_join', { sect: sName }), 300);
 }
 
 window.openSectHallModal = openSectHallModal;

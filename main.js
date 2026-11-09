@@ -102,6 +102,7 @@ function sanitizePlayerData() {
   if (!player.pillUses || typeof player.pillUses !== 'object') player.pillUses = {};
   if (window.Crafting) Crafting.ensureData();
   if (window.Gathering) Gathering.ensureData();
+  if (window.Companions) Companions.ensureData();
   if (window.Encounters) Encounters.ensureData();
   // 門派更名相容：舊存檔中的門派名稱 / 門派地點自動對應到新名稱（editor.html 會記錄 formerNames）
   if (typeof SECT_DATABASE !== 'undefined') {
@@ -351,8 +352,9 @@ function recalcPlayerStats() {
     const enc = player.statsEncounter[k] || 0;
     const gear = statsGear[k] || 0;
     const tal = statsTalent[k] || 0;
-    player.stats[k] = innate + kf + enc + gear + tal;
-    player.statSources[k] = { innate, kf, enc, gear, talent: tal, total: player.stats[k] };
+    const comp = window.Companions ? Companions.statBonus(k) : 0; // 結義俠客的屬性加成
+    player.stats[k] = innate + kf + enc + gear + tal + comp;
+    player.statSources[k] = { innate, kf, enc, gear, talent: tal, companion: comp, total: player.stats[k] };
   });
 
   const boneHp = player.stats.bone * 6;
@@ -398,6 +400,13 @@ function recalcPlayerStats() {
   updateWeaponSVG();
   updateProfileUI();
   if (typeof updateMailRedDot === 'function') updateMailRedDot();
+  // 境界提升時觸發奇遇（第一次計算只記錄，不觸發）
+  if (typeof evaluatePlayerRealm === 'function' && window.ENCOUNTER_REALMS) {
+    const realm = evaluatePlayerRealm();
+    if (player.lastRealm && ENCOUNTER_REALMS.indexOf(realm) > ENCOUNTER_REALMS.indexOf(player.lastRealm) && window.Encounters)
+      setTimeout(() => Encounters.trigger('realm_up', { realm }), 500);
+    player.lastRealm = realm;
+  }
   autoSave();
 }
 
@@ -644,7 +653,9 @@ function loadSavedGame() {
   try {
     const data = JSON.parse(raw);
     if (data && data.player) {
+      window.__expShareMute = true; // 載入存檔時不分修為給俠客
       player = Object.assign(player, data.player);
+      window.__expShareMute = false;
     }
     if (data && Array.isArray(data.myLearnedKungfu) && data.myLearnedKungfu.length > 0) {
       myLearnedKungfu = data.myLearnedKungfu;
@@ -696,8 +707,11 @@ window.gameNotify = gameNotify;
 
 // ==================== 遊戲設定（點擊頭像開啟；存於本機） ====================
 const SETTINGS_KEY = "WUXIA_SETTINGS";
-var GAME_SETTINGS = { music: false, volume: 50, shake: true, speech: true, chatter: true };
+var GAME_SETTINGS = { musicMode: null, volume: 50, shake: true, speech: true, chatter: true };
 try { Object.assign(GAME_SETTINGS, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); } catch (e) { /* 使用預設值 */ }
+// 音樂模式：none 無音樂 / song 音樂 / bgm 純音樂（預設依 data_settings.js，未設定時為純音樂）
+if (!['none', 'song', 'bgm'].includes(GAME_SETTINGS.musicMode)) GAME_SETTINGS.musicMode = (typeof GAME_CONFIG !== 'undefined' && GAME_CONFIG.music && GAME_CONFIG.music.defaultMode) || 'bgm';
+delete GAME_SETTINGS.music;
 window.GAME_SETTINGS = GAME_SETTINGS;
 
 function saveGameSettings() {
@@ -709,16 +723,25 @@ function setGameSetting(key, value) {
   saveGameSettings();
   if (typeof JianghuMusic === 'undefined') return;
   if (key === 'volume') JianghuMusic.setVolume(value / 100);
-  if (key === 'music') {
-    if (value) { JianghuMusic.setVolume(GAME_SETTINGS.volume / 100); JianghuMusic.start(); }
-    else JianghuMusic.stop();
+  if (key === 'musicMode') {
+    JianghuMusic.setVolume(GAME_SETTINGS.volume / 100);
+    JianghuMusic.setMode(value);
+    renderMusicModeButtons();
   }
 }
+function renderMusicModeButtons() {
+  document.querySelectorAll('#set-music-modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === GAME_SETTINGS.musicMode));
+  const cur = typeof JianghuMusic !== 'undefined' ? JianghuMusic.current() : null;
+  const el = document.getElementById('set-music-now');
+  if (el) el.innerText = GAME_SETTINGS.musicMode === 'none' ? '已關閉音樂' : (cur ? `正在播放：${cur.title}` : '點擊畫面後開始播放');
+}
+window.renderMusicModeButtons = renderMusicModeButtons;
+if (typeof JianghuMusic !== 'undefined') JianghuMusic.onTrack(() => renderMusicModeButtons());
 
 function openSettingsPanel() {
   const set = (id, v) => { const el = document.getElementById(id); if (el) { if (el.type === 'checkbox') el.checked = !!v; else el.value = v; } };
-  set('set-music', GAME_SETTINGS.music);
   set('set-volume', GAME_SETTINGS.volume);
+  renderMusicModeButtons();
   set('set-shake', GAME_SETTINGS.shake);
   set('set-speech', GAME_SETTINGS.speech);
   set('set-chatter', GAME_SETTINGS.chatter);
@@ -733,13 +756,27 @@ function resetLocalGame() {
   location.reload();
 }
 
-// 音樂已開啟時：瀏覽器需使用者互動後才能發聲，於第一次點擊時自動開始
-if (GAME_SETTINGS.music) {
-  const kick = () => { if (GAME_SETTINGS.music && typeof JianghuMusic !== 'undefined') { JianghuMusic.setVolume(GAME_SETTINGS.volume / 100); JianghuMusic.start(); } document.removeEventListener('pointerdown', kick); };
+// 瀏覽器需使用者互動後才能發聲：於第一次點擊時依音樂模式開始播放
+if (GAME_SETTINGS.musicMode !== 'none') {
+  const kick = () => { if (GAME_SETTINGS.musicMode !== 'none' && typeof JianghuMusic !== 'undefined') { JianghuMusic.setVolume(GAME_SETTINGS.volume / 100); JianghuMusic.setMode(GAME_SETTINGS.musicMode); } document.removeEventListener('pointerdown', kick); };
   document.addEventListener('pointerdown', kick);
 }
 
 window.setGameSetting = setGameSetting;
+
+// 公告（data_settings.js 的 GAME_CONFIG.announcements，可在編輯器「設定」分頁編輯）
+function openNoticePage() {
+  const box = document.getElementById('notice-content');
+  const list = ((typeof GAME_CONFIG !== 'undefined' && GAME_CONFIG.announcements) || []).filter(a => a && (a.title || a.body));
+  const esc = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  if (box) box.innerHTML = list.length ? list.map(a => `
+    <div class="notice-card ${a.pinned ? 'pinned' : ''}">
+      <div class="notice-head"><b>${a.pinned ? '📌 ' : ''}${esc(a.title || '公告')}</b><small>${esc(a.date || '')}</small></div>
+      <div class="notice-body">${esc(a.body || '').replace(/\n/g, '<br>')}</div>
+    </div>`).join('') : `<div class="comp-empty" style="padding:24px;">目前沒有公告。</div>`;
+  openModal('modal-notice');
+}
+window.openNoticePage = openNoticePage;
 window.openSettingsPanel = openSettingsPanel;
 window.resetLocalGame = resetLocalGame;
 
@@ -756,6 +793,11 @@ const PLACE_PAGES = {
   'settings': 'pg-settings',
   'npc': 'pg-npc',
   'modal-craft': 'pg-craft',
+  'modal-companions': 'pg-companions',
+  'modal-encounter-log': 'pg-enclog',
+  'modal-events': 'pg-events',
+  'modal-shop': 'pg-shop',
+  'modal-notice': 'pg-notice',
   'modal-encounter': 'pg-encounter'
 };
 let currentPlacePage = null;
@@ -844,6 +886,7 @@ function confirmRename() {
 
 function initGame() {
   try {
+    if (typeof hookCompanionExpShare === 'function') hookCompanionExpShare();
     const hasSave = loadSavedGame();
     recalcPlayerStats();
     if (typeof renderJianghuScenesOnMenu === 'function') renderJianghuScenesOnMenu();
@@ -853,6 +896,12 @@ function initGame() {
 
     if (!hasSave && !player.hasSeenIntro && typeof checkAndShowNewbieIntro === 'function') {
       setTimeout(checkAndShowNewbieIntro, 300);
+    }
+    // 每日首次上線（與商店同一個重置時間）
+    const loginDay = window.ShopStock ? ShopStock.cycleStart() : new Date().setHours(0, 0, 0, 0);
+    if (player.lastLoginDay !== loginDay) {
+      player.lastLoginDay = loginDay;
+      if (window.Encounters && hasSave) setTimeout(() => Encounters.trigger('daily_login', {}), 1800);
     }
   } catch (err) {
     console.error("系統啟動修復攔截:", err);

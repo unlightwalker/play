@@ -125,6 +125,9 @@ function updateMailRedDot() {
 
   const unclaimedCount = officialMailbox.filter(m => !player.claimedMails.includes(m.id)).length;
   if (dot) dot.style.display = unclaimedCount > 0 ? "block" : "none";
+  // 信件已移到設定頁：頭像上也顯示紅點提醒
+  const avatarDot = document.getElementById('avatar-mail-dot');
+  if (avatarDot) avatarDot.style.display = unclaimedCount > 0 ? "block" : "none";
   if (badge) {
     badge.style.display = unclaimedCount > 0 ? "inline-block" : "none";
     badge.innerText = `${unclaimedCount} 未領`;

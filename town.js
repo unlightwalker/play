@@ -586,6 +586,7 @@ function sellItemToPawn(idx) {
 
   if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
   renderPawnshopUI();
+  if (window.Encounters) setTimeout(() => Encounters.trigger('pawn', { item: (tpl && tpl.id) || item.templateId || item.name }), 200);
   if (typeof renderBagUI === 'function') renderBagUI();
 }
 
@@ -721,6 +722,9 @@ function closeNpcPanel() {
 function talkToNpc(npcId) {
   const npc = findTownNpc(npcId);
   if (!npc) return;
+  // 人物的「交談觸發奇遇」開關（預設關閉，編輯器中設定）
+  const te = npc.talkEncounter;
+  if (te && te.on && te.id && window.Encounters && Encounters.tryStart(te.id, Number(te.chance ?? 100), { npc: npcId })) return;
   if (window.Encounters && Encounters.trigger('talk', { npc: npcId })) return;
   const lines = (Array.isArray(npc.dialogues) && npc.dialogues.length > 0) ? npc.dialogues : ['……'];
   const panel = document.getElementById('npc-panel');

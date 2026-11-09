@@ -378,4 +378,20 @@ const GLOBAL_ENCOUNTERS = [
   }
 ];
 
+/**
+ * ENCOUNTER_SETTINGS：奇遇總覽設定（editor.html「📚 奇遇總覽」分頁）
+ *   mainlineTitle：主線名稱；replayCooldownMin：重溫已完成主線的冷卻（分鐘）
+ *   replayRewards：重溫時是否再次給予獎勵；showLockedTitles：未解鎖的主線是否顯示標題
+ *   showSideLog：奇遇頁面是否列出已遇過的支線奇遇
+ * 奇遇本身可設定 mainline（主線標籤）、mainOrder（主線順序）、chapter（章節名稱）、mainHint（給玩家的提示）
+ */
+const ENCOUNTER_SETTINGS = {
+  "mainlineTitle": "江湖主線",
+  "replayCooldownMin": 30,
+  "replayRewards": false,
+  "showLockedTitles": false,
+  "showSideLog": true
+};
+
 window.GLOBAL_ENCOUNTERS = GLOBAL_ENCOUNTERS;
+window.ENCOUNTER_SETTINGS = ENCOUNTER_SETTINGS;

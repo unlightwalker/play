@@ -106,23 +106,44 @@ const TOWER_HUMANOIDS = [
 function towerCfg() {
   const d = { mobHp: { base: 80, mul: 14, pow: 1.6 }, exp: { base: 8, mul: 2.2, pow: 0.85 }, gold: { base: 3, mul: 0.9, pow: 0.8 },
     learn: { chanceBase: 20, chancePerFloor: 0.4, chanceMax: 60, floorsPerExtra: 25 }, bossRewardMult: 12,
-    background: { intervalSec: 10, ratio: 0.5 }, clickCooldownMs: 120 };
+    background: { intervalSec: 10, ratio: 0.5 }, clickCooldownMs: 120, attackSpeed: { min: 0.8, max: 3.2, k: 160 } };
   const c = (typeof TOWER_REWARD_CONFIG !== 'undefined' && TOWER_REWARD_CONFIG) || {};
   return { ...d, ...c, mobHp: { ...d.mobHp, ...(c.mobHp || {}) }, exp: { ...d.exp, ...(c.exp || {}) }, gold: { ...d.gold, ...(c.gold || {}) },
-    learn: { ...d.learn, ...(c.learn || {}) }, background: { ...d.background, ...(c.background || {}) } };
+    learn: { ...d.learn, ...(c.learn || {}) }, background: { ...d.background, ...(c.background || {}) }, attackSpeed: { ...d.attackSpeed, ...(c.attackSpeed || {}) } };
 }
 const towerCurve = (f, k) => Math.floor((Number(k.base) || 0) + (Number(k.mul) || 0) * Math.pow(Math.max(1, f), Number(k.pow) || 1));
 function towerMobHp(floor) { return Math.max(30, towerCurve(floor, towerCfg().mobHp)); }
 function towerLearnChance(floor) { const l = towerCfg().learn; return Math.min(Number(l.chanceMax) || 60, (Number(l.chanceBase) || 0) + (Number(l.chancePerFloor) || 0) * floor); }
 function towerLearnAmount(floor) { return 1 + Math.floor(floor / Math.max(1, Number(towerCfg().learn.floorsPerExtra) || 25)); }
-// 一隻一般怪的收益；ratio 用於背景歷練；學點依機率給予
-function towerKillReward(floor, ratio = 1) {
-  const c = towerCfg();
-  const exp = Math.max(1, Math.floor(towerCurve(floor, c.exp) * ratio));
-  const gold = Math.max(0, Math.floor(towerCurve(floor, c.gold) * ratio));
+// 天賦對通天塔的影響（收益、點擊、暴擊、回血…）
+function towerBonuses() {
+  const t = (typeof player !== 'undefined' && Array.isArray(player.talents)) ? player.talents : [];
+  const goldTal = t.filter(x => Number(x.goldGainMult) > 0);
+  const lossTal = t.filter(x => Number(x.towerExpLoss) > 0);
+  return {
+    goldMult: goldTal.reduce((n, x) => n * Number(x.goldGainMult), 1), goldFrom: goldTal.map(x => x.name),
+    expLoss: lossTal.reduce((n, x) => n + Number(x.towerExpLoss), 0), lossFrom: lossTal.map(x => x.name),
+    healPct: t.reduce((n, x) => n + (Number(x.towerHealPct) || 0), 0),
+    clickHalf: t.some(x => x.towerClickHalf), lockCrit: (t.find(x => Number(x.lockCrit) > 0) || {}).lockCrit,
+    chestGod: t.some(x => x.id === "t_007" || x.chestGodDoubled), skip: t.some(x => x.towerSkipFloor), list: t
+  };
+}
+window.towerBonuses = towerBonuses;
+// 一隻一般怪的收益；ratio 用於背景歷練；學點依機率給予；raw = true 時不計天賦加成
+function towerKillReward(floor, ratio = 1, raw = false) {
+  const c = towerCfg(), bn = raw ? { goldMult: 1, expLoss: 0 } : towerBonuses();
+  const exp = Math.max(1, Math.floor(towerCurve(floor, c.exp) * ratio) - bn.expLoss);
+  const gold = Math.max(0, Math.floor(towerCurve(floor, c.gold) * ratio * bn.goldMult));
   const learn = Math.random() * 100 < towerLearnChance(floor) * ratio ? towerLearnAmount(floor) : 0;
   return { exp, gold, learn };
 }
+// 攻擊速度曲線：身法越高越快，但會逐漸趨緩（次/秒 = 最低 +（最高 − 最低）×（1 − e^(−身法 / k)））
+function towerAttacksPerSec(speed) {
+  const a = towerCfg().attackSpeed;
+  const s = Math.max(0, Number(speed) || 0);
+  return (Number(a.min) || 0.8) + ((Number(a.max) || 3.2) - (Number(a.min) || 0.8)) * (1 - Math.exp(-s / (Number(a.k) || 160)));
+}
+window.towerAttacksPerSec = towerAttacksPerSec;
 window.towerKillReward = towerKillReward;
 window.towerMobHp = towerMobHp;
 
@@ -241,6 +262,7 @@ function closeTowerModal() {
   if (typeof refreshChatForCurrentLocation === 'function') {
     refreshChatForCurrentLocation();
   }
+  if (window.Encounters) setTimeout(() => Encounters.flush(), 400);
 }
 
 function returnToTowerAfterBoss(isVictory = false) {
@@ -260,7 +282,7 @@ function returnToTowerAfterBoss(isVictory = false) {
 
 function getTowerAttackSpeedInterval() {
   const currentSpeed = (player.stats && Number(player.stats.speed)) || 50;
-  return Math.max(100, Math.floor(750 - currentSpeed * 4.2));
+  return Math.round(1000 / towerAttacksPerSec(currentSpeed));
 }
 
 function startTowerAutoAttackEngine() {
@@ -373,16 +395,21 @@ function updateTowerUI() {
   const interval = getTowerAttackSpeedInterval();
   const freqPerSec = (1000 / interval).toFixed(1);
 
-  if (armDmgEl) armDmgEl.innerText = `${avgPower} 掌力`;
-  if (spdRateEl) spdRateEl.innerText = `${freqPerSec} 次/秒 (${interval}ms)`;
+  if (armDmgEl) armDmgEl.innerText = `${avgPower}`;
+  if (spdRateEl) spdRateEl.innerText = `${(1000 / interval).toFixed(2)} 次/秒`;
 
-  // 時收收益：依目前自動攻擊實際擊殺速度估算
-  const c = towerCfg();
-  const hitsPerKill = Math.max(1, Math.ceil(towerMobHp(floor) / Math.max(5, Math.floor(avgPower * 0.85))));
-  const killsPerHour = Math.floor(3600000 / (hitsPerKill * interval + 220));
-  const hrExp = Math.floor(towerCurve(floor, c.exp) * killsPerHour);
-  const hrGold = Math.floor(towerCurve(floor, c.gold) * killsPerHour);
-  const hrLearn = Math.floor(towerLearnChance(floor) / 100 * towerLearnAmount(floor) * killsPerHour);
+  // 時收：以目前樓層的自動攻擊估算（首領層以下一層計算），並套用天賦加成
+  const c = towerCfg(), bn = towerBonuses();
+  const farmFloor = towerMonster.isBoss ? Math.max(1, floor - 1) : floor;
+  const autoDmg = Math.max(5, Math.floor(avgPower * 0.85));
+  const hitsPerKill = Math.max(1, Math.ceil(towerMobHp(farmFloor) / autoDmg));
+  const killSec = (hitsPerKill * interval + 220) / 1000;
+  const killsPerHour = Math.floor(3600 / killSec);
+  const hrExp = Math.max(0, Math.floor((towerCurve(farmFloor, c.exp) - bn.expLoss) * killsPerHour));
+  const hrGold = Math.floor(towerCurve(farmFloor, c.gold) * bn.goldMult * killsPerHour);
+  const hrLearn = Math.floor(towerLearnChance(farmFloor) / 100 * towerLearnAmount(farmFloor) * killsPerHour);
+  const killEl = document.getElementById('tower-kill-rate');
+  if (killEl) killEl.innerText = `每隻約 ${killSec.toFixed(1)} 秒（${hitsPerKill} 擊）・約 ${killsPerHour} 隻/時`;
 
   const expHrEl = document.getElementById('tower-hr-exp');
   const goldHrEl = document.getElementById('tower-hr-gold');
@@ -393,16 +420,16 @@ function updateTowerUI() {
 
   const talentsLine = document.getElementById('tower-active-talents');
   if (talentsLine) {
-    const activeTalents = [];
-    if (player.talents) {
-      if (player.talents.some(t => t.id === "t_012")) activeTalents.push("通天回血5%");
-      if (player.talents.some(t => t.id === "t_007")) activeTalents.push("神品雙倍");
-      if (player.talents.some(t => t.id === "t_014")) activeTalents.push("刀狂吸血");
-      if (player.talents.some(t => t.id === "t_134")) activeTalents.push("仙人指路");
-    }
-    talentsLine.innerText = activeTalents.length > 0 
-      ? `命格生效: ${activeTalents.join("、")}` 
-      : "命格生效: 先天凡體 (轉生可覺醒)";
+    const parts = [];
+    if (bn.goldMult !== 1) parts.push(`銀兩 ×${+bn.goldMult.toFixed(2)}（${bn.goldFrom.join('、')}）`);
+    if (bn.expLoss) parts.push(`每隻修為 −${bn.expLoss}（${bn.lossFrom.join('、')}）`);
+    if (bn.healPct) parts.push(`擊殺回血 ${Math.round(bn.healPct * 100)}%`);
+    if (bn.clickHalf) parts.push('點擊威力減半');
+    if (bn.lockCrit) parts.push(`暴擊率固定 ${bn.lockCrit}%`);
+    if (bn.chestGod) parts.push('首領寶箱神品機率 ×2');
+    if (bn.skip) parts.push('每 10 層跳過 1 層');
+    const bg = c.background;
+    talentsLine.innerHTML = `${parts.length ? `命格加成：${parts.join('、')}` : '命格加成：無（轉生可覺醒天賦）'}<br><span style="color:#6f7f94;">離開通天塔時背景歷練：每 ${bg.intervalSec} 秒一隻、收益 ×${bg.ratio}</span>`;
   }
 
   const nextBoss = Math.ceil(floor / 5) * 5;
@@ -480,9 +507,12 @@ function strikeTowerTarget() {
   }
 
   const avgPower = getTowerAverageSkillAttackPower();
-  const isCrit = Math.random() * 100 < ((player.stats ? player.stats.luck : 15) * 0.5 + 5);
+  const bn = towerBonuses();
+  const critRate = bn.lockCrit ? Number(bn.lockCrit) : Math.min(60, (player.stats ? player.stats.luck : 15) * 0.5 + 5);
+  const isCrit = Math.random() * 100 < critRate;
 
   let dmg = Math.floor(avgPower * 1.5 + Math.random() * ((player.stats ? player.stats.arm : 20) * 0.5));
+  if (bn.clickHalf) dmg = Math.floor(dmg * 0.5);
   if (isCrit) dmg = Math.floor(dmg * 1.8);
 
   dealTowerDamage(dmg, isCrit, true);

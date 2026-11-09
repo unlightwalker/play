@@ -131,7 +131,17 @@ function finalizeDamage(dmg, atkSide, defSide) {
   if (hasStatus(defSide, '金剛不壞')) return 0;
   let m = 1 + (statusVal(atkSide, '傷害提升') + statusVal(defSide, '易傷')) / 100;
   m *= 1 - Math.min(80, statusVal(defSide, '減傷')) / 100;
-  return Math.max(0, Math.round(dmg * m));
+  let out = Math.max(0, Math.round(dmg * m));
+  // 俠客護主：穿戴護甲的隨行俠客有機率替少俠擋下部分傷害
+  if (defSide === 'player' && out > 0 && typeof companionInBattle !== 'undefined' && companionInBattle && companionInBattle.guard > 0
+      && window.Companions && Math.random() * 100 < (Number(Companions.cfg().assist.guardChance) || 0)) {
+    const block = Math.min(Math.round(out * 0.5), companionInBattle.guard);
+    if (block > 0) {
+      out -= block;
+      setTimeout(() => floatOn('player', `${companionInBattle ? companionInBattle.short : '俠客'}護主 -${block}`, 'dmg-parry', 6), 60);
+    }
+  }
+  return out;
 }
 function applyStatusRates(rates, atkSide, defSide) {
   rates.hitRate = Math.max(20, Math.min(100, rates.hitRate + statusVal(atkSide, '命中率提升') - statusVal(atkSide, '降低命中')));
@@ -486,8 +496,85 @@ function startBattleAgainst(enemyObj, battleType = false, bossFloor = 0) {
   if (oldBubble) oldBubble.classList.remove('show');
   setTimeout(() => { if (!combatResolved) enemySay('start', true); }, 450);
 
+  setupCompanionForBattle();
+
   if (autoBattleTimer) clearInterval(autoBattleTimer);
   autoBattleTimer = setInterval(battleTick, 70);
+}
+
+// ==================== 俠客助陣（companions.js 提供俠客資料） ====================
+let companionInBattle = null;
+let companionAtb = 0;
+let companionComboUsed = false;
+function setupCompanionForBattle() {
+  companionInBattle = (window.Companions && Companions.forBattle) ? Companions.forBattle(currentCombatType) : null;
+  companionAtb = 0;
+  companionComboUsed = false;
+  const rig = document.getElementById('c-rig');
+  const row = document.getElementById('c-atb-row');
+  if (row) row.style.display = companionInBattle ? 'block' : 'none';
+  const arena = document.getElementById('arena-box');
+  if (arena) arena.classList.toggle('has-comp', !!companionInBattle);
+  if (!rig) return;
+  if (!companionInBattle) { rig.style.display = 'none'; rig.innerHTML = ''; return; }
+  rig.style.display = 'block';
+  // 俠客火柴人比少俠略小（少俠 85×115）
+  rig.innerHTML = `<div class="c-tag">${companionInBattle.short}</div>${typeof companionFigureSvg === 'function' ? companionFigureSvg(companionInBattle.figure, { width: 72, height: 94 }) : ''}`;
+  const nm = document.getElementById('c-atb-name');
+  if (nm) nm.innerText = `${companionInBattle.short}・行動條`;
+  const fill = document.getElementById('c-atb-fill');
+  if (fill) fill.style.width = '0%';
+  setTimeout(() => { if (!combatResolved && companionInBattle) Companions.battleLine(companionInBattle, 'assist'); }, 900);
+}
+function companionTick() {
+  if (!companionInBattle || combatResolved || !currentEnemy) return;
+  const conf = Companions.cfg().assist;
+  companionAtb = Math.min(100, companionAtb + (companionInBattle.speed || 40) * 0.05 * (Number(conf.speedRatio) || 0.8) * speedMult('player'));
+  const fill = document.getElementById('c-atb-fill');
+  if (fill) fill.style.width = Math.round(companionAtb) + '%';
+  const stEl = document.getElementById('c-atb-status');
+  if (stEl) stEl.innerText = companionAtb >= 100 ? '出手！' : (companionInBattle.healPct > 0 && player.hp < player.maxHp * 0.6 ? '準備療傷' : '蓄勢待發');
+  if (companionAtb >= 100 && !isActing && !isPlayerTurnPaused) { companionAtb = 0; executeCompanionAssist(); }
+}
+function executeCompanionAssist() {
+  const c = companionInBattle;
+  if (!c || combatResolved) return;
+  const conf = Companions.cfg().assist;
+  const rig = document.getElementById('c-rig');
+  if (rig) { rig.classList.remove('c-lunge'); void rig.offsetWidth; rig.classList.add('c-lunge'); }
+  // 醫者：少俠氣血低於 60% 時改為療傷
+  if (c.healPct > 0 && player.hp < player.maxHp * 0.6) {
+    const heal = Math.max(1, Math.round(player.maxHp * c.healPct / 100));
+    changeHp('player', heal);
+    floatOn('player', `+${heal} 療傷`, 'dmg-dodge', 18);
+    updateCombatBannerAndLog(`【${c.name}】出手療傷，氣血 +${heal}！`, `【${c.name}】搶到少俠身旁，施針運氣，少俠氣血回復 ${heal} 點。`, '#b98ee0');
+    updateCombatBars();
+    return;
+  }
+  // 結義合擊技：對手氣血低於門檻時，每場一次
+  const combo = c.sworn && c.combo && !companionComboUsed && enemyHp <= currentEnemy.maxHp * (Number(conf.comboAtHpPct) || 50) / 100;
+  let dmg;
+  if (combo) {
+    companionComboUsed = true;
+    dmg = Math.round(((player.currentAtk || player.baseAtk || 20) + c.atk) * (Number(c.combo.mult) || 2.5) * atkMult('player') - (currentEnemy.def || 10) * defMult('enemy') * 0.4);
+    if (typeof playVfxEffect === 'function') playVfxEffect(c.combo.vfx || '三仙品字劍');
+    if (typeof triggerScreenShake === 'function') triggerScreenShake();
+  } else {
+    dmg = Math.round(c.atk * c.skillMult * (Number(conf.damageRatio) || 0.4) - (currentEnemy.def || 10) * defMult('enemy') * 0.3 + Math.random() * 5);
+    if (c.vfx && typeof playVfxEffect === 'function') playVfxEffect(c.vfx);
+  }
+  dmg = Math.max(3, dmg);
+  if (enemyShield > 0) { const ab = Math.min(dmg, enemyShield); enemyShield -= ab; dmg -= ab; }
+  enemyHp = Math.max(0, enemyHp - dmg);
+  floatOn('enemy', combo ? `合擊・${c.combo.name}! -${dmg}` : `-${dmg}`, combo ? 'dmg-crit' : 'dmg-normal', combo ? 30 : 70);
+  if (typeof playHitReaction === 'function') playHitReaction(document.getElementById('e-rig'));
+  updateCombatBannerAndLog(
+    combo ? `【合擊】少俠與${c.name}使出【${c.combo.name}】，造成 ${dmg} 點傷害！` : `【${c.name}】${c.skillName ? `施展【${c.skillName}】` : '出手相助'}，造成 ${dmg} 點傷害！`,
+    combo ? `兩人心意相通，招式渾然一體，一記【${c.combo.name}】重創對手！` : `【${c.name}】從旁搶攻，替少俠分擔壓力。`, combo ? 'var(--gold)' : '#b98ee0');
+  if (!combo) Companions.battleLine(c, 'assist');
+  enemyReactToDamage();
+  updateCombatBars();
+  if (enemyHp <= 0) handleCombatVictory();
 }
 
 function setupEnemySkills(enemy) {
@@ -532,6 +619,12 @@ function stopBattleAndExit() {
   } else if (typeof refreshChatForCurrentLocation === 'function') {
     refreshChatForCurrentLocation();
   }
+  if (window.Companions) Companions.afterBattle(lastBattleOutcome, currentCombatType, currentEnemy);
+  companionInBattle = null;
+  const cRig = document.getElementById('c-rig');
+  if (cRig) cRig.style.display = 'none';
+  const cRow = document.getElementById('c-atb-row');
+  if (cRow) cRow.style.display = 'none';
   if (window.Encounters) Encounters.afterBattle(lastBattleOutcome, currentEnemy, currentCombatType);
   lastBattleOutcome = null;
 }
@@ -729,6 +822,8 @@ function battleTick() {
     if (enemyAtbGauge > 100) enemyAtbGauge = 100;
 
     updateSingleAtbMetersUI();
+    companionTick();
+    if (combatResolved) return;
 
     if (playerAtbGauge >= 100) {
       playerStance = 'none';
@@ -1014,6 +1109,7 @@ function handlePlayerFlee() {
     }
     const wasTowerBoss = (currentCombatType === 'tower_boss');
     stopBattleAndExit();
+    if (!wasTowerBoss && window.Encounters) setTimeout(() => Encounters.trigger('flee', {}), 600);
     if (wasTowerBoss && typeof returnToTowerAfterBoss === 'function') returnToTowerAfterBoss(false);
   } else {
     updateCombatBannerAndLog("抽身受阻！對手看破了退路！", `少俠抽身後退，卻被【${currentEnemy.name}】搶先一步封死生門！`, "#e74c3c");
@@ -1509,6 +1605,7 @@ function handleCombatVictory() {
     const floor = currentTowerBossFloor || player.towerFloor;
     if (floor >= player.towerFloor) player.towerFloor = floor + 1;
     if (typeof autoDropBossLootToBag === 'function') autoDropBossLootToBag(floor);
+    if (window.Encounters) Encounters.queue('tower_boss_win', { floor }); // 離開通天塔後才演出
     if (typeof recalcPlayerStats === 'function') recalcPlayerStats();
 
     if (typeof appendCombatChat === 'function') {

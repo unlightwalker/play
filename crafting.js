@@ -101,7 +101,8 @@ const Crafting = (() => {
 
   function successRate(r, lv, tool) {
     const c = cfg();
-    const rate = (Number(r.rate) || 50) + (lv - (Number(r.reqLevel) || 1)) * c.skillBonus + (tool - (Number(r.reqTool) || 1)) * c.toolBonus;
+    const helper = window.Companions ? Companions.craftBonus(r.skill) : 0; // 隨行俠客協助製作
+    const rate = (Number(r.rate) || 50) + (lv - (Number(r.reqLevel) || 1)) * c.skillBonus + (tool - (Number(r.reqTool) || 1)) * c.toolBonus + helper;
     return Math.max(c.minRate, Math.min(c.maxRate, Math.round(rate)));
   }
 

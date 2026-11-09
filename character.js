@@ -39,7 +39,7 @@ var WUXIA_AVATARS = [
 window.WUXIA_AVATARS = WUXIA_AVATARS;
 
 // ==================== 2. 身體素質透視面板與天賦檢視 ====================
-function openHeroProfileModal() {
+function openHeroProfileModal(tab) {
   const gBox = document.getElementById('avatar-gallery-box');
   if (gBox) {
     gBox.innerHTML = '';
@@ -66,7 +66,7 @@ function openHeroProfileModal() {
 
     if (valEl) valEl.innerText = src.total;
     if (srcEl) {
-      srcEl.innerText = `[先天${src.innate} + 功法${src.kf} + 奇遇${src.enc} + 裝備${src.gear}${src.talent ? ' + 天賦' + src.talent : ''}]`;
+      srcEl.innerText = `[先天${src.innate} + 功法${src.kf} + 奇遇${src.enc} + 裝備${src.gear}${src.talent ? ' + 天賦' + src.talent : ''}${src.companion ? ' + 結義' + src.companion : ''}]`;
     }
   });
 
@@ -122,6 +122,7 @@ function openHeroProfileModal() {
   }
 
   openModal('modal-hero-profile');
+  setProfileTab(typeof tab === 'string' ? tab : profileTab);
 }
 
 function showStatDetail(statKey) {
@@ -461,6 +462,7 @@ function upgradeKungfu(id) {
     if (kf.tier < 10) {
       kf.tier += 1;
       kf.progress = 0;
+      if (window.Encounters) setTimeout(() => Encounters.trigger('kungfu_tier', { kungfu: kf.name, tier: kf.tier }), 300);
       if (typeof pushChatMessage === 'function') {
         pushChatMessage(
           'system', 
@@ -508,6 +510,7 @@ function learnKwoonSkill(name, costLearn, costGold) {
 
   recalcPlayerStats();
   if (typeof refreshCurrentScene === 'function') refreshCurrentScene();
+  if (window.Encounters) setTimeout(() => Encounters.trigger('learn_skill', { kungfu: name }), 200);
   if (typeof pushChatMessage === 'function') {
     pushChatMessage('system', '【武館研習】', `參悟成功！你習得了【${name}】！初始為【初學者（一重 0%）】，請至「武學」配戴！`, '#ff9f43');
   }
@@ -535,6 +538,7 @@ function studyKungfuBook(itemIdx) {
   player.inventory.splice(itemIdx, 1);
   recalcPlayerStats();
   renderBagUI();
+  if (window.Encounters) setTimeout(() => Encounters.trigger('learn_skill', { kungfu: sk.name }), 200);
   if (typeof pushChatMessage === 'function') {
     pushChatMessage('system', '【秘笈研讀】', `挑燈夜讀！你參透了《${item.name}》精妙奧義，正式習得【${sk.name}】！`, '#ff9f43');
   }
@@ -542,6 +546,56 @@ function studyKungfuBook(itemIdx) {
 
 // ==================== 4. 行囊管理與更換兵刃連動 ====================
 function openBagModal() { renderBagUI(); openModal('modal-bag'); }
+
+const BAG_CATEGORIES = [
+  { key: "all", label: "全部", test: () => true },
+  { key: "weapon", label: "兵刃", test: i => i.type === 'weapon' },
+  { key: "armor", label: "防具", test: i => i.type === 'armor' },
+  { key: "pill", label: "丹藥", test: i => i.type === 'pill' },
+  { key: "material", label: "材料", test: i => i.type === 'material' },
+  { key: "book", label: "秘笈", test: i => i.type === 'book' },
+  { key: "other", label: "其他", test: i => !['weapon', 'armor', 'pill', 'material', 'book'].includes(i.type) }
+];
+let bagCategory = "all";
+function setBagCategory(k) { bagCategory = k; renderBagUI(); }
+window.setBagCategory = setBagCategory;
+
+// 內視・裝備：已佩戴 + 行囊中可換的兵刃與防具
+function renderGearEquipList() {
+  const box = document.getElementById('gear-equip-list');
+  if (!box) return;
+  const gear = (player.inventory || []).map((it, i) => ({ it, i })).filter(x => x.it.type === 'weapon' || x.it.type === 'armor');
+  box.innerHTML = gear.length ? gear.map(({ it, i }) => `
+    <div class="bag-item-card">
+      <div><b class="${getRarityColorClass(it.rarity)}">${it.name}</b> <span class="rarity-badge rarity-${it.rarity}">${it.rarity}</span>
+        <small style="color:#f1c40f;">${it.type === 'weapon' ? `[${getWeaponType(it)}]` : '[防具]'}</small>
+        <div style="font-size:11px; color:#8ca0b3; margin-top:2px;">${it.desc || ''}</div></div>
+      <button class="wuxia-btn" style="padding:3px 10px; font-size:11px; color:var(--cyan);" onclick="equipGearFromBag(${i})">裝備</button>
+    </div>`).join('') : `<div style="text-align:center; color:#666; font-size:12px; padding:14px;">行囊中沒有可替換的兵刃或防具。</div>`;
+}
+window.renderGearEquipList = renderGearEquipList;
+
+// 內視分頁：素質 / 武學 / 裝備 / 打坐 / 天賦
+let profileTab = "stats";
+function setProfileTab(tab) {
+  profileTab = tab || profileTab;
+  document.querySelectorAll('#pf-tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === profileTab));
+  document.querySelectorAll('#pg-profile .pf-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === profileTab));
+  if (profileTab === 'kungfu') {
+    renderKungfuSlots();
+    renderLearnedKungfuList();
+    const expEl = document.getElementById('kf-cur-exp');
+    if (expEl) expEl.innerText = player.exp;
+  } else if (profileTab === 'gear') renderBagUI();
+  else if (profileTab === 'meditate') {
+    const el = document.getElementById('pf-meditate-mental');
+    if (el) el.innerText = equippedSlots.internal ? equippedSlots.internal.name : "自然吐納";
+  }
+  const body = document.querySelector('#pg-profile .place-body');
+  if (body) body.scrollTop = 0;
+  if (typeof fitPlaceLayout === 'function') fitPlaceLayout();
+}
+window.setProfileTab = setProfileTab;
 
 function renderBagUI() {
   const w = player.equippedGear ? player.equippedGear.weapon : null;
@@ -565,16 +619,30 @@ function renderBagUI() {
     }
   }
 
+  if (typeof renderGearEquipList === 'function') renderGearEquipList();
   const list = document.getElementById('bag-inventory-list');
   if (!list) return;
   list.innerHTML = '';
+
+  // 分類：全部 / 兵刃 / 防具 / 丹藥 / 材料 / 秘笈 / 其他
+  const cat = BAG_CATEGORIES.find(c => c.key === bagCategory) || BAG_CATEGORIES[0];
+  const tabs = document.getElementById('bag-tabs');
+  if (tabs) tabs.innerHTML = BAG_CATEGORIES.map(c => {
+    const n = (player.inventory || []).filter(c.test).length;
+    return `<button class="${c.key === cat.key ? 'on' : ''}" onclick="setBagCategory('${c.key}')">${c.label}<small>${n}</small></button>`;
+  }).join('');
 
   if (!player.inventory || player.inventory.length === 0) {
     list.innerHTML = `<div style="text-align:center; color:#666; font-size:12px; padding:20px;">行囊空空如也。</div>`;
     return;
   }
+  if (!player.inventory.some(cat.test)) {
+    list.innerHTML = `<div style="text-align:center; color:#666; font-size:12px; padding:20px;">此分類沒有物品。</div>`;
+    return;
+  }
 
   player.inventory.forEach((item, idx) => {
+    if (!cat.test(item)) return;
     const card = document.createElement('div');
     card.className = 'bag-item-card';
     const colorClass = getRarityColorClass(item.rarity);
@@ -671,6 +739,11 @@ window.pillUseLimit = pillUseLimit;
 function usePillFromBag(itemIdx) {
   const item = player.inventory[itemIdx];
   if (!item || item.type !== 'pill') return;
+  if (Number(item.companionExp) > 0) {
+    gameNotify(`【${item.name}】是給俠客服用的，請到「俠客」頁面選擇俠客後服用。`);
+    if (window.Companions) { Companions.open(); Companions.setSub('pill'); }
+    return;
+  }
 
   const isTaotie = (player.talents && player.talents.some(t => t.pillMult));
   const mult = isTaotie ? 2.0 : 1.0;
@@ -718,6 +791,7 @@ function usePillFromBag(itemIdx) {
 
   recalcPlayerStats();
   renderBagUI();
+  if (window.Encounters) setTimeout(() => Encounters.trigger('use_item', { item: pillKey }), 200);
 }
 
 // ==================== 物品入囊 (商店購買 / 戰利品掉落共用) ====================
@@ -831,6 +905,7 @@ function buyGoodsToBag(ref, price) {
   recalcPlayerStats();
   if (typeof refreshCurrentScene === 'function') refreshCurrentScene();
   gameNotify(`🛍️ 購置成功！【${tpl.name}】已放入行囊！（餘 ${player.gold} 兩）`);
+  if (window.Encounters) setTimeout(() => Encounters.trigger('buy', { item: tpl.id }), 200);
 }
 
 // ==================== 5. 轉生輪迴 (通天塔 50 層限制與 10 選 N) ====================
